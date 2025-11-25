@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔧 질문 / 기타 문의
+    url: https://github.com/owner/repo/discussions
+    about: "기능 요청·버그가 아니라 일반적인 질문이나 토론은 Discussions를 이용하세요."
