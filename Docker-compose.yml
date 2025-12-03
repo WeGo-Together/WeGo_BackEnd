@@ -34,7 +34,7 @@ services:
       retries: 10
       start_period: 20s
     networks:
-      - wego-network
+      - we-go-network
 
   redis:
     image: redis:7-alpine
