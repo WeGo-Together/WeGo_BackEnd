@@ -12,7 +12,7 @@ services:
     container_name: we-go-mysql
     restart: unless-stopped
     ports:
-      - "3366:3306"
+      - "3307:3306"
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
