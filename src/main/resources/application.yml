@@ -1,5 +1,5 @@
 server:
-  port: 30000
+  port: 8080
 
 spring:
   application:
@@ -9,10 +9,10 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:mysql://${RDS_ENDPOINT:localhost}:3307/wego?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true
+    url: jdbc:mysql://${RDS_ENDPOINT}:3306/wego?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    username: ${RDS_USER}
+    password: ${RDS_PASSWORD}
 
     hikari:
       pool-name: we-go-dev
