@@ -1,24 +1,24 @@
-### 단일 이미지 업로드
+### 단일 이미지 업로드(원본)
 POST http://localhost:8080/api/v1/test/images/one
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="file"; filename="test.jpg"
+Content-Disposition: form-data; name="file"; filename="img3.jpeg"
 Content-Type: image/jpeg
 
-< ./resources/test.jpg
+< ./resources/img3.jpeg
 --boundary--
 
 
-### 여러 이미지 업로드
+### 여러 이미지 업로드(원본)
 POST http://localhost:8080/api/v1/test/images/many
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="files"; filename="img1.jpg"
-Content-Type: image/jpeg
+Content-Disposition: form-data; name="files"; filename="img1.png"
+Content-Type: image/png
 
-< ./resources/img1.jpg
+< ./resources/img1.png
 --boundary
 Content-Disposition: form-data; name="files"; filename="img2.jpg"
 Content-Type: image/jpeg
@@ -27,10 +27,65 @@ Content-Type: image/jpeg
 --boundary--
 
 
-### 한 개 이미지 삭제
-DELETE http://localhost:8080/api/v1/test/images?key=test/20251205142620_1_4560addb-a3ee-46c3-bfb6-381d92bb590d.jpg
+### 한 개 이미지 삭제(원본)
+# 위 업로드 응답에서 받은 key 값으로 교체해서 테스트
+DELETE http://localhost:8080/api/v1/test/images?key=test/20251205164446_0_bf8e3843-3166-42f5-8f29-c0faf7db1e45.jpg
 
-### 여러 개 이미지 삭제
+
+### 여러 개 이미지 삭제(원본)
+# 마찬가지로 실제 응답에서 받은 key 들로 교체
 DELETE http://localhost:8080/api/v1/test/images/many
-    ?keys=test/20251205142620_0_7f0a1b15-b783-423b-b112-fc2982128882.jpg
-    &keys=test/20251205142552_0_d24c99da-a347-4bae-b222-a96e4c2da437.jpg
+    ?keys=test/20251205164416_1_1284b0f8-fa82-4cd1-a887-ec19bc7b32af.jpg
+    &keys=test/20251205164415_0_bd0f328d-3f97-4dfb-9a57-fd388476ad18.jpg
+
+
+### 단일 이미지 업로드 (원본 + webp 세트, webp 업로드)
+POST http://localhost:8080/api/v1/test/images/one-with-thumb
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ./image/resources/test-webp1.webp
+--boundary--
+
+
+### 여러 이미지 업로드 (원본 + webp 세트)
+POST http://localhost:8080/api/v1/test/images/many-with-thumb
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="img1.png"
+Content-Type: image/png
+
+< ./resources/img1.png
+--boundary
+Content-Disposition: form-data; name="files"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ./resources/img2.jpg
+--boundary
+Content-Disposition: form-data; name="files"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ./resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="files"; filename="test-webp2.webp"
+Content-Type: image/webp
+
+< ./resources/test-webp2.webp
+--boundary--
+
+
+### 한 개 이미지 삭제 (원본 + webp 세트 함께 삭제)
+# key 는 원본이든 webp든 아무거나 하나 (응답에서 받은 key 사용)
+DELETE http://localhost:8080/api/v1/test/images/with-thumb
+    ?key=test/20251205170146_1_5176fa79-dde0-4093-b90d-70c0346743f0.webp
+
+
+### 여러 개 이미지 삭제 (원본 + webp 세트 함께 삭제)
+# 마찬가지로 실제 응답에서 받은 key 로 교체
+DELETE http://localhost:8080/api/v1/test/images/many-with-thumb
+    ?keys=test/20251205162004_0_xxx.jpg
+    &keys=test/20251205162110_0_yyy.webp
