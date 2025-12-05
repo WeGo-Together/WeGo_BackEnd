@@ -48,13 +48,33 @@ public class ImageStorageService {
     @Value("${image.max-height}")
     private int maxHeight;
 
+    @Value("${image.thumb-max-width}")
+    private int thumbMaxWidth;
+
+    @Value("${image.thumb-max-height}")
+    private int thumbMaxHeight;
+
     public UploadedImage uploadImage(String dir, MultipartFile file, int index) {
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
 
-        String key = buildKey(dir, file.getOriginalFilename(), index);
-        byte[] bytes = resizeIfNeeded(file);
+        String originalFilename = file.getOriginalFilename();
+        String extLower = extractExtension(originalFilename).toLowerCase();
+
+        String key = buildKey(dir, originalFilename, index);
+        byte[] bytes;
+
+        try {
+            if (isWebp(extLower)) {
+                bytes = file.getBytes();
+            } else {
+                bytes = resizeIfNeeded(file);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 업로드 중 오류가 발생했습니다.", e);
+        }
+
         putToS3(key, bytes, file.getContentType());
         String url = publicEndpoint + "/" + key;
 
@@ -70,6 +90,54 @@ public class ImageStorageService {
         return result;
     }
 
+    public UploadedImagePair uploadWithThumb(String dir, MultipartFile file, int index) {
+        validateImageSize(file);
+        validateImageContentType(file);
+        validateExtension(file.getOriginalFilename());
+
+        String originalFilename = file.getOriginalFilename();
+        String extLower = extractExtension(originalFilename).toLowerCase();
+        String baseName = buildBaseName(index);
+
+        try {
+            if (isWebp(extLower)) {
+                String webpKey = dir + "/" + baseName + ".webp";
+                byte[] bytes = file.getBytes();
+                putToS3(webpKey, bytes, file.getContentType());
+                String url = publicEndpoint + "/" + webpKey;
+
+                UploadedImage webp = new UploadedImage(webpKey, url);
+                return new UploadedImagePair(webp, webp);
+
+            } else {
+                String originalKey = dir + "/" + baseName + extLower;
+                byte[] originalBytes = resizeIfNeeded(file);
+                putToS3(originalKey, originalBytes, file.getContentType());
+                String originalUrl = publicEndpoint + "/" + originalKey;
+                UploadedImage original = new UploadedImage(originalKey, originalUrl);
+
+                String webpKey = dir + "/" + baseName + ".webp";
+                byte[] webpBytes = createThumbJpeg(file);
+                putToS3(webpKey, webpBytes, "image/jpeg");
+                String webpUrl = publicEndpoint + "/" + webpKey;
+                UploadedImage webp = new UploadedImage(webpKey, webpUrl);
+
+                return new UploadedImagePair(original, webp);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 업로드 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    public List<UploadedImagePair> uploadAllWithWebpThumb(String dir, List<MultipartFile> files) {
+        List<UploadedImagePair> result = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
+            result.add(uploadWithThumb(dir, file, i));
+        }
+        return result;
+    }
+
     public void deleteObject(String key) {
         s3Client.deleteObject(builder -> builder.bucket(bucket).key(key));
     }
@@ -77,6 +145,21 @@ public class ImageStorageService {
     public void deleteObjects(List<String> keys) {
         for (String key : keys) {
             deleteObject(key);
+        }
+    }
+
+    public void deleteObjectWithWebpThumb(String originalKey) {
+        deleteObject(originalKey);
+
+        String pairKey = toPairKey(originalKey);
+        if (!pairKey.equals(originalKey)) {
+            deleteObject(pairKey);
+        }
+    }
+
+    public void deleteObjectsWithWebpThumb(List<String> originalKeys) {
+        for (String key : originalKeys) {
+            deleteObjectWithWebpThumb(key);
         }
     }
 
@@ -100,11 +183,21 @@ public class ImageStorageService {
             throw new IllegalArgumentException("확장자가 없는 파일입니다.");
         }
 
-        String extension = originalFilename.substring(originalFilename.lastIndexOf("."))
-                .toLowerCase();
+        String extension = extractExtension(originalFilename).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("허용되지 않은 확장자입니다: " + extension);
         }
+    }
+
+    private boolean isWebp(String extLowerWithDot) {
+        return ".webp".equals(extLowerWithDot);
+    }
+
+    private String extractExtension(String originalFilename) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return "";
+        }
+        return originalFilename.substring(originalFilename.lastIndexOf("."));
     }
 
     private byte[] resizeIfNeeded(MultipartFile file) {
@@ -127,11 +220,29 @@ public class ImageStorageService {
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             String formatName = getFormatName(file.getOriginalFilename());
-            ImageIO.write(resized, formatName, byteArrayOutputStream);
+            boolean success = ImageIO.write(resized, formatName, byteArrayOutputStream);
+            if (!success || byteArrayOutputStream.size() == 0) {
+                throw new IllegalStateException("현재 환경에서 이미지 리사이즈에 실패했습니다. format=" + formatName);
+            }
             return byteArrayOutputStream.toByteArray();
 
         } catch (IOException e) {
             throw new RuntimeException("이미지 리사이즈 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    private byte[] createThumbJpeg(MultipartFile file) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            Thumbnails.of(file.getInputStream())
+                    .size(thumbMaxWidth, thumbMaxHeight)
+                    .outputFormat("jpg")
+                    .toOutputStream(baos);
+
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("썸네일 생성 중 오류가 발생했습니다.", e);
         }
     }
 
@@ -148,15 +259,44 @@ public class ImageStorageService {
     }
 
     private String buildKey(String dir, String originalFilename, int index) {
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
+        String extension = extractExtension(originalFilename);
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String uuid = UUID.randomUUID().toString();
 
         return dir + "/" + timestamp + "_" + index + "_" + uuid + extension;
+    }
+
+
+    private String buildBaseName(int index) {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString();
+        return timestamp + "_" + index + "_" + uuid;
+    }
+
+    private String toPairKey(String key) {
+        String lower = key.toLowerCase();
+
+        if (lower.endsWith(".webp")) {
+            String base = removeExtension(key);
+            return base + ".jpg";
+        }
+
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")) {
+            String base = removeExtension(key);
+            return base + ".webp";
+        }
+
+        return key;
+    }
+
+    private String removeExtension(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0) {
+            return fileName;
+        }
+        return fileName.substring(0, dot);
     }
 
     private void putToS3(String key, byte[] bytes, String contentType) {
@@ -170,3 +310,7 @@ public class ImageStorageService {
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
     }
 }
+
+
+
+
