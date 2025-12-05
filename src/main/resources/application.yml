@@ -73,3 +73,6 @@ image:
   max-size-bytes: 10485760 # 10MB
   max-width: 2000
   max-height: 2000
+
+  thumb-max-width: 600
+  thumb-max-height: 600
