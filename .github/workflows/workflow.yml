@@ -38,12 +38,7 @@ jobs:
             ./gradlew clean build -x test
             
             echo "[INFO] JAR 찾는 중..."
-            JAR="$(ls build/libs/*SNAPSHOT.jar | head -n 1 || true)"
-            if [ -z "$JAR" ]; then
-              echo "[ERROR] build/libs/*SNAPSHOT.jar 파일을 찾지 못했습니다."
-              ls -al build/libs || true
-              exit 1
-            fi
+            JAR="build/libs/wegobackend-0.0.1-SNAPSHOT.jar"
             echo "[INFO] 사용 JAR: $JAR"
             
             echo "[INFO] 애플리케이션 시작..."
