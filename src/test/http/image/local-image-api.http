@@ -1,0 +1,36 @@
+### 단일 이미지 업로드
+POST http://localhost:8080/api/v1/test/images/one
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.jpg"
+Content-Type: image/jpeg
+
+< ./resources/test.jpg
+--boundary--
+
+
+### 여러 이미지 업로드
+POST http://localhost:8080/api/v1/test/images/many
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="img1.jpg"
+Content-Type: image/jpeg
+
+< ./resources/img1.jpg
+--boundary
+Content-Disposition: form-data; name="files"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ./resources/img2.jpg
+--boundary--
+
+
+### 한 개 이미지 삭제
+DELETE http://localhost:8080/api/v1/test/images?key=test/20251205142620_1_4560addb-a3ee-46c3-bfb6-381d92bb590d.jpg
+
+### 여러 개 이미지 삭제
+DELETE http://localhost:8080/api/v1/test/images/many
+    ?keys=test/20251205142620_0_7f0a1b15-b783-423b-b112-fc2982128882.jpg
+    &keys=test/20251205142552_0_d24c99da-a347-4bae-b222-a96e4c2da437.jpg
