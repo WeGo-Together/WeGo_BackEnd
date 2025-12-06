@@ -62,6 +62,7 @@ public class ImageUploadService {
     private int thumbMaxHeight;
 
     public ImageFile uploadOriginal(String dir, MultipartFile file, int index) {
+        validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
@@ -87,6 +88,7 @@ public class ImageUploadService {
     }
 
     public ImageFile uploadAsWebp(String dir, MultipartFile file, int index) {
+        validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
@@ -112,6 +114,7 @@ public class ImageUploadService {
     }
 
     public ImageFile uploadThumb(String dir, MultipartFile file, int index) {
+        validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
@@ -276,5 +279,23 @@ public class ImageUploadService {
             return "jpg";
         }
         return ext;
+    }
+
+    private void validateDir(String dir) {
+        if (dir == null || dir.isBlank()) {
+            throw new IllegalArgumentException("dir은 필수입니다.");
+        }
+
+        if (dir.contains("..") || dir.startsWith("/")) {
+            throw new IllegalArgumentException("잘못된 디렉토리 경로입니다.");
+        }
+
+        if (dir.endsWith("/")) {
+            throw new IllegalArgumentException("dir은 /로 끝나면 안 됩니다.");
+        }
+
+        if (!dir.matches("[a-zA-Z0-9_\\-/]+")) {
+            throw new IllegalArgumentException("dir에는 알파벳, 숫자, '-', '_', '/'만 사용할 수 있습니다.");
+        }
     }
 }
