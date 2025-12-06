@@ -1,6 +1,5 @@
 package team.wego.wegobackend.image.application.service;
 
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,6 +19,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import team.wego.wegobackend.image.domain.ImageFile;
+import team.wego.wegobackend.image.domain.exception.ImageException;
+import team.wego.wegobackend.image.domain.exception.ImageExceptionCode;
 
 @RequiredArgsConstructor
 @Service
@@ -142,27 +143,31 @@ public class ImageUploadService {
 
     private void validateImageSize(MultipartFile file) {
         if (file.getSize() > maxSizeBytes) {
-            throw new IllegalArgumentException(
-                    "이미지 크기가 너무 큽니다. 최대 " + maxSizeBytes + " bytes 까지만 허용됩니다."
-            );
+            throw new ImageException(ImageExceptionCode.INVALID_IMAGE_SIZE, maxSizeBytes);
         }
     }
 
     private void validateImageContentType(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("허용되지 않은 이미지 타입입니다: " + contentType);
+            throw new ImageException(
+                    ImageExceptionCode.UNSUPPORTED_IMAGE_CONTENT_TYPE,
+                    contentType
+            );
         }
     }
 
     private void validateExtension(String originalFilename) {
         if (originalFilename == null || !originalFilename.contains(".")) {
-            throw new IllegalArgumentException("확장자가 없는 파일입니다.");
+            throw new ImageException(ImageExceptionCode.MISSING_EXTENSION);
         }
 
         String extension = extractExtension(originalFilename).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw new IllegalArgumentException("허용되지 않은 확장자입니다: " + extension);
+            throw new ImageException(
+                    ImageExceptionCode.UNSUPPORTED_EXTENSION,
+                    extension
+            );
         }
     }
 
@@ -171,6 +176,24 @@ public class ImageUploadService {
             return "";
         }
         return originalFilename.substring(originalFilename.lastIndexOf("."));
+    }
+
+    private void validateDir(String dir) {
+        if (dir == null || dir.isBlank()) {
+            throw new ImageException(ImageExceptionCode.DIR_REQUIRED);
+        }
+
+        if (dir.contains("..") || dir.startsWith("/")) {
+            throw new ImageException(ImageExceptionCode.DIR_INVALID_TRAVERSAL);
+        }
+
+        if (dir.endsWith("/")) {
+            throw new ImageException(ImageExceptionCode.DIR_TRAILING_SLASH);
+        }
+
+        if (!dir.matches("[a-zA-Z0-9_\\-/]+")) {
+            throw new ImageException(ImageExceptionCode.DIR_INVALID_PATTERN);
+        }
     }
 
     private String buildKey(String dir, String originalFilename, int index) {
@@ -197,24 +220,13 @@ public class ImageUploadService {
                     .toOutputStream(byteArrayOutputStream);
 
             if (byteArrayOutputStream.size() == 0) {
-                throw new IllegalStateException("WebP 변환에 실패했습니다.");
+                throw new ImageException(ImageExceptionCode.WEBP_CONVERT_FAILED);
             }
 
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException("WebP 변환 중 오류가 발생했습니다.", e);
+            throw new ImageException(ImageExceptionCode.IMAGE_IO_ERROR, e, "WebP 변환");
         }
-    }
-
-    private void putToS3(String key, byte[] bytes, String contentType) {
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .contentType(contentType)
-                .acl(ObjectCannedACL.PUBLIC_READ)
-                .build();
-
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
     }
 
     private byte[] resizeIfNeededKeepFormat(MultipartFile file) {
@@ -231,11 +243,10 @@ public class ImageUploadService {
             int targetMaxHeight,
             String errorPrefix
     ) {
-        // TODO: IO Exception 부분. 공통 예외로 구현으로 try-catch 제거를 노려보자.
         try {
             BufferedImage originalImage = ImageIO.read(file.getInputStream());
             if (originalImage == null) {
-                throw new IllegalArgumentException("이미지 파일 형식이 올바르지 않습니다.");
+                throw new ImageException(ImageExceptionCode.INVALID_IMAGE_FORMAT);
             }
 
             int width = originalImage.getWidth();
@@ -258,15 +269,18 @@ public class ImageUploadService {
                     .toOutputStream(byteArrayOutputStream);
 
             if (byteArrayOutputStream.size() == 0) {
-                throw new IllegalStateException(errorPrefix + "에 실패했습니다. format=" + formatName);
+                throw new ImageException(
+                        ImageExceptionCode.RESIZE_FAILED,
+                        errorPrefix,
+                        formatName
+                );
             }
 
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException(errorPrefix + " 중 오류가 발생했습니다.", e);
+            throw new ImageException(ImageExceptionCode.IMAGE_IO_ERROR, e, errorPrefix);
         }
     }
-
 
     private String getFormatName(String originalFilename) {
         if (originalFilename == null || !originalFilename.contains(".")) {
@@ -281,21 +295,14 @@ public class ImageUploadService {
         return ext;
     }
 
-    private void validateDir(String dir) {
-        if (dir == null || dir.isBlank()) {
-            throw new IllegalArgumentException("dir은 필수입니다.");
-        }
+    private void putToS3(String key, byte[] bytes, String contentType) {
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .acl(ObjectCannedACL.PUBLIC_READ)
+                .build();
 
-        if (dir.contains("..") || dir.startsWith("/")) {
-            throw new IllegalArgumentException("잘못된 디렉토리 경로입니다.");
-        }
-
-        if (dir.endsWith("/")) {
-            throw new IllegalArgumentException("dir은 /로 끝나면 안 됩니다.");
-        }
-
-        if (!dir.matches("[a-zA-Z0-9_\\-/]+")) {
-            throw new IllegalArgumentException("dir에는 알파벳, 숫자, '-', '_', '/'만 사용할 수 있습니다.");
-        }
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
     }
 }
