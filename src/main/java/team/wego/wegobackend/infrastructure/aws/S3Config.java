@@ -1,4 +1,4 @@
-package team.wego.wegobackend.image.infrastructure;
+package team.wego.wegobackend.infrastructure.aws;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
