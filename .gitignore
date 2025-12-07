@@ -747,4 +747,7 @@ FodyWeavers.xsd
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
+# Local Profile
+/src/main/resources/application-local.yml
+
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij+all,intellij+iml,netbeans,macos,windows,visualstudiocode,visualstudio,gradle,groovy,linux,sonarqube,sonar,dotenv,redis,git
