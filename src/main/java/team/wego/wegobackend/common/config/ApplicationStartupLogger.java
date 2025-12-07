@@ -100,17 +100,7 @@ public class ApplicationStartupLogger {
     private void logJwtSettings() {
         log.info("🔐 JWT SETTINGS:");
 
-        String secret = env.getProperty("jwt.secret");
-        if (secret != null) {
-            log.info("   - Secret Key: {}... (length: {})",
-                secret.substring(0, Math.min(10, secret.length())),
-                secret.length()
-            );
-        } else {
-            log.warn("   - Secret Key: NOT CONFIGURED!");
-        }
-
-        String expiration = env.getProperty("jwt.expiration");
+        String expiration = env.getProperty("jwt.access.token.expiration");
         if (expiration != null) {
             long expirationMs = Long.parseLong(expiration);
             long hours = expirationMs / (1000 * 60 * 60);
