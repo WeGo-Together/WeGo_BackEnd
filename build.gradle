@@ -36,6 +36,13 @@ dependencies {
     implementation 'com.twelvemonkeys.imageio:imageio-core:3.12.0'
     implementation 'org.sejda.imageio:webp-imageio:0.1.6'
 
+    // Auth
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+    implementation 'io.jsonwebtoken:jjwt:0.12.6'
+
+    // H2 Database
+    runtimeOnly 'com.h2database:h2'
 
 }
 
