@@ -21,6 +21,15 @@ public record ApiResponse<T>(
         return new ApiResponse<>(code, message, null);
     }
 
+    public static <T> ApiResponse<T> success(int code, String message, T data) {
+        return new ApiResponse<>(String.valueOf(code), message, data);
+    }
+
+    public static <T> ApiResponse<T> success(int code, String message) {
+        return new ApiResponse<>(String.valueOf(code), message, null);
+    }
+
+
     public static <T> ApiResponse<T> error(String code, String message) {
         return new ApiResponse<>(code, message, null);
     }
