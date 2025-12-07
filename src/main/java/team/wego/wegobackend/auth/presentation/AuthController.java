@@ -52,6 +52,21 @@ public class AuthController {
     }
 
     /**
+     * 로그아웃
+     * */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        // Refresh Token 쿠키만 삭제
+        Cookie deleteCookie = new Cookie("refreshToken", null);
+        deleteCookie.setPath("/");
+        deleteCookie.setMaxAge(0);
+        deleteCookie.setHttpOnly(true);
+        response.addCookie(deleteCookie);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * Access Token 재발급
      */
     @PostMapping("/refresh")
