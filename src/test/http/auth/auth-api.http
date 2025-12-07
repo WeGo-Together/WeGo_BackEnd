@@ -19,7 +19,7 @@ Content-Type: application/json
 }
 
 > {%
-  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("accessToken", response.body.data.accessToken);
 %}
 
 ### 액세스 토큰 재발급

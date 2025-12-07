@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +19,7 @@ import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
 import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
 import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
+import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
 
 @Slf4j
@@ -33,29 +36,42 @@ public class AuthController {
      * 회원가입
      */
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
+    public ResponseEntity<ApiResponse<SignupResponse>> signup(
+        @Valid @RequestBody SignupRequest request) {
         SignupResponse response = authService.signup(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success(
+                HttpStatus.CREATED.value(),
+                "인증 : 회원가입 성공",
+                response));
     }
 
     /**
      * 로그인
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+        @Valid @RequestBody LoginRequest request,
         HttpServletResponse response) {
         LoginResponse loginResponse = authService.login(request);
 
         response.addCookie(createRefreshTokenCookie(loginResponse.getRefreshToken()));
 
-        return ResponseEntity.ok(loginResponse);
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(
+                HttpStatus.OK.value(),
+                "인증 : 로그인 성공",
+                loginResponse
+            ));
     }
 
     /**
      * 로그아웃
-     * */
+     */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         // Refresh Token 쿠키만 삭제
         Cookie deleteCookie = new Cookie("refreshToken", null);
         deleteCookie.setPath("/");
@@ -63,23 +79,33 @@ public class AuthController {
         deleteCookie.setHttpOnly(true);
         response.addCookie(deleteCookie);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity
+            .status(HttpStatus.NO_CONTENT)
+            .body(ApiResponse.success(
+                HttpStatus.NO_CONTENT.value(),
+                "인증 : 로그아웃 성공"
+            ));
     }
 
     /**
      * Access Token 재발급
      */
     @PostMapping("/refresh")
-    public ResponseEntity<RefreshResponse> refresh(
-        @CookieValue(name = "refreshToken", required = false) String refreshToken
-    ) {
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
+        @CookieValue(name = "refreshToken", required = false) String refreshToken) {
         if (refreshToken == null) {
             throw new IllegalArgumentException("Refresh 토큰이 없습니다.");
         }
 
         RefreshResponse response = authService.refresh(refreshToken);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success(
+                HttpStatus.CREATED.value(),
+                "인증 : Access Token 재발급 성공",
+                response
+            ));
     }
 
     /**
