@@ -1,5 +1,6 @@
 package team.wego.wegobackend.auth.application;
 
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.auth.application.dto.request.LoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
+import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
 import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
 import team.wego.wegobackend.common.security.Role;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
@@ -72,5 +74,33 @@ public class AuthService {
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
         return LoginResponse.of(user, accessToken, refreshToken, expiresIn);
+    }
+
+    /**
+     * Access Token 재발급
+     */
+    public RefreshResponse refresh(String refreshToken) {
+
+        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 Refresh Token");
+        }
+
+        String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+
+        if (user.getDeleted()) {
+            throw new IllegalArgumentException("탈퇴한 계정");
+        }
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(
+            user.getEmail(),
+            user.getRole().name()
+        );
+
+        Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
+
+        return RefreshResponse.of(newAccessToken, expiresIn);
     }
 }

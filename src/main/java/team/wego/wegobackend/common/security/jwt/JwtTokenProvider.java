@@ -78,6 +78,10 @@ public class JwtTokenProvider {
         return accessTokenExpiration / 1000;
     }
 
+    public long getRefreshTokenExpiration() {
+        return refreshTokenExpiration / 1000;
+    }
+
     private Claims getClaims(String token) {
         return Jwts.parser()
             .verifyWith(secretKey)
@@ -105,5 +109,47 @@ public class JwtTokenProvider {
             log.error("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
+    }
+
+    /**
+     * Access 검증
+     */
+    public boolean validateAccessToken(String token) {
+        if (!validateToken(token)) {
+            return false;
+        }
+
+        try {
+            String tokenType = getTokenType(token);
+            if (!"access".equals(tokenType)) {
+                log.warn("Token is not a Access Token. Type -> {}", tokenType);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("Error validating access token type");
+            return false;
+        }
+    }
+
+    /**
+     * Refresh 검증
+     */
+    public boolean validateRefreshToken(String token) {
+        if (!validateToken(token)) {
+            return false;
+        }
+
+        try {
+            String tokenType = getTokenType(token);
+            if (!"refresh".equals(tokenType)) {
+                log.warn("Token is not a Refresh Token. Type -> {}", tokenType);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("Error validating refresh token type");
+            return false;
+        }
     }
 }
