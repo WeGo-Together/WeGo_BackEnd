@@ -35,7 +35,7 @@ public class UserInfoResponse {
 
     private Boolean isDeleted;
 
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
     public static UserInfoResponse from(User user) {
         return UserInfoResponse.builder()
@@ -49,7 +49,7 @@ public class UserInfoResponse {
             .profileMessage(user.getProfileMessage())
             .isNotificationEnabled(user.getNotificationEnabled())
             .isDeleted(user.getDeleted())
-            .createAt(user.getCreatedAt())
+            .createdAt(user.getCreatedAt())
             .build();
     }
 }
