@@ -1,5 +1,6 @@
 package team.wego.wegobackend.image.presentation;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.image.application.dto.ImageFileResponse;
 import team.wego.wegobackend.image.application.service.ImageUploadService;
 import team.wego.wegobackend.image.domain.ImageFile;
+import team.wego.wegobackend.image.domain.ImageSize;
 
 @RestController
 @RequestMapping("/api/v1/images")
@@ -37,11 +39,7 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
-                        "이미지: 원본 업로드가 정상적으로 처리되었습니다.",
-                        response
-                ));
+                .body(ApiResponse.success(response));
     }
 
     @PostMapping(
@@ -59,94 +57,73 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
-                        "이미지: 여러 원본 업로드가 정상적으로 처리되었습니다.",
-                        responses
-                ));
+                .body(ApiResponse.success(responses));
     }
 
+    /**
+     * 단일 크기로 WebP 업로드 (예: 440x240, 100x100 등)
+     */
     @PostMapping(
             value = "/webp",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    public ResponseEntity<ApiResponse<ImageFileResponse>> uploadAsWebp(
+    public ResponseEntity<ApiResponse<ImageFileResponse>> uploadAsWebpWithSize(
             @RequestParam("dir") String dir,
+            @RequestParam("width") int width,
+            @RequestParam("height") int height,
             @RequestPart("file") MultipartFile file
     ) {
-        ImageFile image = imageUploadService.uploadAsWebp(dir, file, 0);
+        ImageSize size = new ImageSize(width, height);
+        ImageFile image = imageUploadService.uploadAsWebpWithSize(dir, file, 0, size);
         ImageFileResponse response = ImageFileResponse.from(image);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
-                        "이미지: WebP 변환 업로드가 정상적으로 처리되었습니다.",
-                        response
-                ));
+                .body(ApiResponse.success(response));
     }
 
     @PostMapping(
-            value = "/webps",
+            value = "/webp/multiple",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    public ResponseEntity<ApiResponse<List<ImageFileResponse>>> uploadAllAsWebp(
+    public ResponseEntity<ApiResponse<List<ImageFileResponse>>> uploadAsWebpWithSizes(
             @RequestParam("dir") String dir,
-            @RequestPart("files") List<MultipartFile> files
+            @RequestParam("widths") List<Integer> widths,
+            @RequestParam("heights") List<Integer> heights,
+            @RequestPart("file") MultipartFile file
     ) {
-        List<ImageFileResponse> responses = imageUploadService.uploadAllAsWebp(dir, files)
+        if (widths.size() != heights.size()) {
+            // 여기서 어떻게 에러를 내려줄지는 프로젝트의 공통 에러 응답 정책에 맞춰서 조정해도 됨
+            throw new IllegalArgumentException("widths와 heights의 길이가 일치해야 합니다.");
+        }
+
+        List<ImageSize> sizes = new ArrayList<>();
+        for (int i = 0; i < widths.size(); i++) {
+            sizes.add(new ImageSize(widths.get(i), heights.get(i)));
+        }
+
+        List<ImageFileResponse> responses = imageUploadService
+                .uploadAsWebpWithSizes(dir, file, 0, sizes)
                 .stream()
                 .map(ImageFileResponse::from)
                 .toList();
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
-                        "이미지: 여러 WebP 변환 업로드가 정상적으로 처리되었습니다.",
-                        responses
-                ));
+                .body(ApiResponse.success(responses));
     }
 
     @DeleteMapping("/one")
-    public ResponseEntity<ApiResponse<Void>> deleteOne(@RequestParam("key") String key) {
+    public ResponseEntity<Void> deleteOne(@RequestParam("key") String key) {
         imageUploadService.delete(key);
 
-        return ResponseEntity
-                .ok(ApiResponse.success(
-                        HttpStatus.CREATED.toString(),
-                        "이미지: 단일 삭제가 정상적으로 처리되었습니다."
-                ));
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<ApiResponse<Void>> deleteMany(@RequestParam("keys") List<String> keys) {
+    public ResponseEntity<Void> deleteMany(@RequestParam("keys") List<String> keys) {
         imageUploadService.deleteAll(keys);
 
-        return ResponseEntity
-                .ok(ApiResponse.success(
-                        HttpStatus.OK.value(),
-                        "이미지: 여러 건 삭제가 정상적으로 처리되었습니다."
-                ));
-    }
-
-    @PostMapping(
-            value = "/thumb",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResponseEntity<ApiResponse<ImageFileResponse>> uploadThumb(
-            @RequestParam("dir") String dir,
-            @RequestPart("file") MultipartFile file
-    ) {
-        ImageFile image = imageUploadService.uploadThumb(dir, file, 0);
-        ImageFileResponse response = ImageFileResponse.from(image);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
-                        "이미지: 썸네일 업로드가 정상적으로 처리되었습니다.",
-                        response
-                ));
+        return ResponseEntity.noContent().build();
     }
 }
