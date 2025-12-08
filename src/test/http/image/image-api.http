@@ -1,5 +1,6 @@
 ### 1. 단일 이미지 업로드 (원본)
-POST http://localhost:8080/api/v1/images/original?dir=test
+POST http://localhost:8080/api/v1/images/original
+    ?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -11,7 +12,8 @@ Content-Type: image/jpeg
 
 
 ### 2. 여러 이미지 업로드 (원본)
-POST http://localhost:8080/api/v1/images/originals?dir=test
+POST http://localhost:8080/api/v1/images/originals
+    ?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -29,33 +31,41 @@ Content-Type: image/jpeg
 
 ### 3. 단일 이미지 업로드 (WebP 변환 저장, 크기 지정)
 # 예: 모임 상세페이지 썸네일 440x240
-POST http://localhost:8080/api/v1/images/webp?dir=test&width=440&height=240
+POST http://localhost:8080/api/v1/images/webp
+    ?dir=test
+    &width=440
+    &height=240
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="any-image.jpg"
 Content-Type: image/jpeg
 
-< ./resources/any-image.jpg
+< ./resources/img1.png
 --boundary--
 
 
 ### 4. 단일 이미지 업로드 (여러 크기 WebP 변환 저장)
 # 예: 상세(440x240) + 목록(100x100)을 한 번에 생성
-POST http://localhost:8080/api/v1/images/webp/multiple?dir=test&widths=440&widths=100&heights=240&heights=100
+POST http://localhost:8080/api/v1/images/webp/multiple
+    ?dir=test&widths=440
+    &widths=100
+    &heights=240
+    &heights=100
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="group-thumbnail.jpg"
 Content-Type: image/jpeg
 
-< ./resources/group-thumbnail.jpg
+< ./resources/img1.png
 --boundary--
 
 
 ### 5. 한 개 이미지 삭제
 # 업로드 응답에서 받은 key 사용
-DELETE http://localhost:8080/api/v1/images/one?key=test/20251206141745_0_1f6f3420-0e78-4a5e-b782-93834937c552.webp
+DELETE http://localhost:8080/api/v1/images/one
+    ?key=test/20251206141745_0_1f6f3420-0e78-4a5e-b782-93834937c552.webp
 
 
 ### 6. 여러 개 이미지 삭제
