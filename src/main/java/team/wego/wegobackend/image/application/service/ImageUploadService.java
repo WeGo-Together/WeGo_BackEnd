@@ -11,14 +11,16 @@ import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import net.coobird.thumbnailator.Thumbnails;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import team.wego.wegobackend.image.config.AwsS3Properties;
+import team.wego.wegobackend.image.config.ImageProperties;
 import team.wego.wegobackend.image.domain.ImageFile;
+import team.wego.wegobackend.image.domain.ImageSize;
 import team.wego.wegobackend.image.domain.exception.ImageException;
 import team.wego.wegobackend.image.domain.exception.ImageExceptionCode;
 
@@ -40,27 +42,8 @@ public class ImageUploadService {
     );
 
     private final S3Client s3Client;
-
-    @Value("${aws.s3.bucket}")
-    private String bucket;
-
-    @Value("${aws.s3.public-endpoint}")
-    private String publicEndpoint;
-
-    @Value("${image.max-size-bytes}")
-    private long maxSizeBytes;
-
-    @Value("${image.max-width}")
-    private int maxWidth;
-
-    @Value("${image.max-height}")
-    private int maxHeight;
-
-    @Value("${image.thumb-max-width}")
-    private int thumbMaxWidth;
-
-    @Value("${image.thumb-max-height}")
-    private int thumbMaxHeight;
+    private final AwsS3Properties awsS3Properties;
+    private final ImageProperties imageProperties;
 
     public ImageFile uploadOriginal(String dir, MultipartFile file, int index) {
         validateDir(dir);
@@ -74,7 +57,7 @@ public class ImageUploadService {
         byte[] bytes = resizeIfNeededKeepFormat(file);
 
         putToS3(key, bytes, file.getContentType());
-        String url = publicEndpoint + "/" + key;
+        String url = awsS3Properties.getPublicEndpoint() + "/" + key;
 
         return new ImageFile(key, url);
     }
@@ -88,51 +71,60 @@ public class ImageUploadService {
         return result;
     }
 
-    public ImageFile uploadAsWebp(String dir, MultipartFile file, int index) {
+    public ImageFile uploadAsWebpWithSize(
+            String dir,
+            MultipartFile file,
+            int index,
+            ImageSize size
+    ) {
         validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
 
         String baseName = buildBaseName(index);
-        String key = dir + "/" + baseName + ".webp";
+        String key = dir + "/" + baseName + "_" + size.width() + "x" + size.height() + ".webp";
 
-        byte[] bytes = convertToWebp(file);
+        byte[] bytes = convertToWebpWithSize(file, size);
 
         putToS3(key, bytes, "image/webp");
-        String url = publicEndpoint + "/" + key;
+        String url = awsS3Properties.getPublicEndpoint() + "/" + key;
 
         return new ImageFile(key, url);
     }
 
-    public List<ImageFile> uploadAllAsWebp(String dir, List<MultipartFile> files) {
-        List<ImageFile> result = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            MultipartFile file = files.get(i);
-            result.add(uploadAsWebp(dir, file, i));
-        }
-        return result;
-    }
-
-    public ImageFile uploadThumb(String dir, MultipartFile file, int index) {
+    public List<ImageFile> uploadAsWebpWithSizes(
+            String dir,
+            MultipartFile file,
+            int index,
+            List<ImageSize> sizes
+    ) {
         validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
 
-        String originalFilename = file.getOriginalFilename();
-        String key = buildKey(dir, originalFilename, index);
+        String baseName = buildBaseName(index);
+        List<ImageFile> result = new ArrayList<>();
 
-        byte[] bytes = resizeToThumb(file);
+        for (ImageSize size : sizes) {
+            String key = dir + "/" + baseName + "_" + size.width() + "x" + size.height() + ".webp";
+            byte[] bytes = convertToWebpWithSize(file, size);
 
-        putToS3(key, bytes, file.getContentType());
-        String url = publicEndpoint + "/" + key;
+            putToS3(key, bytes, "image/webp");
+            String url = awsS3Properties.getPublicEndpoint() + "/" + key;
 
-        return new ImageFile(key, url);
+            result.add(new ImageFile(key, url));
+        }
+
+        return result;
     }
 
     public void delete(String key) {
-        s3Client.deleteObject(builder -> builder.bucket(bucket).key(key));
+        s3Client.deleteObject(builder -> builder
+                .bucket(awsS3Properties.getBucket())
+                .key(key)
+        );
     }
 
     public void deleteAll(List<String> keys) {
@@ -141,7 +133,25 @@ public class ImageUploadService {
         }
     }
 
+    private byte[] convertToWebpWithSize(MultipartFile file, ImageSize size) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            Thumbnails.of(file.getInputStream())
+                    .size(size.width(), size.height())
+                    .outputFormat("webp")
+                    .toOutputStream(byteArrayOutputStream);
+
+            if (byteArrayOutputStream.size() == 0) {
+                throw new ImageException(ImageExceptionCode.WEBP_CONVERT_FAILED);
+            }
+
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            throw new ImageException(ImageExceptionCode.IMAGE_IO_ERROR, e, "WebP 변환");
+        }
+    }
+
     private void validateImageSize(MultipartFile file) {
+        long maxSizeBytes = imageProperties.getMaxSizeBytes();
         if (file.getSize() > maxSizeBytes) {
             throw new ImageException(ImageExceptionCode.INVALID_IMAGE_SIZE, maxSizeBytes);
         }
@@ -212,29 +222,13 @@ public class ImageUploadService {
         return timestamp + "_" + index + "_" + uuid;
     }
 
-    private byte[] convertToWebp(MultipartFile file) {
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            Thumbnails.of(file.getInputStream())
-                    .size(maxWidth, maxHeight)
-                    .outputFormat("webp")
-                    .toOutputStream(byteArrayOutputStream);
-
-            if (byteArrayOutputStream.size() == 0) {
-                throw new ImageException(ImageExceptionCode.WEBP_CONVERT_FAILED);
-            }
-
-            return byteArrayOutputStream.toByteArray();
-        } catch (IOException e) {
-            throw new ImageException(ImageExceptionCode.IMAGE_IO_ERROR, e, "WebP 변환");
-        }
-    }
-
     private byte[] resizeIfNeededKeepFormat(MultipartFile file) {
-        return resizeToBox(file, maxWidth, maxHeight, "이미지 리사이즈");
-    }
-
-    private byte[] resizeToThumb(MultipartFile file) {
-        return resizeToBox(file, thumbMaxWidth, thumbMaxHeight, "썸네일 생성");
+        return resizeToBox(
+                file,
+                imageProperties.getMaxWidth(),
+                imageProperties.getMaxHeight(),
+                "이미지 리사이즈"
+        );
     }
 
     private byte[] resizeToBox(
@@ -297,7 +291,7 @@ public class ImageUploadService {
 
     private void putToS3(String key, byte[] bytes, String contentType) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
+                .bucket(awsS3Properties.getBucket())
                 .key(key)
                 .contentType(contentType)
                 .acl(ObjectCannedACL.PUBLIC_READ)

@@ -1,5 +1,6 @@
 ### 1. 단일 이미지 업로드 (원본)
-POST http://localhost:8080/api/v1/images/original?dir=test
+POST http://localhost:8080/api/v1/images/original
+    ?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -10,8 +11,9 @@ Content-Type: image/jpeg
 --boundary--
 
 
-### 3. 여러 이미지 업로드 (원본)
-POST http://localhost:8080/api/v1/images/originals?dir=test
+### 2. 여러 이미지 업로드 (원본)
+POST http://localhost:8080/api/v1/images/originals
+    ?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -27,37 +29,36 @@ Content-Type: image/jpeg
 --boundary--
 
 
-### 2. 단일 이미지 업로드 (WebP 변환 저장)
-POST http://localhost:8080/api/v1/images/webp?dir=test
+### 3. 단일 이미지 업로드 (WebP 변환 저장, 크기 지정)
+# 예: 모임 상세페이지 썸네일 440x240
+POST http://localhost:8080/api/v1/images/webp
+    ?dir=test
+    &width=440
+    &height=240
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="any-image.jpg"
 Content-Type: image/jpeg
 
-< ./resources/test-webp2.webp
+< ./resources/img1.png
 --boundary--
 
 
-### 4. 여러 이미지 업로드 (모두 WebP 변환 저장)
-POST http://localhost:8080/api/v1/images/webps?dir=test
+### 4. 단일 이미지 업로드 (여러 크기 WebP 변환 저장)
+# 예: 상세(440x240) + 목록(100x100)을 한 번에 생성
+POST http://localhost:8080/api/v1/images/webp/multiple
+    ?dir=test&widths=440
+    &widths=100
+    &heights=240
+    &heights=100
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="files"; filename="img1.png"
-Content-Type: image/png
-
-< ./resources/img1.png
---boundary
-Content-Disposition: form-data; name="files"; filename="img2.jpg"
+Content-Disposition: form-data; name="file"; filename="group-thumbnail.jpg"
 Content-Type: image/jpeg
 
-< ./resources/img2.jpg
---boundary
-Content-Disposition: form-data; name="files"; filename="test-webp1.webp"
-Content-Type: image/webp
-
-< ./resources/test-webp2.webp
+< ./resources/img1.png
 --boundary--
 
 
@@ -72,18 +73,8 @@ DELETE http://localhost:8080/api/v1/images
     ?keys=test/20251206141808_0_51d58b84-080c-47d2-9ce0-4e50b2e00b63.png
     &keys=test/20251206141808_1_3dea121d-7d39-4e3d-8b02-3dce01a8a929.jpg
 
-### 7. 단일 이미지 업로드 (썸네일 변환 저장)
-POST http://localhost:8080/api/v1/images/thumb?dir=test
-Content-Type: multipart/form-data; boundary=boundary
 
---boundary
-Content-Disposition: form-data; name="file"; filename="big-image.jpg"
-Content-Type: image/jpeg
-
-< ./test-webp2.webp
---boundary--
-
-###(예외 발생)dir 비어있음 → DIR_REQUIRED
+### (예외) dir 비어있음 → DIR_REQUIRED
 POST http://localhost:8080/api/v1/images/original?dir=
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -91,10 +82,11 @@ Content-Type: multipart/form-data; boundary=boundary
 Content-Disposition: form-data; name="file"; filename="img1.jpg"
 Content-Type: image/jpeg
 
-< ./resources/img1.png
+< ./resources/img1.jpg
 --boundary--
 
-### (예외 발생)디렉토리 경로 traversal → DIR_INVALID_TRAVERSAL
+
+### (예외) 디렉토리 경로 traversal → DIR_INVALID_TRAVERSAL
 POST http://localhost:8080/api/v1/images/original?dir=../secret
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -102,10 +94,11 @@ Content-Type: multipart/form-data; boundary=boundary
 Content-Disposition: form-data; name="file"; filename="img1.jpg"
 Content-Type: image/jpeg
 
-< ./resources/img1.png
+< ./resources/img1.jpg
 --boundary--
 
-### (예외 발생)dir이 / 로 끝남 → DIR_TRAILING_SLASH
+
+### (예외) dir이 / 로 끝남 → DIR_TRAILING_SLASH
 POST http://localhost:8080/api/v1/images/original?dir=test/
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -113,10 +106,10 @@ Content-Type: multipart/form-data; boundary=boundary
 Content-Disposition: form-data; name="file"; filename="img1.jpg"
 Content-Type: image/jpeg
 
-< ./resources/img1.png
+< ./resources/img1.jpg
 --boundary--
 
-### (예외 발생)dir에 허용되지 않는 문자 포함 → DIR_INVALID_PATTERN
+### (예외) dir에 허용되지 않는 문자 포함 → DIR_INVALID_PATTERN
 POST http://localhost:8080/api/v1/images/original?dir=test 이미지
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -124,10 +117,11 @@ Content-Type: multipart/form-data; boundary=boundary
 Content-Disposition: form-data; name="file"; filename="img1.jpg"
 Content-Type: image/jpeg
 
-< ./resources/img1.png
+< ./resources/img1.jpg
 --boundary--
 
-### (예외 발생: 이미지 큰 게 없어서 못해봄)너무 큰 이미지 업로드 → INVALID_IMAGE_SIZE
+
+### (예외) 너무 큰 이미지 업로드 → INVALID_IMAGE_SIZE
 POST http://localhost:8080/api/v1/images/original?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -138,7 +132,8 @@ Content-Type: image/jpeg
 < ./resources/very-big-image.jpg
 --boundary--
 
-### (예외 발생: 인텔리제이에서부터 찾을 수 없음)Content-Type이 image/* 가 아님 → UNSUPPORTED_IMAGE_CONTENT_TYPE
+
+### (예외) Content-Type이 image/* 가 아님 → UNSUPPORTED_IMAGE_CONTENT_TYPE
 POST http://localhost:8080/api/v1/images/original?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -150,7 +145,7 @@ Content-Type: application/pdf
 --boundary--
 
 
-### (예외 발생: 인텔리제이에서부터 찾을 수 없음)확장자는 .xyz, Content-Type 은 image/jpeg → UNSUPPORTED_EXTENSION
+### (예외) 확장자는 .xyz, Content-Type 은 image/jpeg → UNSUPPORTED_EXTENSION
 POST http://localhost:8080/api/v1/images/original?dir=test
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -161,8 +156,9 @@ Content-Type: image/jpeg
 < ./resources/img1.jpg
 --boundary--
 
-### (예외 발생: 인텔리제이에서부터 찾을 수 없음)내용이 이미지가 아님 → INVALID_IMAGE_FORMAT
-POST http://localhost:8080/api/v1/images/thumb?dir=test
+
+### (예외) 내용이 이미지가 아님 → INVALID_IMAGE_FORMAT
+POST http://localhost:8080/api/v1/images/webp?dir=test&width=440&height=240
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary

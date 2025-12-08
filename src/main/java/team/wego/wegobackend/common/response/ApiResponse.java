@@ -9,7 +9,7 @@ public record ApiResponse<T>(
 ) {
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(Boolean.TRUE, data);
+        return new ApiResponse<>(true, data);
     }
 
     public static <T> ApiResponse<T> success(boolean isSuccess, T data) {
@@ -17,7 +17,7 @@ public record ApiResponse<T>(
     }
 
     public static <T> ApiResponse<T> success(String message) {
-        return new ApiResponse<>(Boolean.TRUE, null);
+        return new ApiResponse<>(true, null);
     }
 
     public static <T> ApiResponse<T> error(String message) {
