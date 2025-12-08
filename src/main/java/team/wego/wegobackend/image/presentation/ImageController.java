@@ -38,7 +38,6 @@ public class ImageController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
                         "이미지: 원본 업로드가 정상적으로 처리되었습니다.",
                         response
                 ));
@@ -60,7 +59,6 @@ public class ImageController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
                         "이미지: 여러 원본 업로드가 정상적으로 처리되었습니다.",
                         responses
                 ));
@@ -80,7 +78,6 @@ public class ImageController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
                         "이미지: WebP 변환 업로드가 정상적으로 처리되었습니다.",
                         response
                 ));
@@ -102,7 +99,6 @@ public class ImageController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
                         "이미지: 여러 WebP 변환 업로드가 정상적으로 처리되었습니다.",
                         responses
                 ));
@@ -114,7 +110,6 @@ public class ImageController {
 
         return ResponseEntity
                 .ok(ApiResponse.success(
-                        HttpStatus.CREATED.toString(),
                         "이미지: 단일 삭제가 정상적으로 처리되었습니다."
                 ));
     }
@@ -125,7 +120,6 @@ public class ImageController {
 
         return ResponseEntity
                 .ok(ApiResponse.success(
-                        HttpStatus.OK.value(),
                         "이미지: 여러 건 삭제가 정상적으로 처리되었습니다."
                 ));
     }
@@ -144,7 +138,6 @@ public class ImageController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        HttpStatus.CREATED.value(),
                         "이미지: 썸네일 업로드가 정상적으로 처리되었습니다.",
                         response
                 ));
