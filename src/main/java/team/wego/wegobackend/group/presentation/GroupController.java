@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
-import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
 import team.wego.wegobackend.group.application.service.GroupService;
 
 @RequiredArgsConstructor
@@ -23,6 +22,7 @@ public class GroupController {
 
     private final GroupService groupService;
 
+    // TODO: 유저 정보 파싱 전, 임시 userId
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupResponse>> createGroupResponse(
             @RequestParam Long userId,

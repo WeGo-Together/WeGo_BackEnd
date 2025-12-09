@@ -24,6 +24,7 @@ public class GroupImageController {
 
     private final GroupImageService groupImageService;
 
+    // TODO: 유저 정보 파싱 전, 임시 userId
     @PostMapping(value = "/{groupId}/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CreateGroupImageResponse>> createGroupImage(
             @RequestParam Long userId,
