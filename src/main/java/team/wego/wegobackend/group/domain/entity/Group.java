@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.domain;
+package team.wego.wegobackend.group.domain.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
