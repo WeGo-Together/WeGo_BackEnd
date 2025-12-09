@@ -47,13 +47,25 @@ public class GroupController {
     ) {
         GetGroupResponse response = groupService.attendGroup(groupId, userId);
 
-        return  ResponseEntity
+        return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(
-                        HttpStatus.OK.value(),response));
+                        HttpStatus.OK.value(), response));
     }
 
+
     // 모임 참여 취소
+    @PostMapping("/{groupId}/cancel")
+    public ResponseEntity<ApiResponse<GetGroupResponse>> cancelAttendGroup(
+            @PathVariable Long groupId,
+            @RequestParam Long userId   // TODO: 나중에 인증 정보에서 꺼내기
+    ) {
+        GetGroupResponse response = groupService.cancelAttendGroup(groupId, userId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
 
     // 모임 상세 조회
     @PostMapping("/{groupId}")

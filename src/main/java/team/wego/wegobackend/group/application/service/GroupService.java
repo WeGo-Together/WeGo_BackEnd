@@ -244,6 +244,37 @@ public class GroupService {
         return buildGetGroupResponse(group, memberId);
     }
 
+    @Transactional
+    public GetGroupResponse cancelAttendGroup(Long groupId, Long memberId) {
+        // 0. Group 조회 (soft delete 고려)
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // 1. member 조회
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, memberId));
+
+        // 2. GroupUser 찾기
+        GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, memberId));
+
+        // 3. HOST는 나갈 수 없음
+        if (groupUser.getGroupRole() == GroupRole.HOST) {
+            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId, memberId);
+        }
+
+        // 4. 이미 나간 상태면 예외
+        if (groupUser.getStatus() == LEFT) {
+            throw new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, memberId);
+        }
+
+        // 5. 참여 취소 (leave)
+        groupUser.leave();
+
+        // 6. 최신 모임 상세 응답 반환
+        return buildGetGroupResponse(group, memberId);
+    }
+
 
     private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
         // 이미지 URL (sortOrder 기준 정렬)
