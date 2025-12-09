@@ -21,6 +21,6 @@ Content-Type: application/json
   client.global.set("accessToken", response.body.data.accessToken);
 %}
 
-### 보호된 API 요청 (테스트용)
+### 1번 유저 조회
 GET http://localhost:8080/api/v1/user/1
 Authorization: Bearer {{accessToken}}

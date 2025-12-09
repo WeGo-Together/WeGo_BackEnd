@@ -42,7 +42,7 @@ public class UserController {
         UserInfoResponse response = userService.getProfile(userId);
 
         return ResponseEntity
-            .status(200)
+            .status(HttpStatus.OK)
             .body(ApiResponse.success(200,
                 response));
     }
