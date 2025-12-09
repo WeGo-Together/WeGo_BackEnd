@@ -105,7 +105,6 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
-            log.debug("네 되네요");
             return true;
         } catch (SecurityException | SignatureException e) {
             log.error("Invalid JWT signature -> {}", e.getMessage());

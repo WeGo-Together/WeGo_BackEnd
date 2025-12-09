@@ -77,6 +77,8 @@ public class AuthController {
         deleteCookie.setPath("/");
         deleteCookie.setMaxAge(0);
         deleteCookie.setHttpOnly(true);
+        deleteCookie.setSecure(true);
+        deleteCookie.setAttribute("SameSite", "Strict");
         response.addCookie(deleteCookie);
 
         return ResponseEntity
