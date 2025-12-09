@@ -19,8 +19,6 @@ public class UserInfoResponse {
 
     private String email;
 
-    private Role role;
-
     private String nickName;
 
     private String mbti;
@@ -29,9 +27,15 @@ public class UserInfoResponse {
 
     private String profileMessage;
 
-    private Boolean isNotificationEnabled;
+    private int followeesCnt;
 
-    private Boolean isDeleted;
+    private int followersCnt;
+
+    private int groupJoinedCnt;
+
+    private int groupCreatedCnt;
+
+    private Boolean isNotificationEnabled;
 
     private LocalDateTime createdAt;
 
@@ -39,13 +43,15 @@ public class UserInfoResponse {
         return UserInfoResponse.builder()
             .userId(user.getId())
             .email(user.getEmail())
-            .role(user.getRole())
             .nickName(user.getNickName())
             .mbti(user.getMbti())
             .profileImage(user.getProfileImage())
             .profileMessage(user.getProfileMessage())
+            .followeesCnt(user.getFolloweesCnt())
+            .followersCnt(user.getFollowersCnt())
+            .groupJoinedCnt(user.getGroupJoinedCnt())
+            .groupCreatedCnt(user.getGroupCreatedCnt())
             .isNotificationEnabled(user.getNotificationEnabled())
-            .isDeleted(user.getDeleted())
             .createdAt(user.getCreatedAt())
             .build();
     }
