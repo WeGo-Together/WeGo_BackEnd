@@ -117,4 +117,24 @@ public class User extends BaseTimeEntity {
         }
     }
 
+    public void updateProfileImage(String imageUrl) {
+        this.profileImage = imageUrl;
+    }
+
+    public void updateNickName(String nickName) {
+        this.nickName = nickName;
+    }
+
+    public void updateNotificationEnabled(Boolean flag) {
+        this.notificationEnabled = flag;
+    }
+
+    public void updateMbti(String mbti) {
+        this.mbti = mbti;
+    }
+
+    public void updateProfileMessage(String profileMessage) {
+        this.profileMessage = profileMessage;
+    }
+
 }

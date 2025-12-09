@@ -8,6 +8,8 @@ Content-Type: application/json
   "nickName": "Beemo"
 }
 
+###
+
 ### 로그인
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
@@ -21,6 +23,38 @@ Content-Type: application/json
   client.global.set("accessToken", response.body.data.accessToken);
 %}
 
-### 1번 유저 조회
-GET http://localhost:8080/api/v1/user/1
+###
+
+### 유저 정보 조회
+GET http://localhost:8080/api/v1/users/1
 Authorization: Bearer {{accessToken}}
+
+###
+
+### 유저 프로필 이미지 변경
+PATCH http://localhost:8080/api/v1/users/profile-image
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="file"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--Boundary--
+
+###
+
+### 유저 프로필 정보 변경 (JSON)
+PATCH http://localhost:8080/api/v1/users/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickName": "예은",
+  "notificationEnabled": false,
+  "mbti": "ISTP",
+  "profileMessage": "앙냥냥"
+}
+
+###
