@@ -6,6 +6,7 @@ public class SecurityEndpoints {
         "/api/v*/auth/**",
         "/api/v*/docs/**",
         "/api/v*/health",
+        "/h2-console/**",
         "/error"
     };
 }
