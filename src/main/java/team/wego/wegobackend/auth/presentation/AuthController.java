@@ -42,8 +42,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(
-                HttpStatus.CREATED.value(),
-                "인증 : 회원가입 성공",
+                true,
                 response));
     }
 
@@ -61,8 +60,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
-                HttpStatus.OK.value(),
-                "인증 : 로그인 성공",
+                true,
                 loginResponse
             ));
     }
@@ -82,8 +80,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
             .body(ApiResponse.success(
-                HttpStatus.NO_CONTENT.value(),
-                "인증 : 로그아웃 성공"
+                true
             ));
     }
 
@@ -102,8 +99,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(
-                HttpStatus.CREATED.value(),
-                "인증 : Access Token 재발급 성공",
+                true,
                 response
             ));
     }

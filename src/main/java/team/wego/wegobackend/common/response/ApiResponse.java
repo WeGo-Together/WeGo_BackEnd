@@ -16,7 +16,10 @@ public record ApiResponse<T>(
         return new ApiResponse<>(isSuccess, data);
     }
 
-    public static <T> ApiResponse<T> success(String message) {
+    /**
+     * No Content (ex : 204)
+     * */
+    public static <T> ApiResponse<T> success(boolean isSuccess) {
         return new ApiResponse<>(true, null);
     }
 

@@ -21,7 +21,7 @@ public class UserController {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
-                HttpStatus.OK.value(),
+                true,
                 "테스트 성공"
             ));
     }
