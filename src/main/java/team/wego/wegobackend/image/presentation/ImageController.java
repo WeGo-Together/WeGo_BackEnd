@@ -1,6 +1,5 @@
 package team.wego.wegobackend.image.presentation;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -52,7 +52,8 @@ public class ImageUploadService {
         validateExtension(file.getOriginalFilename());
 
         String originalFilename = file.getOriginalFilename();
-        String key = buildKey(dir, originalFilename, index);
+//        String key = buildKey(dir, originalFilename, index);
+        String key = buildKey(originalFilename, index);
 
         byte[] bytes = resizeIfNeededKeepFormat(file);
 
@@ -93,6 +94,29 @@ public class ImageUploadService {
         return new ImageFile(key, url);
     }
 
+
+    // TODO: 회원에서 사용할 단 건 이미지 저장 기능
+    public ImageFile uploadAsWebpWithSize(
+            MultipartFile file,
+            Integer width,
+            Integer height
+    ) {
+        validateImageSize(file);
+        validateImageContentType(file);
+        validateExtension(file.getOriginalFilename());
+        ImageSize size = new ImageSize(width, height);
+
+        String baseName = buildBaseName();
+        String key = baseName + "_" + size.width() + "x" + size.height() + ".webp";
+
+        byte[] bytes = convertToWebpWithSize(file, size);
+
+        putToS3(key, bytes, "image/webp");
+        String url = awsS3Properties.getPublicEndpoint() + "/" + key;
+
+        return new ImageFile(key, url);
+    }
+
     public List<ImageFile> uploadAsWebpWithSizes(
             String dir,
             MultipartFile file,
@@ -117,6 +141,39 @@ public class ImageUploadService {
             ImageSize size = new ImageSize(widths.get(i), heights.get(i));
 
             String key = dir + "/" + baseName + "_" + size.width() + "x" + size.height() + ".webp";
+            byte[] bytes = convertToWebpWithSize(file, size);
+
+            putToS3(key, bytes, "image/webp");
+            String url = awsS3Properties.getPublicEndpoint() + "/" + key;
+
+            result.add(new ImageFile(key, url));
+        }
+
+        return result;
+    }
+
+    public List<ImageFile> uploadAsWebpWithSizes(
+            MultipartFile file,
+            int index,
+            List<Integer> widths,
+            List<Integer> heights
+    ) {
+        if (widths.size() != heights.size()) {
+            // 해당 예외는 이미지 예외 처리로 수행하지 않는다.
+            throw new IllegalArgumentException("widths와 heights의 길이가 일치해야 합니다.");
+        }
+
+        validateImageSize(file);
+        validateImageContentType(file);
+        validateExtension(file.getOriginalFilename());
+
+        String baseName = buildBaseName(index);
+        List<ImageFile> result = new ArrayList<>();
+
+        for (int i = 0; i < widths.size(); i++) {
+            ImageSize size = new ImageSize(widths.get(i), heights.get(i));
+
+            String key = baseName + "_" + size.width() + "x" + size.height() + ".webp";
             byte[] bytes = convertToWebpWithSize(file, size);
 
             putToS3(key, bytes, "image/webp");
@@ -197,9 +254,14 @@ public class ImageUploadService {
     }
 
     private void validateDir(String dir) {
-        if (dir == null || dir.isBlank()) {
-            throw new ImageException(ImageExceptionCode.DIR_REQUIRED);
-        }
+        // TODO: 모임 경로: FE 요청으로 루트 디렉토리로 개선했습니다.
+//        if (dir == null || dir.isBlank()) {
+//            throw new ImageException(ImageExceptionCode.DIR_REQUIRED);
+//        }
+
+//        if (!dir.matches("[a-zA-Z0-9_\\-/]+")) {
+//            throw new ImageException(ImageExceptionCode.DIR_INVALID_PATTERN);
+//        }
 
         if (dir.contains("..") || dir.startsWith("/")) {
             throw new ImageException(ImageExceptionCode.DIR_INVALID_TRAVERSAL);
@@ -207,10 +269,6 @@ public class ImageUploadService {
 
         if (dir.endsWith("/")) {
             throw new ImageException(ImageExceptionCode.DIR_TRAILING_SLASH);
-        }
-
-        if (!dir.matches("[a-zA-Z0-9_\\-/]+")) {
-            throw new ImageException(ImageExceptionCode.DIR_INVALID_PATTERN);
         }
     }
 
@@ -223,11 +281,28 @@ public class ImageUploadService {
         return dir + "/" + timestamp + "_" + index + "_" + uuid + extension;
     }
 
+    private String buildKey(String originalFilename, int index) {
+        String extension = extractExtension(originalFilename);
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString();
+
+        return timestamp + "_" + index + "_" + uuid + extension;
+    }
+
+
     private String buildBaseName(int index) {
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String uuid = UUID.randomUUID().toString();
         return timestamp + "_" + index + "_" + uuid;
+    }
+
+    private String buildBaseName() {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString();
+        return timestamp + "_" + uuid;
     }
 
     private byte[] resizeIfNeededKeepFormat(MultipartFile file) {
