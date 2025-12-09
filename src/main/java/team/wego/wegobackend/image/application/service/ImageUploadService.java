@@ -94,6 +94,26 @@ public class ImageUploadService {
         return new ImageFile(key, url);
     }
 
+    public ImageFile uploadAsWebpWithSize(
+            MultipartFile file,
+            int index,
+            ImageSize size
+    ) {
+        validateImageSize(file);
+        validateImageContentType(file);
+        validateExtension(file.getOriginalFilename());
+
+        String baseName = buildBaseName(index);
+        String key = baseName + "_" + size.width() + "x" + size.height() + ".webp";
+
+        byte[] bytes = convertToWebpWithSize(file, size);
+
+        putToS3(key, bytes, "image/webp");
+        String url = awsS3Properties.getPublicEndpoint() + "/" + key;
+
+        return new ImageFile(key, url);
+    }
+
     public List<ImageFile> uploadAsWebpWithSizes(
             String dir,
             MultipartFile file,
