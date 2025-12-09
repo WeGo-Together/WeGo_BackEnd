@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.domain;
+package team.wego.wegobackend.group.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,12 +46,17 @@ public class GroupUser extends BaseTimeEntity {
     @Column(name = "left_at")
     private LocalDateTime leftAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "group_user_status")
+    private GroupUserStatus status;
+
     public static GroupUser create(Group group, User user, GroupRole role) {
         GroupUser groupUser = new GroupUser();
         groupUser.group = group;
         groupUser.user = user;
         groupUser.groupRole = role;
         groupUser.joinedAt = LocalDateTime.now();
+        groupUser.status = GroupUserStatus.ATTEND;
         group.addUser(groupUser);
         return groupUser;
     }
