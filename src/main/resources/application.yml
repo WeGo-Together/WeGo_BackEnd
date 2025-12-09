@@ -2,8 +2,8 @@ server:
   port: 8080
 
 spring:
-  profiles:
-    active: local
+#  profiles:
+#    active: local
 
   servlet:
     multipart:
@@ -34,7 +34,7 @@ spring:
   jpa:
     defer-datasource-initialization: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true

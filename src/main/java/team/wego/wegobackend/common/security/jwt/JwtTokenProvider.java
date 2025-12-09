@@ -1,21 +1,28 @@
 package team.wego.wegobackend.common.security.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.Jwts.SIG;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import team.wego.wegobackend.common.response.ErrorResponse;
+import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
+import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtTokenProvider {
 
     @Value("${jwt.secret}")
@@ -28,6 +35,8 @@ public class JwtTokenProvider {
     private long refreshTokenExpiration;
 
     private SecretKey secretKey;
+
+    private final ObjectMapper objectMapper;
 
     @PostConstruct
     protected void init() {
@@ -97,27 +106,27 @@ public class JwtTokenProvider {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
             return true;
-        } catch (SecurityException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (SecurityException | SignatureException e) {
+            log.error("Invalid JWT signature -> {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
+            log.error("Invalid JWT token -> {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            log.error("Expired JWT token: {}", e.getMessage());
+            log.error("Expired JWT token -> {}", e.getMessage());
+            throw new ExpiredTokenException();
         } catch (UnsupportedJwtException e) {
-            log.error("Unsupported JWT token: {}", e.getMessage());
+            log.error("Unsupported JWT token -> {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
+            log.error("JWT claims string is empty -> {}", e.getMessage());
         }
-        return false;
+
+        throw new InvalidTokenException();
     }
 
     /**
      * Access 검증
      */
     public boolean validateAccessToken(String token) {
-        if (!validateToken(token)) {
-            return false;
-        }
+        validateToken(token);
 
         try {
             String tokenType = getTokenType(token);
@@ -136,9 +145,7 @@ public class JwtTokenProvider {
      * Refresh 검증
      */
     public boolean validateRefreshToken(String token) {
-        if (!validateToken(token)) {
-            return false;
-        }
+        validateToken(token);
 
         try {
             String tokenType = getTokenType(token);
@@ -152,4 +159,5 @@ public class JwtTokenProvider {
             return false;
         }
     }
+
 }
