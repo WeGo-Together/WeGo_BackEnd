@@ -42,6 +42,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(
+                201,
                 true,
                 response));
     }
@@ -60,6 +61,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
+                200,
                 true,
                 loginResponse
             ));
@@ -80,6 +82,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
             .body(ApiResponse.success(
+                204,
                 true
             ));
     }
@@ -99,6 +102,7 @@ public class AuthController {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(
+                201,
                 true,
                 response
             ));

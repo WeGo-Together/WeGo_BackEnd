@@ -39,7 +39,7 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.success(201, response));
     }
 
     @PostMapping(
@@ -57,7 +57,7 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(responses));
+                .body(ApiResponse.success(201, responses));
     }
 
     /**
@@ -79,7 +79,7 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.success(201, response));
     }
 
     @PostMapping(
@@ -110,7 +110,7 @@ public class ImageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(responses));
+                .body(ApiResponse.success(201, responses));
     }
 
     @DeleteMapping("/one")

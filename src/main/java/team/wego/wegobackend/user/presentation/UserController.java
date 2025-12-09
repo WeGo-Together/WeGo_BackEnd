@@ -23,6 +23,7 @@ public class UserController {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
+                200,
                 true,
                 "Test Success"
             ));
