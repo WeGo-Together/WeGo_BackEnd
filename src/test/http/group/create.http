@@ -14,7 +14,7 @@ Content-Type: application/json
 %}
 
 
-### 모임 생성(webp가 아닌 경우)
+### 1. 모임 생성(webp가 아닌 경우)
 POST http://localhost:8080/api/v1/groups/create
     ?userId={{userId}}
 Content-Type: application/json
@@ -38,29 +38,29 @@ Content-Type: application/json
   client.global.set("groupId", response.body.data.id);
 %}
 
-### 모임 이미지 생성(webp 아닌 경우)
+### 1. 모임 이미지 생성(webp 아닌 경우)
 POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload
     ?userId={{userId}}
 Content-Type: multipart/form-data; boundary=boundary
 
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
 < ../image/resources/img1.png
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="img2.jpg"
 Content-Type: image/jpeg
 
 < ../image/resources/img2.jpg
---boundary--}
+--boundary--
 
 
 
 
 
 
-### 모임 이미지 생성(webp인 경우, 3장)
+### 2. 모임 이미지 생성(webp인 경우, 3장)
 POST http://localhost:8080/api/v1/groups/create
     ?userId=1
 Content-Type: application/json
@@ -84,7 +84,7 @@ Content-Type: application/json
   client.global.set("groupId", response.body.data.id);
 %}
 
-### 모임 이미지 생성(webp인 경우, 3장)
+### 2. 모임 이미지 생성(webp인 경우, 3장)
 POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload?userId=1
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -111,7 +111,7 @@ Content-Type: image/png
 
 
 
-### 모임 이미지 생성(4장인 경우 예외 발생)
+### 3. 모임 이미지 생성(4장인 경우 예외 발생)
 POST http://localhost:8080/api/v1/groups/create
     ?userId=1
 Content-Type: application/json
@@ -135,7 +135,7 @@ Content-Type: application/json
   client.global.set("groupId", response.body.data.id);
 %}
 
-### 모임 이미지 생성(4장인 경우 예외 발생)
+### 3. 모임 이미지 생성(4장인 경우 예외 발생)
 POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload
     ?userId=1
 Content-Type: multipart/form-data; boundary=boundary
@@ -149,16 +149,12 @@ Content-Type: image/webp
 Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
 Content-Type: image/webp
 
-< ../image/resources/test-webp2.webp
---boundary--
-
+< ../image/resources/test-webp1.webp
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
 < ../image/resources/img1.png
---boundary--
-
 --boundary
 Content-Disposition: form-data; name="images"; filename="img2.jpg"
 Content-Type: image/jpeg
