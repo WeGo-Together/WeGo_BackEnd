@@ -33,10 +33,9 @@ public class GroupImageService {
     private final ImageUploadService imageUploadService;
 
     private void validateCreateGroupImageRequest(List<MultipartFile> images) {
-//        // TODO: 이미지가 필수는 아니라고 가정한다면? (필수면 여기서 예외 던지면 됨)
-//        if (images == null || images.isEmpty()) {
-//            return;
-//        }
+        if (images == null || images.isEmpty()) {
+            return; // TODO: 이미지가 필수가 아니라면 null/빈 리스트는 그대로 허용 -> 정책 확인 필요
+        }
 
         if (images.size() > 3) {
             throw new GroupException(GroupErrorCode.IMAGE_UPLOAD_EXCEED, images.size());
