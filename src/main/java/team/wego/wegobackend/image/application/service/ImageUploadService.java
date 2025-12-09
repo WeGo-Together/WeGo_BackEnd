@@ -97,8 +97,14 @@ public class ImageUploadService {
             String dir,
             MultipartFile file,
             int index,
-            List<ImageSize> sizes
+            List<Integer> widths,
+            List<Integer> heights
     ) {
+        if (widths.size() != heights.size()) {
+            // 해당 예외는 이미지 예외 처리로 수행하지 않는다.
+            throw new IllegalArgumentException("widths와 heights의 길이가 일치해야 합니다.");
+        }
+
         validateDir(dir);
         validateImageSize(file);
         validateImageContentType(file);
@@ -107,7 +113,9 @@ public class ImageUploadService {
         String baseName = buildBaseName(index);
         List<ImageFile> result = new ArrayList<>();
 
-        for (ImageSize size : sizes) {
+        for (int i = 0; i < widths.size(); i++) {
+            ImageSize size = new ImageSize(widths.get(i), heights.get(i));
+
             String key = dir + "/" + baseName + "_" + size.width() + "x" + size.height() + ".webp";
             byte[] bytes = convertToWebpWithSize(file, size);
 

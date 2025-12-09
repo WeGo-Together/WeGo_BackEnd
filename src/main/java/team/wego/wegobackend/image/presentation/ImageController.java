@@ -92,18 +92,8 @@ public class ImageController {
             @RequestParam("heights") List<Integer> heights,
             @RequestPart("file") MultipartFile file
     ) {
-        if (widths.size() != heights.size()) {
-            // 여기서 어떻게 에러를 내려줄지는 프로젝트의 공통 에러 응답 정책에 맞춰서 조정해도 됨
-            throw new IllegalArgumentException("widths와 heights의 길이가 일치해야 합니다.");
-        }
-
-        List<ImageSize> sizes = new ArrayList<>();
-        for (int i = 0; i < widths.size(); i++) {
-            sizes.add(new ImageSize(widths.get(i), heights.get(i)));
-        }
-
         List<ImageFileResponse> responses = imageUploadService
-                .uploadAsWebpWithSizes(dir, file, 0, sizes)
+                .uploadAsWebpWithSizes(dir, file, 0, widths, heights)
                 .stream()
                 .map(ImageFileResponse::from)
                 .toList();
