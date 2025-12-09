@@ -11,7 +11,7 @@ import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
 
 @Builder(access = AccessLevel.PRIVATE)
-public record CreateGroupResponse(
+public record GetGroupResponse(
         Long id,
         String title,
         String location,
@@ -25,17 +25,11 @@ public record CreateGroupResponse(
         CreatedBy createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        List<GroupImageItemResponse> images
+        int joinedCount
+
 ) {
 
-    public static CreateGroupResponse from(Group group) {
-        return from(group, List.of());
-    }
-
-    public static CreateGroupResponse from(
-            Group group,
-            List<GroupImageItemResponse> images
-    ) {
+    public static GetGroupResponse from(Group group) {
         // 태그 이름 리스트
         List<String> tagNames = group.getGroupTags().stream()
                 .map(GroupTag::getTag)
@@ -53,10 +47,9 @@ public record CreateGroupResponse(
         CreatedBy createdByHost = new CreatedBy(
                 host.getId(),
                 host.getNickName(),
-                host.getProfileImage()
-        );
+                host.getProfileImage());
 
-        return CreateGroupResponse.builder()
+        return GetGroupResponse.builder()
                 .id(group.getId())
                 .title(group.getTitle())
                 .location(group.getLocation())
@@ -70,7 +63,8 @@ public record CreateGroupResponse(
                 .createdBy(createdByHost)
                 .createdAt(group.getCreatedAt())
                 .updatedAt(group.getUpdatedAt())
-                .images(images)
+                .joinedCount(1) // TODO: 다시 한 번 체크
                 .build();
     }
+
 }

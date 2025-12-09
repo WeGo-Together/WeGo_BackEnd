@@ -23,7 +23,6 @@ public record CreateGroupRequest(
         @FutureOrPresent(message = "모임: 시작 시간은 현재 이후여야 합니다.")
         LocalDateTime startTime,
 
-        @NotNull(message = "모임: 종료 시간은 필수 입니다.")
         @Future(message = "모임: 종료 시간은 현재 이후여야 합니다.")
         LocalDateTime endTime,
 
@@ -35,7 +34,9 @@ public record CreateGroupRequest(
         @NotNull(message = "모임: 최대 인원은 필수 입니다.")
         @Min(value = 2, message = "모임: 최대 인원은 최소 2명 이상이어야 합니다.")
         @Max(value = 12, message = "모임: 최대 인원은 최대 12명 이하이어야 합니다.")
-        Integer maxParticipants
+        Integer maxParticipants,
+
+        List<CreateGroupImageRequest> images
 ) {
 
 }
