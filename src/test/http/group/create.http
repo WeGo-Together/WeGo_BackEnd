@@ -140,22 +140,22 @@ POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload
     ?userId=1
 Content-Type: multipart/form-data; boundary=boundary
 
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
 Content-Type: image/webp
 
 < ../image/resources/test-webp1.webp
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
 Content-Type: image/webp
 
 < ../image/resources/test-webp1.webp
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
 < ../image/resources/img1.png
---boundary
+--boundary--
 Content-Disposition: form-data; name="images"; filename="img2.jpg"
 Content-Type: image/jpeg
 
