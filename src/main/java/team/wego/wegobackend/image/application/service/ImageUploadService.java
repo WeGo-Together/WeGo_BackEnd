@@ -94,16 +94,19 @@ public class ImageUploadService {
         return new ImageFile(key, url);
     }
 
+
+    // TODO: 회원에서 사용할 단 건 이미지 저장 기능
     public ImageFile uploadAsWebpWithSize(
             MultipartFile file,
-            int index,
-            ImageSize size
+            Integer width,
+            Integer height
     ) {
         validateImageSize(file);
         validateImageContentType(file);
         validateExtension(file.getOriginalFilename());
+        ImageSize size = new ImageSize(width, height);
 
-        String baseName = buildBaseName(index);
+        String baseName = buildBaseName();
         String key = baseName + "_" + size.width() + "x" + size.height() + ".webp";
 
         byte[] bytes = convertToWebpWithSize(file, size);
@@ -293,6 +296,13 @@ public class ImageUploadService {
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String uuid = UUID.randomUUID().toString();
         return timestamp + "_" + index + "_" + uuid;
+    }
+
+    private String buildBaseName() {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString();
+        return timestamp + "_" + uuid;
     }
 
     private byte[] resizeIfNeededKeepFormat(MultipartFile file) {
