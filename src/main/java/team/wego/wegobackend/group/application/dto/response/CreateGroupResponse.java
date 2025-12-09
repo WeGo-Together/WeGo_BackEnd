@@ -37,7 +37,7 @@ public record CreateGroupResponse(
 
         // 현재 참여 인원
         long attendUserCount = group.getUsers().stream()
-                .filter(groupUser -> groupUser.getStatus().equals(GroupUserStatus.ATTEND))
+                .filter(groupUser -> GroupUserStatus.ATTEND.equals(groupUser.getStatus()))
                 .count();
 
         // 모임 생성자 정보
