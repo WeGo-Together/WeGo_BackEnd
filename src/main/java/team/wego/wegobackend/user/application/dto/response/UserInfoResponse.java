@@ -23,8 +23,6 @@ public class UserInfoResponse {
 
     private String nickName;
 
-    private String phoneNumber;
-
     private String mbti;
 
     private String profileImage;
@@ -43,7 +41,6 @@ public class UserInfoResponse {
             .email(user.getEmail())
             .role(user.getRole())
             .nickName(user.getNickName())
-            .phoneNumber(user.getPhoneNumber())
             .mbti(user.getMbti())
             .profileImage(user.getProfileImage())
             .profileMessage(user.getProfileMessage())
