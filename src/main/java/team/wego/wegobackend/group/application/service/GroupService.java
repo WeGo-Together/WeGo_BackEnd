@@ -1,5 +1,9 @@
 package team.wego.wegobackend.group.application.service;
 
+import static team.wego.wegobackend.group.domain.entity.GroupUserStatus.ATTEND;
+import static team.wego.wegobackend.group.domain.entity.GroupUserStatus.LEFT;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,6 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.CreatedByResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.JoinedMemberResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.UserStatusResponse;
 import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
 import team.wego.wegobackend.group.domain.entity.Group;
 import team.wego.wegobackend.group.domain.entity.GroupImage;
@@ -41,7 +49,7 @@ public class GroupService {
     private final GroupUserRepository groupUserRepository;
 
     private void validateCreateGroupRequest(CreateGroupRequest request) {
-        if (!request.endTime().isAfter(request.startTime())) {
+        if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
             throw new GroupException(GroupErrorCode.INVALID_TIME_RANGE);
         }
 
@@ -194,5 +202,93 @@ public class GroupService {
                     );
                 })
                 .toList();
+    }
+
+    @Transactional
+    public GetGroupResponse attendGroup(Long groupId, Long memberId) {
+        // 0. Group 조회 (삭제된 모임 제외)
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // 1. member 조회
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, memberId));
+
+        // 2. 이미 GroupUser row가 있는지 확인 (한 모임/유저당 한 row 가정)
+        GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
+                .orElse(null);
+
+        if (groupUser != null && groupUser.getStatus() == ATTEND) {
+            // 이미 참여 중인 경우
+            throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId, memberId);
+        }
+
+        // 3. 정원 체크 (ATTEND 상태인 인원 수 기준)
+        long currentAttendCount = groupUserRepository.countByGroupAndStatus(group, ATTEND);
+        if (currentAttendCount >= group.getMaxParticipants()) {
+            throw new GroupException(GroupErrorCode.GROUP_CAPACITY_EXCEEDED, groupId);
+        }
+
+        // 4. 참여 처리
+        if (groupUser == null) {
+            // 처음 참여
+            GroupUser newGroupUser = GroupUser.create(group, member, GroupRole.MEMBER);
+            groupUserRepository.save(newGroupUser);
+        } else if (groupUser.getStatus() == LEFT) {
+            // 이전에 나갔다가 다시 참여
+            groupUser.reAttend();
+            // dirty checking 으로 업데이트
+        }
+
+        return buildGetGroupResponse(group, memberId);
+    }
+
+
+    private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
+        // 이미지 URL (sortOrder 기준 정렬)
+        var imageUrls = group.getImages().stream()
+                .sorted(Comparator.comparing(GroupImage::getSortOrder))
+                .map(GroupImage::getImageUrl)
+                .toList();
+
+        // 태그 이름
+        var tagNames = group.getGroupTags().stream()
+                .map(GroupTag::getTag)
+                .map(Tag::getName)
+                .toList();
+
+        // 현재 참여 인원 수 (status == ATTEND 인 인원만)
+        int participantCount = (int) group.getUsers().stream()
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .count();
+
+        // 만든 사람 정보
+        CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
+
+        // 현재 요청 유저의 참여 상태
+        UserStatusResponse userStatus = group.getUsers().stream()
+                .filter(gu -> gu.getUser().getId().equals(currentUserId))
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .findFirst()
+                .map(gu -> UserStatusResponse.fromJoined(gu.getJoinedAt()))
+                .orElse(UserStatusResponse.notJoined());
+
+        // 참여 중인 멤버 리스트 (status == ATTEND)
+        var joinedMembers = group.getUsers().stream()
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .sorted(Comparator.comparing(GroupUser::getJoinedAt))
+                .map(JoinedMemberResponse::from)
+                .toList();
+
+        return GetGroupResponse.of(
+                group,
+                imageUrls,
+                tagNames,
+                participantCount,
+                createdBy,
+                userStatus,
+                joinedMembers
+        );
     }
 }

@@ -2,15 +2,11 @@ package team.wego.wegobackend.group.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Builder;
 import team.wego.wegobackend.group.domain.entity.Group;
-import team.wego.wegobackend.group.domain.entity.GroupTag;
-import team.wego.wegobackend.group.domain.entity.GroupUserStatus;
-import team.wego.wegobackend.tag.domain.entity.Tag;
+import team.wego.wegobackend.group.domain.entity.GroupRole;
+import team.wego.wegobackend.group.domain.entity.GroupUser;
 import team.wego.wegobackend.user.domain.User;
 
-@Builder(access = AccessLevel.PRIVATE)
 public record GetGroupResponse(
         Long id,
         String title,
@@ -18,53 +14,100 @@ public record GetGroupResponse(
         String locationDetail,
         LocalDateTime startTime,
         LocalDateTime endTime,
+        List<String> images,
         List<String> tags,
         String description,
-        long participantCount,
+        int participantCount,
         int maxParticipants,
-        CreatedBy createdBy,
+        CreatedByResponse createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        int joinedCount
-
+        UserStatusResponse userStatus,
+        List<JoinedMemberResponse> joinedMembers
 ) {
 
-    public static GetGroupResponse from(Group group) {
-        // 태그 이름 리스트
-        List<String> tagNames = group.getGroupTags().stream()
-                .map(GroupTag::getTag)
-                .map(Tag::getName)
-                .toList();
-
-        // 현재 참여 인원
-        long attendUserCount = group.getUsers().stream()
-                .filter(groupUser -> GroupUserStatus.ATTEND.equals(groupUser.getStatus()))
-                .count();
-
-        // 모임 생성자 정보
-        User host = group.getHost();
-
-        CreatedBy createdByHost = new CreatedBy(
-                host.getId(),
-                host.getNickName(),
-                host.getProfileImage());
-
-        return GetGroupResponse.builder()
-                .id(group.getId())
-                .title(group.getTitle())
-                .location(group.getLocation())
-                .locationDetail(group.getLocationDetail())
-                .startTime(group.getStartTime())
-                .endTime(group.getEndTime())
-                .tags(tagNames)
-                .description(group.getDescription())
-                .participantCount(attendUserCount)
-                .maxParticipants(group.getMaxParticipants())
-                .createdBy(createdByHost)
-                .createdAt(group.getCreatedAt())
-                .updatedAt(group.getUpdatedAt())
-                .joinedCount(1) // TODO: 다시 한 번 체크
-                .build();
+    public static GetGroupResponse of(
+            Group group,
+            List<String> imageUrls,
+            List<String> tagNames,
+            int participantCount,
+            CreatedByResponse createdBy,
+            UserStatusResponse userStatus,
+            List<JoinedMemberResponse> joinedMembers
+    ) {
+        return new GetGroupResponse(
+                group.getId(),
+                group.getTitle(),
+                group.getLocation(),
+                group.getLocationDetail(),
+                group.getStartTime(),
+                group.getEndTime(),
+                imageUrls,
+                tagNames,
+                group.getDescription(),
+                participantCount,
+                group.getMaxParticipants(),
+                createdBy,
+                group.getCreatedAt(),
+                group.getUpdatedAt(),
+                userStatus,
+                joinedMembers
+        );
     }
 
+    // createdBy
+    public record CreatedByResponse(
+            Long userId,
+            String nickName,
+            String profileImage
+    ) {
+
+        public static CreatedByResponse from(User host) {
+            return new CreatedByResponse(
+                    host.getId(),
+                    host.getNickName(),
+                    host.getProfileImage()
+            );
+        }
+    }
+
+    // userStatus
+    public record UserStatusResponse(
+            boolean isJoined,
+            LocalDateTime joinedAt
+    ) {
+
+        public static UserStatusResponse notJoined() {
+            return new UserStatusResponse(false, null);
+        }
+
+        public static UserStatusResponse fromJoined(LocalDateTime joinedAt) {
+            return new UserStatusResponse(true, joinedAt);
+        }
+    }
+
+    // joinedMembers
+    public record JoinedMemberResponse(
+            Long userId,
+            GroupRole groupRole,
+            String nickName,
+            String profileImage,
+            LocalDateTime joinedAt
+    ) {
+
+        public static JoinedMemberResponse from(
+                GroupUser groupUser
+        ) {
+            User user = groupUser.getUser();
+            return new JoinedMemberResponse(
+                    user.getId(),
+                    groupUser.getGroupRole(),
+                    user.getNickName(),
+                    user.getProfileImage(),
+                    groupUser.getJoinedAt()
+            );
+        }
+    }
 }
+
+
