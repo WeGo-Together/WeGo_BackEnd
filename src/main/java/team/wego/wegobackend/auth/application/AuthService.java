@@ -10,7 +10,13 @@ import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
 import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
 import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
+import team.wego.wegobackend.auth.exception.DeletedUserException;
+import team.wego.wegobackend.auth.exception.InvalidPasswordException;
+import team.wego.wegobackend.auth.exception.UserAlreadyExistsException;
+import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.common.exception.AppErrorCode;
 import team.wego.wegobackend.common.security.Role;
+import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
@@ -36,7 +42,7 @@ public class AuthService {
     public SignupResponse signup(SignupRequest request) {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 존재하는 회원");
+            throw new UserAlreadyExistsException();
         }
 
         User user = User.builder().email(request.getEmail())
@@ -55,14 +61,14 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+            .orElseThrow(UserNotFoundException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("잘못된 비밀번호");
+            throw new InvalidPasswordException();
         }
 
         if (user.getDeleted()) {
-            throw new IllegalArgumentException("탈퇴한 계정");
+            throw new DeletedUserException();
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(),
@@ -81,16 +87,16 @@ public class AuthService {
     public RefreshResponse refresh(String refreshToken) {
 
         if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
-            throw new IllegalArgumentException("유효하지 않은 Refresh Token");
+            throw new ExpiredTokenException();
         }
 
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
 
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+            .orElseThrow(UserNotFoundException::new);
 
         if (user.getDeleted()) {
-            throw new IllegalArgumentException("탈퇴한 계정");
+            throw new DeletedUserException();
         }
 
         String newAccessToken = jwtTokenProvider.createAccessToken(

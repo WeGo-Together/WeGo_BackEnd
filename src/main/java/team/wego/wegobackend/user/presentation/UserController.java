@@ -1,5 +1,6 @@
 package team.wego.wegobackend.user.presentation;
 
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,11 +19,12 @@ public class UserController {
     @GetMapping("/test")
     public ResponseEntity<ApiResponse<String>> test() {
 
+        log.info(LocalDateTime.now() + "test endpoint call");
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
                 true,
-                "테스트 성공"
+                "Test Success"
             ));
     }
 }

@@ -22,7 +22,7 @@ import team.wego.wegobackend.common.response.ErrorResponse.FieldError;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String PROBLEM_BASE_URI = "http://13.125.199.79:8080/problem/";
+    private static final String PROBLEM_BASE_URI = "about:blank";
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApp(AppException ex,
@@ -261,6 +261,6 @@ public class GlobalExceptionHandler {
     }
 
     private static String toProblemType(String title) {
-        return PROBLEM_BASE_URI + title.toLowerCase().replace('_', '-');
+        return PROBLEM_BASE_URI;
     }
 }

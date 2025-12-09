@@ -20,7 +20,16 @@ public enum AppErrorCode implements ErrorCode {
 
     ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "공통: 요청한 리소스를 찾을 수 없습니다."),
     RESP_BODY_WRITE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "공통: 응답 본문을 생성/쓰기 중 오류가 발생했습니다."),
-    MEDIA_TYPE_NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "공통: 요청한 응답 형식을 제공할 수 없습니다.");
+    MEDIA_TYPE_NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "공통: 요청한 응답 형식을 제공할 수 없습니다."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 : 가입된 회원이 아닙니다."),
+    ALREADY_EXISTS_USER(HttpStatus.BAD_REQUEST, "회원 : 이미 가입한 회원입니다."),
+    INVALID_PASSWORD_VALUE(HttpStatus.BAD_REQUEST, "회원 : 비밀번호가 일치하지 않습니다."),
+    DELETED_USER(HttpStatus.BAD_REQUEST, "회원 : 탈퇴한 회원입니다."),
+
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 만료된 토큰입니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 유효하지 않은 토큰입니다.")
+    ;
 
     private final HttpStatus httpStatus;
     private final String messageTemplate;
