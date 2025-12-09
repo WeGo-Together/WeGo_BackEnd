@@ -37,6 +37,21 @@ public class GroupController {
                 .body(ApiResponse.success(response));
     }
 
+    // 모임 참여
+    @PostMapping("/{groupId}/attend")
+    public ResponseEntity<ApiResponse<GetGroupResponse>> attendGroup(
+            @PathVariable Long groupId,
+            @RequestParam Long userId
+    ) {
+        GetGroupResponse response = groupService.attendGroup(groupId, userId);
+
+        return  ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
+    }
+
+    // 모임 참여 취소
+
     // 모임 상세 조회
     @PostMapping("/{groupId}")
     public ResponseEntity<ApiResponse<GetGroupResponse>> getGroupResponse(

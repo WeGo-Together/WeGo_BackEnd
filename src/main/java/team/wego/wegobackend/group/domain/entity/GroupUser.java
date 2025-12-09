@@ -60,5 +60,16 @@ public class GroupUser extends BaseTimeEntity {
         group.addUser(groupUser);
         return groupUser;
     }
+
+    public void reAttend() {
+        this.status = GroupUserStatus.ATTEND;
+        this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
+    }
+
+    public void leave() {
+        this.status = GroupUserStatus.LEFT;
+        this.leftAt = LocalDateTime.now();
+    }
 }
 
