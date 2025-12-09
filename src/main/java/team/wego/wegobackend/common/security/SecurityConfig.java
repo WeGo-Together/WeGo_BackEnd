@@ -29,7 +29,6 @@ public class SecurityConfig {
 
         http
             .authorizeHttpRequests((auth) -> auth
-                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()
                 .anyRequest().authenticated()
             );

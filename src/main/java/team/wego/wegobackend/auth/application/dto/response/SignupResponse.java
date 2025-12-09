@@ -22,8 +22,6 @@ public class SignupResponse {
 
     private String nickName;
 
-    private String phoneNumber;
-
     private LocalDateTime createdAt;
 
     public static SignupResponse from(User user) {
@@ -31,7 +29,6 @@ public class SignupResponse {
             .userId(user.getId())
             .email(user.getEmail())
             .nickName(user.getNickName())
-            .phoneNumber(user.getPhoneNumber())
             .createdAt(user.getCreatedAt())
             .build();
     }

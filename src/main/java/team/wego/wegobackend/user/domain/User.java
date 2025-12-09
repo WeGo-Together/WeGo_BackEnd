@@ -40,9 +40,6 @@ public class User extends BaseTimeEntity {
     @Column(name = "nick_name", length = 50, nullable = false, unique = true)
     private String nickName;
 
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
-
     @Column(name = "mbti", length = 10)
     private String mbti;
 
@@ -52,6 +49,18 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_message", length = 500)
     private String profileMessage;
 
+    @Column(name = "followee_count")
+    private int followeesCnt;
+
+    @Column(name = "follower_count")
+    private int followersCnt;
+
+    @Column(name = "group_joined_count")
+    private int groupJoinedCnt;
+
+    @Column(name = "group_created_count")
+    private int groupCreatedCnt;
+
     @Column(name = "notification_enabled", nullable = false)
     private Boolean notificationEnabled = false;
 
@@ -59,12 +68,53 @@ public class User extends BaseTimeEntity {
     private Boolean deleted = false;
 
     @Builder
-    public User(String email, String password, String nickName, String phoneNumber, Role role) {
+    public User(String email, String password, String nickName, Role role) {
         this.email = email;
         this.password = password;
         this.nickName = nickName;
-        this.phoneNumber = phoneNumber;
         this.role = role != null ? role : Role.ROLE_USER;
+    }
+
+    // ===== 카운트 증가 메서드 =====
+
+    public void increaseFolloweeCount() {
+        this.followeesCnt++;
+    }
+
+    public void decreaseFolloweeCount() {
+        if (this.followeesCnt > 0) {
+            this.followeesCnt--;
+        }
+    }
+
+    public void increaseFollowerCount() {
+        this.followersCnt++;
+    }
+
+    public void decreaseFollowerCount() {
+        if (this.followersCnt > 0) {
+            this.followersCnt--;
+        }
+    }
+
+    public void increaseGroupJoinedCount() {
+        this.groupJoinedCnt++;
+    }
+
+    public void decreaseGroupJoinedCount() {
+        if (this.groupJoinedCnt > 0) {
+            this.groupJoinedCnt--;
+        }
+    }
+
+    public void increaseGroupCreatedCount() {
+        this.groupCreatedCnt++;
+    }
+
+    public void decreaseGroupCreatedCount() {
+        if (this.groupCreatedCnt > 0) {
+            this.groupCreatedCnt--;
+        }
     }
 
 }
