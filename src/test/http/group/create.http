@@ -9,7 +9,58 @@ Content-Type: application/json
   "phoneNumber": "010-1234-5678"
 }
 
-### 모임 생성
+> {%
+  client.global.set("userId", response.body.userId);
+%}
+
+
+### 모임 생성(webp가 아닌 경우)
+POST http://localhost:8080/api/v1/groups/create
+    ?userId={{userId}}
+Content-Type: application/json
+
+{
+  "title": "강남에서 하는 자바 스터디",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2025-12-10T19:00:00",
+  "endTime": "2025-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "자바 백엔드 신입 준비하는 분들을 위한 스터디입니다.",
+  "maxParticipants": 12
+}
+
+> {%
+  client.global.set("groupId", response.body.data.id);
+%}
+
+### 모임 이미지 생성(webp 아닌 경우)
+POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload
+    ?userId={{userId}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../image/resources/img2.jpg
+--boundary--}
+
+
+
+
+
+
+### 모임 이미지 생성(webp인 경우, 3장)
 POST http://localhost:8080/api/v1/groups/create
     ?userId=1
 Content-Type: application/json
@@ -29,19 +80,89 @@ Content-Type: application/json
   "maxParticipants": 12
 }
 
-### 모임 이미지 생성
-POST http://localhost:8080/api/v1/groups/images/1/upload
+> {%
+  client.global.set("groupId", response.body.data.id);
+%}
+
+### 모임 이미지 생성(webp인 경우, 3장)
+POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload?userId=1
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp2.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp2.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary--
+
+
+
+
+
+
+
+### 모임 이미지 생성(4장인 경우 예외 발생)
+POST http://localhost:8080/api/v1/groups/create
+    ?userId=1
+Content-Type: application/json
+
+{
+  "title": "강남에서 하는 자바 스터디",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2025-12-10T19:00:00",
+  "endTime": "2025-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "자바 백엔드 신입 준비하는 분들을 위한 스터디입니다.",
+  "maxParticipants": 12
+}
+
+> {%
+  client.global.set("groupId", response.body.data.id);
+%}
+
+### 모임 이미지 생성(4장인 경우 예외 발생)
+POST http://localhost:8080/api/v1/groups/images/{{groupId}}/upload
     ?userId=1
 Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp2.webp
+--boundary--
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
 < ../image/resources/img1.png
+--boundary--
+
 --boundary
 Content-Disposition: form-data; name="images"; filename="img2.jpg"
 Content-Type: image/jpeg
 
 < ../image/resources/img2.jpg
---boundary--}
+--boundary--
+

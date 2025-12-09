@@ -5,7 +5,6 @@ import java.util.List;
 
 public record CreateGroupImageResponse(
         Long groupId,
-        GroupImageItemResponse representativeImage,
         List<GroupImageItemResponse> images
 ) {
 }

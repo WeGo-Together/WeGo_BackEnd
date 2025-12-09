@@ -1,7 +1,6 @@
 package team.wego.wegobackend.group.application.service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -143,14 +142,8 @@ public class GroupImageService {
         // 5. 업로드 + DB 저장 + 응답 DTO 생성
         List<GroupImageItemResponse> imageItems = saveGroupImages(group, images);
 
-        // 6. 대표 이미지 = sortOrder가 가장 작은 이미지(0)
-        GroupImageItemResponse representativeImage = imageItems.stream()
-                .min(Comparator.comparingInt(GroupImageItemResponse::sortOrder))
-                .orElse(null);
-
         return new CreateGroupImageResponse(
                 group.getId(),
-                representativeImage,
                 imageItems
         );
     }
