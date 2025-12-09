@@ -8,9 +8,12 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
 import team.wego.wegobackend.group.domain.entity.Group;
+import team.wego.wegobackend.group.domain.entity.GroupImage;
 import team.wego.wegobackend.group.domain.entity.GroupRole;
 import team.wego.wegobackend.group.domain.entity.GroupTag;
 import team.wego.wegobackend.group.domain.entity.GroupUser;
@@ -36,8 +39,6 @@ public class GroupService {
     private final GroupImageRepository groupImageRepository;
     private final GroupTagRepository groupTagRepository;
     private final GroupUserRepository groupUserRepository;
-
-    private final GroupImageService groupImageService;
 
     private void validateCreateGroupRequest(CreateGroupRequest request) {
         if (!request.endTime().isAfter(request.startTime())) {
@@ -101,15 +102,16 @@ public class GroupService {
     }
 
     @Transactional
-    public CreateGroupResponse create(Long userId, CreateGroupRequest request) {
-        // 1. 회원 조회(HOST) TODO: 회원 정보 파싱 구현되면 연결
-        User host = userRepository.findById(userId)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, userId));
-
-        // 2. 비즈니스 유효성 검사
+    public CreateGroupResponse createGroup(Long hostUserId, CreateGroupRequest request) {
+        // 0. 기본 검증
         validateCreateGroupRequest(request);
 
-        // 3. Group 엔티티 생성 및 저장
+        // 1. HOST 조회
+        User host = userRepository.findById(hostUserId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, hostUserId));
+
+        // 2. Group 생성 및 저장
         Group group = Group.create(
                 request.title(),
                 request.location(),
@@ -120,15 +122,77 @@ public class GroupService {
                 request.maxParticipants(),
                 host
         );
-
         groupRepository.save(group);
 
-        // 4. 태그 저장
-        saveGroupTags(group, request.tags());
-
-        // 5. 모임 생성자를 모임 참가자(HOST)로 등록
+        // 3. HOST를 GroupUser(HOST)로 저장
         saveHostAsGroupUser(group, host);
 
-        return CreateGroupResponse.from(group);
+        // 4. 태그 저장 (이름 기반)
+        saveGroupTags(group, request.tags());
+
+        // 5. 이미지 URL 기반으로 GroupImage 생성 + 응답 DTO 구성
+        List<GroupImageItemResponse> imageResponses = saveGroupImagesByUrl(group, request.images());
+
+        // 6. 응답 생성 (그룹 + 이미지 모두 포함)
+        return CreateGroupResponse.from(group, imageResponses);
+    }
+
+    /**
+     * CreateGroupRequest.images 안에 들어있는 imageUrl440x240 / imageUrl100x100 을 사용해서 GroupImage 엔티티를
+     * 생성하고 저장한 뒤, 응답 DTO로 변환합니다.
+     */
+    private List<GroupImageItemResponse> saveGroupImagesByUrl(
+            Group group,
+            List<CreateGroupImageRequest> imageRequests
+    ) {
+        if (imageRequests == null || imageRequests.isEmpty()) {
+            return List.of();
+        }
+
+        // 정렬 보장(필요 시 sortOrder 기준으로 정렬)
+        List<CreateGroupImageRequest> sorted = imageRequests.stream()
+                .filter(Objects::nonNull)
+                .sorted((a, b) -> {
+                    int s1 = a.sortOrder() != null ? a.sortOrder() : 0;
+                    int s2 = b.sortOrder() != null ? b.sortOrder() : 0;
+                    return Integer.compare(s1, s2);
+                })
+                .toList();
+
+        // 엔티티 생성
+        List<GroupImage> images = sorted.stream()
+                .map(req -> {
+                    int sortOrder = req.sortOrder() != null ? req.sortOrder() : 0;
+                    // DB에는 대표 이미지(440x240)만 저장
+                    return GroupImage.create(group, req.imageUrl440x240(), sortOrder);
+                })
+                .toList();
+
+        // 저장
+        if (!images.isEmpty()) {
+            groupImageRepository.saveAll(images);
+        }
+
+        // 응답 DTO로 변환
+        return images.stream()
+                .map(image -> {
+                    // 요청에서 매칭되는 썸네일 URL 찾아오기
+                    CreateGroupImageRequest matched = sorted.stream()
+                            .filter(req -> Objects.equals(
+                                    req.imageUrl440x240(),
+                                    image.getImageUrl()
+                            ))
+                            .findFirst()
+                            .orElse(null);
+
+                    String thumbUrl = matched != null ? matched.imageUrl100x100() : null;
+
+                    return GroupImageItemResponse.from(
+                            image,
+                            image.getImageUrl(), // 440x240
+                            thumbUrl             // 100x100
+                    );
+                })
+                .toList();
     }
 }
