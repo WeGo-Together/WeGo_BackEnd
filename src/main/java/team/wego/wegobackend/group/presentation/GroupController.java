@@ -34,7 +34,9 @@ public class GroupController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.success(
+                        HttpStatus.CREATED.value(),
+                        response));
     }
 
     // 모임 참여
@@ -47,7 +49,8 @@ public class GroupController {
 
         return  ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.success(
+                        HttpStatus.OK.value(),response));
     }
 
     // 모임 참여 취소
