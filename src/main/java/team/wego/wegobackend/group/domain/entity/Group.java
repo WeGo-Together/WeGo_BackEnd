@@ -102,4 +102,22 @@ public class Group extends BaseTimeEntity {
     public void addTag(GroupTag groupTag) {
         this.groupTags.add(groupTag);
     }
+
+    public void update(
+            String title,
+            String location,
+            String locationDetail,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String description,
+            Integer maxParticipants
+    ) {
+        this.title = title;
+        this.location = location;
+        this.locationDetail = locationDetail;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.description = description;
+        this.maxParticipants = maxParticipants;
+    }
 }

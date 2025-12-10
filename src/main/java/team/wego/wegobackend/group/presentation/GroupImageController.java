@@ -1,16 +1,23 @@
 package team.wego.wegobackend.group.presentation;
 
 
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
+import team.wego.wegobackend.group.application.dto.request.UpdateGroupImageItemRequest;
+import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
 import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageResponse;
 import team.wego.wegobackend.group.application.service.GroupImageService;
 
@@ -33,7 +40,31 @@ public class GroupImageController {
                 .body(ApiResponse.success(HttpStatus.CREATED.value(), response));
     }
 
-    // 모임 이미지 수정
+    @PatchMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<List<GroupImageItemResponse>>> updateGroupImages(
+            @RequestParam Long userId,  // TODO: 나중에 인증 정보에서 꺼내기
+            @PathVariable Long groupId,
+            @RequestBody @Valid List<UpdateGroupImageItemRequest> images
+    ) {
+        List<GroupImageItemResponse> response =
+                groupImageService.updateGroupImages(userId, groupId, images);
 
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<Void>> deleteGroupImages(
+            @RequestParam Long userId,   // TODO: 나중에 인증 정보에서 꺼내기
+            @PathVariable Long groupId
+    ) {
+        groupImageService.deleteGroupImages(userId, groupId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), null));
+    }
 
 }

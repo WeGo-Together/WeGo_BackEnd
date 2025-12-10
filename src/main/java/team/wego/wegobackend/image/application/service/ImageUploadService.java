@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -382,4 +383,54 @@ public class ImageUploadService {
 
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
     }
+
+    public String extractKeyFromUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+
+        String endpoint = awsS3Properties.getPublicEndpoint();
+        if (endpoint != null && !endpoint.isBlank()) {
+            String prefix = endpoint.endsWith("/") ? endpoint : endpoint + "/";
+            if (imageUrl.startsWith(prefix)) {
+                return imageUrl.substring(prefix.length());
+            }
+        }
+
+        // fallback: 마지막 "/" 이후를 key로 사용
+        int idx = imageUrl.lastIndexOf('/');
+        if (idx >= 0 && idx + 1 < imageUrl.length()) {
+            return imageUrl.substring(idx + 1);
+        }
+
+        // 그래도 안 되면 전체를 key로 시도 (최악의 경우)
+        return imageUrl;
+    }
+
+    public void deleteByUrl(String imageUrl) {
+        String key = extractKeyFromUrl(imageUrl);
+        if (key == null || key.isBlank()) {
+            return;
+        }
+        delete(key);
+    }
+
+    public void deleteAllByUrls(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+
+        List<String> keys = imageUrls.stream()
+                .filter(Objects::nonNull)
+                .map(this::extractKeyFromUrl)
+                .filter(Objects::nonNull)
+                .filter(key -> !key.isBlank())
+                .toList();
+
+        if (!keys.isEmpty()) {
+            deleteAll(keys);
+        }
+    }
+
+
 }
