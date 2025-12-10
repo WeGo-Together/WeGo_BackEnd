@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.application.dto.request.UpdateGroupImageItemRequest;
 import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
 import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageItemResponse;
@@ -138,7 +139,7 @@ public class GroupImageService {
 
     @Transactional
     public List<GroupImageItemResponse> updateGroupImages(
-            Long userId,
+            CustomUserDetails userDetails,
             Long groupId,
             List<UpdateGroupImageItemRequest> requests
     ) {
@@ -149,11 +150,11 @@ public class GroupImageService {
                 );
 
         // 2. HOST 권한 체크
-        if (!group.getHost().getId().equals(userId)) {
+        if (!group.getHost().getId().equals(userDetails.getId())) {
             throw new GroupException(
                     GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP,
                     groupId,
-                    userId
+                    userDetails.getId()
             );
         }
 
@@ -232,7 +233,7 @@ public class GroupImageService {
 
 
     @Transactional
-    public void deleteGroupImages(Long userId, Long groupId) {
+    public void deleteGroupImages(CustomUserDetails userDetails, Long groupId) {
         // 1. 그룹 조회
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
@@ -240,11 +241,11 @@ public class GroupImageService {
                 );
 
         // 2. HOST 권한 체크
-        if (!group.getHost().getId().equals(userId)) {
+        if (!group.getHost().getId().equals(userDetails.getId())) {
             throw new GroupException(
                     GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP,
                     groupId,
-                    userId
+                    userDetails.getId()
             );
         }
 
