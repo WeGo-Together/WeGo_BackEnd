@@ -22,9 +22,13 @@ public enum GroupErrorCode implements ErrorCode {
     GROUP_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "모임: 모임 최대 참가자 수를 초과했습니다. 모임 ID: %s"),
     NOT_ATTEND_GROUP(HttpStatus.BAD_REQUEST, "모임: 참여한 적 없거나 이미 나간 상태입니다. 모임 ID: %s 회원 ID: %s"),
     HOST_CANNOT_LEAVE_OWN_GROUP(HttpStatus.BAD_REQUEST, "모임: HOST는 나갈 수 없습니다. 모임 ID: %s 회원 ID: %s"),
-    NO_PERMISSION_TO_UPDATE_GROUP(HttpStatus.FORBIDDEN, "모임: 해당 모임을 수정할 권한이 없습니다. 모임 ID: %s 회원 ID: %s"),
-    INVALID_MAX_PARTICIPANTS_LESS_THAN_CURRENT(HttpStatus.BAD_REQUEST, "모임: 현재 참여 인원 수(%s)보다 작은 값으로 최대 인원을 줄일 수 없습니다."),
-    NO_PERMISSION_TO_DELETE_GROUP(HttpStatus.UNAUTHORIZED, "모임: 삭제할 수 있는 권한이 없습니다.");
+    NO_PERMISSION_TO_UPDATE_GROUP(HttpStatus.FORBIDDEN,
+            "모임: 해당 모임을 수정할 권한이 없습니다. 모임 ID: %s 회원 ID: %s"),
+    INVALID_MAX_PARTICIPANTS_LESS_THAN_CURRENT(HttpStatus.BAD_REQUEST,
+            "모임: 현재 참여 인원 수(%s)보다 작은 값으로 최대 인원을 줄일 수 없습니다."),
+    NO_PERMISSION_TO_DELETE_GROUP(HttpStatus.UNAUTHORIZED, "모임: 삭제할 수 있는 권한이 없습니다."),
+    MY_GROUP_TYPE_NOT_NULL(HttpStatus.BAD_REQUEST, "모임: MyGroupType 값은 null일 수 없습니다."),
+    INVALID_MY_GROUP_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 MyGroupType: %s");
 
     private final HttpStatus status;
     private final String message;

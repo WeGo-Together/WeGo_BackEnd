@@ -2,6 +2,8 @@ package team.wego.wegobackend.group.domain.entity;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
 
 @Getter(AccessLevel.PUBLIC)
 public enum MyGroupType {
@@ -17,13 +19,15 @@ public enum MyGroupType {
 
     public static MyGroupType from(String value) {
         if (value == null) {
-            throw new IllegalArgumentException("MyGroupType 값은 null일 수 없습니다.");
+            throw new GroupException(GroupErrorCode.MY_GROUP_TYPE_NOT_NULL);
         }
         return switch (value) {
             case "current" -> CURRENT;
-            case "myPost"  -> MY_POST;
-            case "past"    -> PAST;
-            default -> throw new IllegalArgumentException("지원하지 않는 MyGroupType: " + value);
+            case "myPost" -> MY_POST;
+            case "past" -> PAST;
+            default -> throw new GroupException(GroupErrorCode.INVALID_MY_GROUP_TYPE, value);
+
+
         };
     }
 }
