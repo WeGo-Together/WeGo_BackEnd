@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
+import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.request.UpdateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
@@ -29,13 +31,12 @@ public class GroupController {
 
     private final GroupService groupService;
 
-    // TODO: 유저 정보 파싱 전, 임시 userId
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupResponse>> createGroupResponse(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody @Valid CreateGroupRequest request
     ) {
-        CreateGroupResponse response = groupService.createGroup(userId, request);
+        CreateGroupResponse response = groupService.createGroup(userDetails, request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -46,10 +47,10 @@ public class GroupController {
 
     @PostMapping("/{groupId}/attend")
     public ResponseEntity<ApiResponse<GetGroupResponse>> attendGroup(
-            @PathVariable Long groupId,
-            @RequestParam Long userId
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
     ) {
-        GetGroupResponse response = groupService.attendGroup(groupId, userId);
+        GetGroupResponse response = groupService.attendGroup(userDetails, groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -60,10 +61,10 @@ public class GroupController {
 
     @PostMapping("/{groupId}/cancel")
     public ResponseEntity<ApiResponse<GetGroupResponse>> cancelAttendGroup(
-            @PathVariable Long groupId,
-            @RequestParam Long userId   // TODO: 나중에 인증 정보에서 꺼내기
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
     ) {
-        GetGroupResponse response = groupService.cancelAttendGroup(groupId, userId);
+        GetGroupResponse response = groupService.cancelAttendGroup(userDetails, groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -72,12 +73,12 @@ public class GroupController {
 
     @GetMapping("/{groupId}")
     public ResponseEntity<ApiResponse<GetGroupResponse>> getGroupResponse(
-            @PathVariable Long groupId,
-            @RequestParam(required = false) Long userId // TODO: 나중에 인증에서 꺼내기
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
     ) {
-        GetGroupResponse response = (userId == null)
+        GetGroupResponse response = (userDetails == null)
                 ? groupService.getGroup(groupId)
-                : groupService.getGroup(groupId, userId);
+                : groupService.getGroup(userDetails, groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -99,24 +100,23 @@ public class GroupController {
 
     @PatchMapping("/{groupId}")
     public ResponseEntity<ApiResponse<GetGroupResponse>> updateGroup(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
             @RequestBody @Valid UpdateGroupRequest request
     ) {
-        GetGroupResponse response = groupService.updateGroup(userId, groupId, request);
+        GetGroupResponse response = groupService.updateGroup(userDetails, groupId, request);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    // 모임 삭제
     @DeleteMapping("/{groupId}")
     public ResponseEntity<ApiResponse<Void>> deleteGroup(
-            @RequestParam Long userId,  // TODO: 나중에 인증 정보에서 꺼내기
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
-        groupService.deleteGroup(userId, groupId);
+        groupService.deleteGroup(userDetails, groupId);
 
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
@@ -126,17 +126,18 @@ public class GroupController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<GetGroupListResponse>> getMyGroups(
-            @RequestParam Long userId,        // TODO: 나중에 인증 정보에서 꺼내기
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam String type,
             @RequestParam(required = false) Long cursor,
             @RequestParam int size
     ) {
         GetGroupListResponse response =
-                groupService.getMyGroups(userId, type, cursor, size);
+                groupService.getMyGroups(userDetails, type, cursor, size);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(HttpStatus.OK.value(), response));
     }
-
 }
+
+
