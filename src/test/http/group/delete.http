@@ -102,14 +102,26 @@ Content-Type: application/json
   "phoneNumber": "010-1234-5678"
 }
 
+### 로그인(MEMBER)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#"
+}
+
+
 > {%
   client.global.set("memberId1", response.body.data.userId);
+  client.global.set("MemberId1AccessToken", response.body.data.accessToken);
+
 %}
 
 ### 모임 참여 (MEMBER 1)
 POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend?userId={{memberId1}}
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{MemberId1AccessToken}}
 
 
 

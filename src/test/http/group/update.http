@@ -155,7 +155,7 @@ Authorization: Bearer {{accessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
-Content-Type: image/jpeg
+Content-Type: image/png
 
 < ../image/resources/img1.png
 --boundary
