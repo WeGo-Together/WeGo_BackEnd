@@ -3,6 +3,7 @@ package team.wego.wegobackend.group.application.service;
 import static team.wego.wegobackend.group.domain.entity.GroupUserStatus.ATTEND;
 import static team.wego.wegobackend.group.domain.entity.GroupUserStatus.LEFT;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import team.wego.wegobackend.group.domain.entity.GroupImage;
 import team.wego.wegobackend.group.domain.entity.GroupRole;
 import team.wego.wegobackend.group.domain.entity.GroupTag;
 import team.wego.wegobackend.group.domain.entity.GroupUser;
+import team.wego.wegobackend.group.domain.entity.MyGroupType;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.domain.repository.GroupImageRepository;
@@ -567,4 +569,97 @@ public class GroupService {
 
         groupRepository.delete(group);
     }
+
+    @Transactional(readOnly = true)
+    public GetGroupListResponse getMyGroups(
+            Long userId,
+            String type,
+            Long cursor,
+            int size
+    ) {
+        MyGroupType myGroupType = MyGroupType.from(type);
+
+        int pageSize = Math.max(1, Math.min(size, 50));
+
+        return switch (myGroupType) {
+            case CURRENT -> getMyCurrentGroups(userId, cursor, pageSize);
+            case MY_POST -> getMyPostGroups(userId, cursor, pageSize);
+            case PAST -> getMyPastGroups(userId, cursor, pageSize);
+        };
+    }
+
+    private GetGroupListResponse getMyCurrentGroups(Long userId, Long cursor, int size) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 지금은 ATTEND 만 사용, 나중에 LEFT 도 포함하려면 여기만 변경하면 됨
+        List<String> statuses = List.of(ATTEND.name());
+
+        List<Group> groups = groupRepository.findCurrentGroupsByUser(
+                userId,
+                statuses,
+                cursor,
+                now,
+                size + 1   // 다음 페이지 여부 판단용
+        );
+
+        Long nextCursor = null;
+        if (groups.size() > size) {
+            Group lastExtra = groups.remove(size);
+            nextCursor = lastExtra.getId();
+        }
+
+        List<GroupListItemResponse> items = groups.stream()
+                .map(this::toGroupListItemResponse)
+                .toList();
+
+        return GetGroupListResponse.of(items, nextCursor);
+    }
+
+    private GetGroupListResponse getMyPostGroups(Long userId, Long cursor, int size) {
+        List<Group> groups = groupRepository.findMyPostGroupsByHost(
+                userId,
+                cursor,
+                size + 1
+        );
+
+        Long nextCursor = null;
+        if (groups.size() > size) {
+            Group lastExtra = groups.remove(size);
+            nextCursor = lastExtra.getId();
+        }
+
+        List<GroupListItemResponse> items = groups.stream()
+                .map(this::toGroupListItemResponse)
+                .toList();
+
+        return GetGroupListResponse.of(items, nextCursor);
+    }
+
+    private GetGroupListResponse getMyPastGroups(Long userId, Long cursor, int size) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 추후 LEFT 포함하고 싶으면 여기만 변경
+        List<String> statuses = List.of(ATTEND.name());
+
+        List<Group> groups = groupRepository.findPastGroupsByUser(
+                userId,
+                statuses,
+                cursor,
+                now,
+                size + 1
+        );
+
+        Long nextCursor = null;
+        if (groups.size() > size) {
+            Group lastExtra = groups.remove(size);
+            nextCursor = lastExtra.getId();
+        }
+
+        List<GroupListItemResponse> items = groups.stream()
+                .map(this::toGroupListItemResponse)
+                .toList();
+
+        return GetGroupListResponse.of(items, nextCursor);
+    }
 }
+

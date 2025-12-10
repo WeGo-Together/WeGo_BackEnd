@@ -3,9 +3,9 @@ package team.wego.wegobackend.group.application.dto.response;
 import team.wego.wegobackend.group.domain.entity.GroupImage;
 
 public record GroupImageItemResponse(
+        int sortOrder,
         Long imageId440x240,
         Long imageId100x100,
-        int sortOrder,
         String imageUrl440x240,
         String imageUrl100x100
 ) {
@@ -25,9 +25,9 @@ public record GroupImageItemResponse(
         String thumbUrlVal = (thumb != null) ? thumb.getImageUrl() : null;
 
         return new GroupImageItemResponse(
+                sortOrder,
                 mainId,
                 thumbId,
-                sortOrder,
                 mainUrlVal,
                 thumbUrlVal
         );
