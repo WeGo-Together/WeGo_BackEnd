@@ -27,7 +27,7 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-public class UserController {
+public class UserController implements UserControllerDocs{
 
     private final UserService userService;
 

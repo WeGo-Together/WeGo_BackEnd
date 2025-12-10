@@ -4,9 +4,16 @@ public class SecurityEndpoints {
 
     public static final String[] PUBLIC_PATTERNS = {
         "/api/v*/auth/**",
-        "/api/v*/docs/**",
         "/api/v*/health",
         "/h2-console/**",
-        "/error"
+        "/error",
+
+        "/swagger-ui/**",
+        "/swagger-ui.html",
+
+        // API Docs
+        "/api-docs/**",
+        "/v*/api-docs/**",
     };
+
 }
