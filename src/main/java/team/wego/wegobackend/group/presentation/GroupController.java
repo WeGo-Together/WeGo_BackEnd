@@ -123,6 +123,20 @@ public class GroupController {
                 .body(ApiResponse.success(HttpStatus.NO_CONTENT.value(), null));
     }
 
-    // 나의 모임 목록 조회
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<GetGroupListResponse>> getMyGroups(
+            @RequestParam Long userId,        // TODO: 나중에 인증 정보에서 꺼내기
+            @RequestParam String type,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam int size
+    ) {
+        GetGroupListResponse response =
+                groupService.getMyGroups(userId, type, cursor, size);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
 
 }
