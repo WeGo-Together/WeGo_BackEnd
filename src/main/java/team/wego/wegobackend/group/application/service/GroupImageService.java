@@ -20,7 +20,7 @@ import team.wego.wegobackend.image.domain.ImageFile;
 @Service
 public class GroupImageService {
 
-    // 인덱스 0 → 440x240, 인덱스 1 → 100x100
+    // 인덱스 0: 440x240, 인덱스 1: 100x100
     private static final List<Integer> GROUP_WIDTHS = List.of(440, 100);
     private static final List<Integer> GROUP_HEIGHTS = List.of(240, 100);
 
@@ -61,7 +61,7 @@ public class GroupImageService {
 
     private void validateCreateGroupImageRequest(List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
-            return; // TODO: 이미지가 필수가 아니라면 null/빈 리스트는 그대로 허용 -> 정책 확인 필요
+            return;
         }
 
         if (images.size() > 3) {
@@ -78,8 +78,7 @@ public class GroupImageService {
         }
 
         List<GroupImage> entities = new ArrayList<>();
-        List<ImageFile> mainFiles = new ArrayList<>();   // 440x240
-        List<ImageFile> thumbFiles = new ArrayList<>();  // 100x100
+        List<GroupImageItemResponse> responses = new ArrayList<>();
         List<String> uploadedKeys = new ArrayList<>();
 
         try {
@@ -100,36 +99,29 @@ public class GroupImageService {
                 ImageFile main = variants.get(0);   // 440x240
                 ImageFile thumb = variants.get(1);  // 100x100
 
-                // DB에는 대표(440x240) 기준 URL만 저장
-                GroupImage image = GroupImage.create(group, main.url(), i);
-                entities.add(image);
-                mainFiles.add(main);
-                thumbFiles.add(thumb);
+                // DB에는 두 행으로 저장 (같은 sortOrder = i)
+                GroupImage mainEntity = GroupImage.create(group, main.url(), i);
+                GroupImage thumbEntity = GroupImage.create(group, thumb.url(), i);
 
-                // 보상 트랜잭션용
+                entities.add(mainEntity);
+                entities.add(thumbEntity);
+
+                // 응답은 한 세트로
+                responses.add(
+                        GroupImageItemResponse.from(
+                                mainEntity,          // 대표 행 기준으로
+                                main.url(),          // 440x240
+                                thumb.url()          // 100x100
+                        )
+                );
+
+                // 롤백용 key 기록
                 uploadedKeys.add(main.key());
                 uploadedKeys.add(thumb.key());
             }
 
             if (!entities.isEmpty()) {
-                groupImageRepository.saveAll(entities); // 여기서 IDENTITY ID 세팅
-            }
-
-            // 엔티티 + 두 사이즈 URL을 묶어서 응답 DTO로 변환
-            List<GroupImageItemResponse> responses = new ArrayList<>();
-            for (int i = 0; i < entities.size(); i++) {
-
-                GroupImage entity = entities.get(i);
-                ImageFile main = mainFiles.get(i);
-                ImageFile thumb = thumbFiles.get(i);
-
-                responses.add(
-                        GroupImageItemResponse.from(
-                                entity,
-                                main.url(),   // 440x240
-                                thumb.url()   // 100x100
-                        )
-                );
+                groupImageRepository.saveAll(entities);
             }
 
             return responses;

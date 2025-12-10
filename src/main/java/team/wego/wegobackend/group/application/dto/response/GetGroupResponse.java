@@ -14,7 +14,7 @@ public record GetGroupResponse(
         String locationDetail,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        List<String> images,
+        List<GroupImageItemResponse> images,
         List<String> tags,
         String description,
         int participantCount,
@@ -28,7 +28,7 @@ public record GetGroupResponse(
 
     public static GetGroupResponse of(
             Group group,
-            List<String> imageUrls,
+            List<GroupImageItemResponse> images,
             List<String> tagNames,
             int participantCount,
             CreatedByResponse createdBy,
@@ -42,7 +42,7 @@ public record GetGroupResponse(
                 group.getLocationDetail(),
                 group.getStartTime(),
                 group.getEndTime(),
-                imageUrls,
+                images,
                 tagNames,
                 group.getDescription(),
                 participantCount,

@@ -15,11 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupListResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.CreatedByResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.JoinedMemberResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse.UserStatusResponse;
 import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
+import team.wego.wegobackend.group.application.dto.response.GroupListItemResponse;
 import team.wego.wegobackend.group.domain.entity.Group;
 import team.wego.wegobackend.group.domain.entity.GroupImage;
 import team.wego.wegobackend.group.domain.entity.GroupRole;
@@ -157,7 +159,7 @@ public class GroupService {
             return List.of();
         }
 
-        // 정렬 보장(필요 시 sortOrder 기준으로 정렬)
+        // sortOrder 기준 정렬
         List<CreateGroupImageRequest> sorted = imageRequests.stream()
                 .filter(Objects::nonNull)
                 .sorted((a, b) -> {
@@ -167,38 +169,55 @@ public class GroupService {
                 })
                 .toList();
 
-        // 엔티티 생성
-        List<GroupImage> images = sorted.stream()
-                .map(req -> {
-                    int sortOrder = req.sortOrder() != null ? req.sortOrder() : 0;
-                    // DB에는 대표 이미지(440x240)만 저장
-                    return GroupImage.create(group, req.imageUrl440x240(), sortOrder);
-                })
-                .toList();
+        // 엔티티 2배 생성 (한 이미지는 440, 100 두 행)
+        List<GroupImage> entities = new java.util.ArrayList<>();
 
-        // 저장
-        if (!images.isEmpty()) {
-            groupImageRepository.saveAll(images);
+        for (CreateGroupImageRequest req : sorted) {
+            int sortOrder = req.sortOrder() != null ? req.sortOrder() : 0;
+
+            // MAIN: 440x240
+            if (req.imageUrl440x240() != null && !req.imageUrl440x240().isBlank()) {
+                GroupImage main = GroupImage.create(group, req.imageUrl440x240(), sortOrder);
+                entities.add(main);
+            }
+
+            // THUMB: 100x100
+            if (req.imageUrl100x100() != null && !req.imageUrl100x100().isBlank()) {
+                GroupImage thumb = GroupImage.create(group, req.imageUrl100x100(), sortOrder);
+                entities.add(thumb);
+            }
         }
 
-        // 응답 DTO로 변환
-        return images.stream()
-                .map(image -> {
-                    // 요청에서 매칭되는 썸네일 URL 찾아오기
-                    CreateGroupImageRequest matched = sorted.stream()
-                            .filter(req -> Objects.equals(
-                                    req.imageUrl440x240(),
-                                    image.getImageUrl()
-                            ))
+        if (!entities.isEmpty()) {
+            groupImageRepository.saveAll(entities);
+        }
+
+        // sortOrder 기준으로 묶어서 "논리적인 한 장" 단위로 응답 DTO 생성
+        Map<Integer, List<GroupImage>> byOrder = entities.stream()
+                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
+
+        return byOrder.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())  // sortOrder 오름차순
+                .map(entry -> {
+                    int sortOrder = entry.getKey();
+                    List<GroupImage> list = entry.getValue();
+
+                    // 440x240 행
+                    GroupImage main = list.stream()
+                            .filter(img -> img.getImageUrl().contains("440x240"))
+                            .findFirst()
+                            .orElse(list.getFirst()); // 혹시 패턴이 안 맞으면 첫 번째를 대표로
+
+                    // 100x100 행
+                    GroupImage thumb = list.stream()
+                            .filter(img -> img.getImageUrl().contains("100x100"))
                             .findFirst()
                             .orElse(null);
 
-                    String thumbUrl = matched != null ? matched.imageUrl100x100() : null;
-
                     return GroupImageItemResponse.from(
-                            image,
-                            image.getImageUrl(), // 440x240
-                            thumbUrl             // 100x100
+                            main,
+                            main.getImageUrl(),
+                            (thumb != null) ? thumb.getImageUrl() : null
                     );
                 })
                 .toList();
@@ -248,7 +267,8 @@ public class GroupService {
     public GetGroupResponse cancelAttendGroup(Long groupId, Long memberId) {
         // 0. Group 조회 (soft delete 고려)
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // 1. member 조회
         User member = userRepository.findById(memberId)
@@ -256,7 +276,8 @@ public class GroupService {
 
         // 2. GroupUser 찾기
         GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, memberId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId,
+                        memberId));
 
         // 3. HOST는 나갈 수 없음
         if (groupUser.getGroupRole() == GroupRole.HOST) {
@@ -275,38 +296,132 @@ public class GroupService {
         return buildGetGroupResponse(group, memberId);
     }
 
+    @Transactional(readOnly = true)
+    public GetGroupListResponse getGroupList(String keyword, Long cursor, int size) {
 
-    private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
-        // 이미지 URL (sortOrder 기준 정렬)
-        var imageUrls = group.getImages().stream()
-                .sorted(Comparator.comparing(GroupImage::getSortOrder))
-                .map(GroupImage::getImageUrl)
+        // 1. size 기본 방어 로직 (1 ~ 50 사이로 제한)
+        int pageSize = Math.max(1, Math.min(size, 50));
+
+        // 2. keyword가 비었으면 null로 통일해서 쿼리 단에서 처리
+        String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
+
+        // 3. limit = pageSize + 1: 다음 페이지 여부 판단용
+        List<Group> groups = groupRepository.findGroupsWithKeywordAndCursor(
+                normalizedKeyword,
+                cursor,
+                pageSize + 1
+        );
+
+        Long nextCursor = null;
+        if (groups.size() > pageSize) {
+            Group lastExtra = groups.remove(pageSize); // size+1 중 마지막 하나 제거
+            nextCursor = lastExtra.getId();           // 그 id를 다음 커서로 사용
+        }
+
+        List<GroupListItemResponse> items = groups.stream()
+                .map(this::toGroupListItemResponse)
                 .toList();
 
-        // 태그 이름
-        var tagNames = group.getGroupTags().stream()
+        return GetGroupListResponse.of(items, nextCursor);
+    }
+
+    private GroupListItemResponse toGroupListItemResponse(Group group) {
+        // sortOrder 기준으로 묶어서 대표(440x240)만 선택
+        Map<Integer, List<GroupImage>> byOrder = group.getImages().stream()
+                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
+
+        List<String> imageUrls = byOrder.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .limit(3) // 논리적인 3장까지만
+                .map(entry -> {
+                    List<GroupImage> list = entry.getValue();
+                    return list.stream()
+                            .filter(img -> img.getImageUrl().contains("440x240"))
+                            .findFirst()
+                            .orElse(list.get(0))
+                            .getImageUrl();
+                })
+                .toList();
+
+        List<String> tagNames = group.getGroupTags().stream()
                 .map(GroupTag::getTag)
                 .map(Tag::getName)
                 .toList();
 
-        // 현재 참여 인원 수 (status == ATTEND 인 인원만)
         int participantCount = (int) group.getUsers().stream()
                 .filter(gu -> gu.getStatus() == ATTEND)
                 .count();
 
-        // 만든 사람 정보
         CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
 
-        // 현재 요청 유저의 참여 상태
-        UserStatusResponse userStatus = group.getUsers().stream()
-                .filter(gu -> gu.getUser().getId().equals(currentUserId))
-                .filter(gu -> gu.getStatus() == ATTEND)
-                .findFirst()
-                .map(gu -> UserStatusResponse.fromJoined(gu.getJoinedAt()))
-                .orElse(UserStatusResponse.notJoined());
+        return GroupListItemResponse.of(
+                group,
+                imageUrls,
+                tagNames,
+                participantCount,
+                createdBy
+        );
+    }
 
-        // 참여 중인 멤버 리스트 (status == ATTEND)
-        var joinedMembers = group.getUsers().stream()
+
+    private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
+        // 1) 이미지: sortOrder 기준으로 묶어서 440 + 100 세트 만들기
+        Map<Integer, List<GroupImage>> byOrder = group.getImages().stream()
+                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
+
+        List<GroupImageItemResponse> images = byOrder.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()) // sortOrder 기준
+                .map(entry -> {
+                    int sortOrder = entry.getKey();
+                    List<GroupImage> list = entry.getValue();
+
+                    GroupImage main = list.stream()
+                            .filter(img -> img.getImageUrl().contains("440x240"))
+                            .findFirst()
+                            .orElse(list.getFirst());
+
+                    GroupImage thumb = list.stream()
+                            .filter(img -> img.getImageUrl().contains("100x100"))
+                            .findFirst()
+                            .orElse(null);
+
+                    return GroupImageItemResponse.from(
+                            main,
+                            main.getImageUrl(),
+                            (thumb != null) ? thumb.getImageUrl() : null
+                    );
+                })
+                .toList();
+
+        // 2) 태그 이름
+        List<String> tagNames = group.getGroupTags().stream()
+                .map(GroupTag::getTag)
+                .map(Tag::getName)
+                .toList();
+
+        // 3) 현재 참여 인원 수 (status == ATTEND 인 인원만)
+        int participantCount = (int) group.getUsers().stream()
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .count();
+
+        // 4) 만든 사람 정보
+        CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
+
+        // 5) 현재 요청 유저의 참여 상태 (currentUserId가 null일 수도 있음)
+        UserStatusResponse userStatus;
+        if (currentUserId == null) {
+            userStatus = UserStatusResponse.notJoined();
+        } else {
+            userStatus = group.getUsers().stream()
+                    .filter(gu -> gu.getUser().getId().equals(currentUserId))
+                    .filter(gu -> gu.getStatus() == ATTEND)
+                    .findFirst()
+                    .map(gu -> UserStatusResponse.fromJoined(gu.getJoinedAt()))
+                    .orElse(UserStatusResponse.notJoined());
+        }
+
+        // 6) 참여 중인 멤버 리스트 (status == ATTEND)
+        List<JoinedMemberResponse> joinedMembers = group.getUsers().stream()
                 .filter(gu -> gu.getStatus() == ATTEND)
                 .sorted(Comparator.comparing(GroupUser::getJoinedAt))
                 .map(JoinedMemberResponse::from)
@@ -314,7 +429,7 @@ public class GroupService {
 
         return GetGroupResponse.of(
                 group,
-                imageUrls,
+                images,
                 tagNames,
                 participantCount,
                 createdBy,
@@ -322,4 +437,38 @@ public class GroupService {
                 joinedMembers
         );
     }
+
+    private String resolveThumbnailUrl(String mainUrl) {
+        if (mainUrl == null || mainUrl.isBlank()) {
+            return null;
+        }
+
+        if (mainUrl.contains("440x240")) {
+            return mainUrl.replace("440x240", "100x100");
+        }
+
+        return mainUrl;
+    }
+
+    @Transactional(readOnly = true)
+    public GetGroupResponse getGroup(Long groupId, Long currentUserId) {
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        return buildGetGroupResponse(group, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public GetGroupResponse getGroup(Long groupId) {
+        // 익명 / 비로그인 / userId 모르는 경우
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // currentUserId = null로 넘기면 userStatus.notJoined()
+        return buildGetGroupResponse(group, null);
+    }
+
+
 }

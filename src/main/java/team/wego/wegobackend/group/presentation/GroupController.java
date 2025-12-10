@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.response.GetGroupListResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
 import team.wego.wegobackend.group.application.service.GroupService;
 
@@ -39,7 +41,6 @@ public class GroupController {
                         response));
     }
 
-    // 모임 참여
     @PostMapping("/{groupId}/attend")
     public ResponseEntity<ApiResponse<GetGroupResponse>> attendGroup(
             @PathVariable Long groupId,
@@ -54,7 +55,6 @@ public class GroupController {
     }
 
 
-    // 모임 참여 취소
     @PostMapping("/{groupId}/cancel")
     public ResponseEntity<ApiResponse<GetGroupResponse>> cancelAttendGroup(
             @PathVariable Long groupId,
@@ -68,16 +68,32 @@ public class GroupController {
     }
 
     // 모임 상세 조회
-    @PostMapping("/{groupId}")
+    @GetMapping("/{groupId}")
     public ResponseEntity<ApiResponse<GetGroupResponse>> getGroupResponse(
-            @PathVariable Long groupId
+            @PathVariable Long groupId,
+            @RequestParam(required = false) Long userId // TODO: 나중에 인증에서 꺼내기
     ) {
-//        GetGroupResponse response = groupService.getGroup(groupId);
+        GetGroupResponse response = (userId == null)
+                ? groupService.getGroup(groupId)
+                : groupService.getGroup(groupId, userId);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    // 모임 목록 조회(무한스크롤, 커서 기반)
+    @GetMapping
+    public ResponseEntity<ApiResponse<GetGroupListResponse>> getGroupList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam int size
+    ) {
+        GetGroupListResponse response = groupService.getGroupList(keyword, cursor, size);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
 
     // 모임 수정
 

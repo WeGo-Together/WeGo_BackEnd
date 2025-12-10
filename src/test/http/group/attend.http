@@ -12,19 +12,33 @@ Content-Type: application/json
 > {%
   // 응답 구조에 따라 수정 필요
   // 예: { "userId": 1, ... } 라면 아래처럼 유지
-  client.global.set("userId", response.body.userId);
+  client.global.set("userId", response.body.data.userId);
+%}
+
+### 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.accessToken);
 %}
 
 ### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v1/groups/images/upload?userId={{userId}}
 Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
 
---boundary--
+--boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
 < ../image/resources/img1.png
---boundary--
+--boundary
 Content-Disposition: form-data; name="images"; filename="img2.jpg"
 Content-Type: image/jpeg
 
@@ -44,6 +58,8 @@ Content-Type: image/jpeg
 ### 1-2. 모임 생성 (png/jpg 업로드 결과 URL로 생성)
 POST http://localhost:8080/api/v1/groups/create?userId={{userId}}
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
 
 {
   "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
