@@ -50,12 +50,8 @@ public class UserService {
             user.updateNickName(request.getNickName());
         }
 
-        if (request.getNotificationEnabled() != null) {
-            user.updateNotificationEnabled(request.getNotificationEnabled());
-        }
-
         if (request.getMbti() != null) {
-            user.updateMbti(request.getMbti());
+            user.updateMbti(request.getMbti().name());
         }
 
         if (request.getProfileMessage() != null) {
