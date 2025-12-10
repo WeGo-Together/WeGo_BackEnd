@@ -551,7 +551,7 @@ public class GroupService {
         // 2. HOST 권한 체크
         if (!group.getHost().getId().equals(userId)) {
             throw new GroupException(
-                    GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP, // 삭제도 동일 코드 재사용
+                    GroupErrorCode.NO_PERMISSION_TO_DELETE_GROUP,
                     groupId,
                     userId
             );

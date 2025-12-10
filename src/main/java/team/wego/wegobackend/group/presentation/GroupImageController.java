@@ -1,6 +1,7 @@
 package team.wego.wegobackend.group.presentation;
 
 
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,7 +44,7 @@ public class GroupImageController {
     public ResponseEntity<ApiResponse<List<GroupImageItemResponse>>> updateGroupImages(
             @RequestParam Long userId,  // TODO: 나중에 인증 정보에서 꺼내기
             @PathVariable Long groupId,
-            @RequestBody List<UpdateGroupImageItemRequest> images
+            @RequestBody @Valid List<UpdateGroupImageItemRequest> images
     ) {
         List<GroupImageItemResponse> response =
                 groupImageService.updateGroupImages(userId, groupId, images);

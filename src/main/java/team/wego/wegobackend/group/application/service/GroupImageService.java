@@ -167,17 +167,17 @@ public class GroupImageService {
             throw new GroupException(GroupErrorCode.IMAGE_UPLOAD_EXCEED, safeList.size());
         }
 
-        // 4. 기존 이미지 URL 수집 -> S3 삭제
+        // 4. 기존 GroupImage 엔티티들을 관계에서 제거: DB에서도 삭제됨
+        group.getImages().clear();
+        groupImageRepository.flush();  // DB 즉시 삭제하기 위해 추가
+
+        // 5. 기존 이미지 URL 수집 -> S3 삭제
         List<String> oldUrls = group.getImages().stream()
                 .map(GroupImage::getImageUrl)
                 .filter(Objects::nonNull)
                 .toList();
 
         imageUploadService.deleteAllByUrls(oldUrls);
-
-        // 5. 기존 GroupImage 엔티티들을 관계에서 제거: DB에서도 삭제됨
-        group.getImages().clear();
-        groupImageRepository.flush();  // DB 즉시 삭제하기 위해 추가
 
         // 6. 새 GroupImage 엔티티 생성
         List<GroupImage> newEntities = new ArrayList<>();
@@ -249,14 +249,14 @@ public class GroupImageService {
         }
 
         // 3. 기존 URL들 수집 후 S3 삭제
+        group.getImages().clear();
+        groupImageRepository.flush(); // DB 즉시 삭제하기 위해 추가
+
         List<String> oldUrls = group.getImages().stream()
                 .map(GroupImage::getImageUrl)
                 .filter(Objects::nonNull)
                 .toList();
 
         imageUploadService.deleteAllByUrls(oldUrls);
-
-        group.getImages().clear();
-        groupImageRepository.flush(); // DB 즉시 삭제하기 위해 추가
     }
 }

@@ -5,6 +5,7 @@ public record UpdateGroupImageItemRequest(
         String imageUrl440x240,
         String imageUrl100x100
 ) {
+
 }
 
 

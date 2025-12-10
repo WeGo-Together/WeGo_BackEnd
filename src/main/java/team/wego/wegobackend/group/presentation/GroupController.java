@@ -120,7 +120,7 @@ public class GroupController {
 
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
-                .body(ApiResponse.success(HttpStatus.OK.value(), null));
+                .body(ApiResponse.success(HttpStatus.NO_CONTENT.value(), null));
     }
 
     // 나의 모임 목록 조회
