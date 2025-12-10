@@ -64,8 +64,8 @@ public class UserController {
         UserInfoResponse response = userService.updateProfileImage(userDetails.getId(), file);
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(201, response));
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
     }
 
     @PatchMapping("/profile")
@@ -77,8 +77,8 @@ public class UserController {
         UserInfoResponse response = userService.updateProfileInfo(userDetails.getId(), request);
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(201, response));
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
     }
 
     @PatchMapping("/notification")
@@ -91,8 +91,8 @@ public class UserController {
             isNotificationEnabled);
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(201, response));
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
     }
 
 }
