@@ -3,14 +3,14 @@ POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
 {
-  "email": "test@example.com",
+  "email": "testj@example.com",
   "password": "Test1234!@#",
-  "nickName": "Beemo",
+  "nickName": "Qeemo",
   "phoneNumber": "010-1234-5678"
 }
 
 > {%
-  client.global.set("userId", response.body.data.userId);
+  client.global.set("hostUserId", response.body.data.userId);
 %}
 
 ### 0-2. 로그인(HOST)
@@ -23,14 +23,41 @@ Content-Type: application/json
 }
 
 > {%
-  client.global.set("accessToken", response.body.data.accessToken);
+  client.global.set("hostAccessToken", response.body.data.accessToken);
 %}
 
+### 0-3. 회원가입(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
 
-### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Heemo",
+  "phoneNumber": "010-1234-5678"
+}
+
+> {%
+  client.global.set("member1UserId", response.body.data.userId);
+%}
+
+### 0-4. 로그인(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member1AccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 이미지 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
@@ -54,24 +81,23 @@ Content-Type: image/jpeg
   client.global.set("img1_thumb", images[1].imageUrl100x100);
 %}
 
-
-### 1-2. 모임 생성 (업로드된 URL로 생성)
-POST http://localhost:8080/api/v1/groups/create?userId={{userId}}
+### 1-2. HOST가 "현재 모임" 생성 (endTime 미래 → current)
+POST http://localhost:8080/api/v1/groups/create
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 {
-  "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
+  "title": "강남 자바 스터디 - CURRENT",
   "location": "서울 강남구",
   "locationDetail": "강남역 2번 출구 근처 카페",
-  "startTime": "2025-12-11T19:00:00",
-  "endTime": "2025-12-15T21:00:00",
+  "startTime": "2025-12-20T19:00:00",
+  "endTime": "2025-12-20T21:00:00",
   "tags": [
     "자바",
     "백엔드",
     "스터디"
   ],
-  "description": "PNG/JPG 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "description": "내 모임 목록(current) 테스트용 모임입니다.",
   "maxParticipants": 12,
   "images": [
     {
@@ -88,51 +114,14 @@ Authorization: Bearer {{accessToken}}
 }
 
 > {%
-  client.global.set("groupId_png_jpg", response.body.data.id);
+  const groupIdCurrent = response.body.data.id;
+  client.global.set("groupId_current", groupIdCurrent);
 %}
 
-
-### 1-3. 회원가입(MEMBER 1)
-POST http://localhost:8080/api/v1/auth/signup
-Content-Type: application/json
-
-{
-  "email": "test1@example.com",
-  "password": "Test1234!@#",
-  "nickName": "Heemo",
-  "phoneNumber": "010-1234-5678"
-}
-
-> {%
-  client.global.set("memberId1", response.body.data.userId);
-%}
-
-
-### 1-4. 로그인(MEMBER 1)
-POST http://localhost:8080/api/v1/auth/login
-Content-Type: application/json
-
-{
-  "email": "test1@example.com",
-  "password": "Test1234!@#"
-}
-
-> {%
-  client.global.set("accessTokenMember1", response.body.data.accessToken);
-%}
-
-
-### 1-5. 모임 참여 (MEMBER 1)
-POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend?userId={{memberId1}}
-Content-Type: application/json
-Authorization: Bearer {{accessTokenMember1}}
-
-
-
-### 2-1. 모임 이미지 수정용 새 이미지 업로드 (예: 1장만)
+### 2-1. (재사용 가능) 모임 이미지 업로드 – 여기서는 간단히 1장만
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img3.jpeg"
@@ -142,146 +131,171 @@ Content-Type: image/jpeg
 --boundary--
 
 > {%
-  const images2 = response.body.data.images;
+  const imagesPast = response.body.data.images;
 
-  // 이번에는 1장만 업로드했다고 가정
-  client.global.set("new_img0_main",  images2[0].imageUrl440x240);
-  client.global.set("new_img0_thumb", images2[0].imageUrl100x100);
+  client.global.set("past_img0_main",  imagesPast[0].imageUrl440x240);
+  client.global.set("past_img0_thumb", imagesPast[0].imageUrl100x100);
 %}
 
-
-### 2-2. 모임 이미지 수정 (기존 2장 → 새 이미지 1장으로 교체)
-PATCH http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}?userId={{userId}}
+### 2-2. 예외발생: HOST가 "과거 모임" 생성 (endTime 과거 → past)
+POST http://localhost:8080/api/v1/groups/create
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-
-[
-  {
-    "sortOrder": 0,
-    "imageUrl440x240": "{{new_img0_main}}",
-    "imageUrl100x100": "{{new_img0_thumb}}"
-  }
-]
-
-
-### 3-1. 모임 이미지 전체 삭제
-DELETE http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}?userId={{userId}}
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 {
+  "title": "강남 자바 스터디 - PAST",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-01-10T19:00:00",
+  "endTime": "2026-01-10T21:00:00",
+  "tags": [
+    "자바",
+    "과거모임"
+  ],
+  "description": "내 모임 목록(past) 테스트용 모임입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{past_img0_main}}",
+      "imageUrl100x100": "{{past_img0_thumb}}"
+    }
+  ]
 }
 
-### 4-1. 내 모임 목록 조회 - HOST 기준 (현재 참여 중인 모임: current)
-GET http://localhost:8080/api/v1/groups/me?userId={{userId}}&type=current&size=20
+> {%
+  const groupIdPast = response.body.data.id;
+  client.global.set("groupId_past", groupIdPast);
+%}
+
+### 3-1. MEMBER1이 CURRENT 모임 참여
+POST http://localhost:8080/api/v1/groups/{{groupId_current}}/attend
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{member1AccessToken}}
 
+{}
+
+### 3-2. 예외발생: MEMBER1이 PAST 모임 참여
+POST http://localhost:8080/api/v1/groups/{{groupId_past}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 4-1. HOST 기준 - 현재 참여 중인 모임 (type=current, 첫 페이지)
+GET http://localhost:8080/api/v1/groups/me?type=current&size=5
+Authorization: Bearer {{hostAccessToken}}
 
 > {%
-  const currentHostItems = response.body.data.items;
+  const data = response.body.data;
+  console.log("[HOST] current page1:", data.items);
 
-  if (currentHostItems && currentHostItems.length > 0) {
-    const last = currentHostItems[currentHostItems.length - 1];
-    client.global.set("myGroupsCurrentCursor_host", last.id);
+  const nextCursor = data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("me_host_current_cursor1", nextCursor);
   }
 %}
 
-
-### 4-2. 내 모임 목록 조회 - HOST 기준 (current, 2페이지 예시)
-GET http://localhost:8080/api/v1/groups/me
-    ?userId={{userId}}
-    &type=current
-    &cursor={{myGroupsCurrentCursor_host}}
-    &size=20
-Authorization: Bearer {{accessToken}}
-
-
-
-### 4-3. 내 모임 목록 조회 - HOST 기준 (내가 만든 모임: myPost)
-GET http://localhost:8080/api/v1/groups/me?userId={{userId}}&type=myPost&size=20
-Authorization: Bearer {{accessToken}}
+### 4-2. HOST 기준 - 현재 참여 중인 모임 (type=current, 2페이지 예시)
+GET http://localhost:8080/api/v1/groups/me?type=current&size=5&cursor={{me_host_current_cursor1}}
+Authorization: Bearer {{hostAccessToken}}
 
 > {%
-  const myPostHostItems = response.body.data.items;
-
-  if (myPostHostItems && myPostHostItems.length > 0) {
-    const last = myPostHostItems[myPostHostItems.length - 1];
-    client.global.set("myPostCursor_host", last.id);
-  }
+  const data = response.body.data;
+  console.log("[HOST] current page2:", data.items);
 %}
 
 
-### 4-4. 내 모임 목록 조회 - HOST 기준 (myPost, 2페이지 예시)
-GET http://localhost:8080/api/v1/groups/me
-    ?userId={{userId}}
-    &type=myPost
-    &cursor={{myPostCursor_host}}
-    &size=20
-Authorization: Bearer {{accessToken}}
-
-
-
-### 5-1. 내 모임 목록 조회 - MEMBER 1 기준 (현재 참여 중인 모임: current)
-GET http://localhost:8080/api/v1/groups/me?userId={{memberId1}}&type=current&size=20
-Authorization: Bearer {{accessTokenMember1}}
+### 4-3. HOST 기준 - 내가 만든 모임 (type=myPost, 첫 페이지)
+GET http://localhost:8080/api/v1/groups/me?type=myPost&size=10
+Authorization: Bearer {{hostAccessToken}}
 
 > {%
-  const currentMemberItems = response.body.data.items;
+  const data = response.body.data;
+  console.log("[HOST] myPost page1:", data.items);
 
-  if (currentMemberItems && currentMemberItems.length > 0) {
-    const last = currentMemberItems[currentMemberItems.length - 1];
-    client.global.set("myGroupsCurrentCursor_member1", last.id);
+  const nextCursor = data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("me_host_myPost_cursor1", nextCursor);
   }
 %}
 
-
-### 5-2. 내 모임 목록 조회 - MEMBER 1 기준 (current, 2페이지 예시)
-GET http://localhost:8080/api/v1/groups/me
-    ?userId={{memberId1}}
-    &type=current
-    &cursor={{myGroupsCurrentCursor_member1}}
-    &size=20
-Authorization: Bearer {{accessTokenMember1}}
-
-
-
-### 5-3. 내 모임 목록 조회 - MEMBER 1 기준 (과거 참여 모임: past)
-# 참고: endTime < now 인 모임이 없으면 빈 배열이 나올 수 있음
-GET http://localhost:8080/api/v1/groups/me?userId={{memberId1}}&type=past&size=20
-Authorization: Bearer {{accessTokenMember1}}
+### 4-4. HOST 기준 - 내가 만든 모임 (type=myPost, 2페이지 예시)
+GET http://localhost:8080/api/v1/groups/me?type=myPost&size=10&cursor={{me_host_myPost_cursor1}}
+Authorization: Bearer {{hostAccessToken}}
 
 > {%
-  const pastMemberItems = response.body.data.items;
-
-  if (pastMemberItems && pastMemberItems.length > 0) {
-    const last = pastMemberItems[pastMemberItems.length - 1];
-    client.global.set("myGroupsPastCursor_member1", last.id);
-  }
+  const data = response.body.data;
+  console.log("[HOST] myPost page2:", data.items);
 %}
 
 
-### 5-4. 내 모임 목록 조회 - MEMBER 1 기준 (past, 2페이지 예시)
-GET http://localhost:8080/api/v1/groups/me
-    ?userId={{memberId1}}
-    &type=past
-    &cursor={{myGroupsPastCursor_member1}}
-    &size=20
-Authorization: Bearer {{accessTokenMember1}}
+### 4-5. HOST 기준 - 과거에 참여했던 모임 (type=past, 첫 페이지)
+GET http://localhost:8080/api/v1/groups/me?type=past&size=10
+Authorization: Bearer {{hostAccessToken}}
+
+> {%
+  const data = response.body.data;
+  console.log("[HOST] past page1:", data.items);
+
+  const nextCursor = data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("me_host_past_cursor1", nextCursor);
+  }
+%}
+
+### 4-6. 예외발생: HOST 기준 - 과거에 참여했던 모임 (type=past, 2페이지 예시)
+GET http://localhost:8080/api/v1/groups/me?type=past&size=10&cursor={{me_host_past_cursor1}}
+Authorization: Bearer {{hostAccessToken}}
+
+> {%
+  const data = response.body.data;
+  console.log("[HOST] past page2:", data.items);
+%}
+
+### 5-1. MEMBER1 기준 - 현재 참여 중인 모임 (type=current, 첫 페이지)
+GET http://localhost:8080/api/v1/groups/me?type=current&size=10
+Authorization: Bearer {{member1AccessToken}}
+
+> {%
+  const data = response.body.data;
+  console.log("[MEMBER1] current page1:", data.items);
+
+  const nextCursor = data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("me_member1_current_cursor1", nextCursor);
+  }
+%}
+
+### 5-2. 예외발생: MEMBER1 기준 - 현재 참여 중인 모임 (type=current, 2페이지 예시)
+GET http://localhost:8080/api/v1/groups/me?type=current&size=10&cursor={{me_member1_current_cursor1}}
+Authorization: Bearer {{member1AccessToken}}
+
+> {%
+  const data = response.body.data;
+  console.log("[MEMBER1] current page2:", data.items);
+%}
 
 
+### 5-3. MEMBER1 기준 - 과거 참여 모임 (type=past, 첫 페이지)
+GET http://localhost:8080/api/v1/groups/me?type=past&size=10
+Authorization: Bearer {{member1AccessToken}}
 
-### 6-1. 모임 삭제 (HOST가 자신이 만든 모임 삭제)
-DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}?userId={{userId}}
-Authorization: Bearer {{accessToken}}
+> {%
+  const data = response.body.data;
+  console.log("[MEMBER1] past page1:", data.items);
 
+  const nextCursor = data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("me_member1_past_cursor1", nextCursor);
+  }
+%}
 
+### 5-4. 예외발생:  MEMBER1 기준 - 과거 참여 모임 (type=past, 2페이지 예시)
+GET http://localhost:8080/api/v1/groups/me?type=past&size=10&cursor={{me_member1_past_cursor1}}
+Authorization: Bearer {{member1AccessToken}}
 
-### 6-2. 모임 삭제 후 - HOST 기준 내 모임 목록(current) 재조회 (비어있는지 확인용)
-GET http://localhost:8080/api/v1/groups/me?userId={{userId}}&type=current&size=20
-Authorization: Bearer {{accessToken}}
-
-
-
-### 6-3. 모임 삭제 후 - MEMBER 1 기준 내 모임 목록(current) 재조회 (비어있는지 확인용)
-GET http://localhost:8080/api/v1/groups/me?userId={{memberId1}}&type=current&size=20
-Authorization: Bearer {{accessTokenMember1}}
+> {%
+  const data = response.body.data;
+  console.log("[MEMBER1] past page2:", data.items);
+%}
