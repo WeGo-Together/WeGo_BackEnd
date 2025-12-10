@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,12 +56,12 @@ public class UserController {
     }
 
     @PatchMapping("/profile-image")
-    public ResponseEntity<ApiResponse<?>> profileImage(
+    public ResponseEntity<ApiResponse<UserInfoResponse>> profileImage(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @RequestPart("file") MultipartFile file
     ) {
 
-        ImageFileResponse response = userService.updateProfileImage(userDetails.getId(), file);
+        UserInfoResponse response = userService.updateProfileImage(userDetails.getId(), file);
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -68,12 +69,26 @@ public class UserController {
     }
 
     @PatchMapping("/profile")
-    public ResponseEntity<ApiResponse<?>> profileInfo(
+    public ResponseEntity<ApiResponse<UserInfoResponse>> profileInfo(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestBody ProfileUpdateRequest request
     ) {
 
         UserInfoResponse response = userService.updateProfileInfo(userDetails.getId(), request);
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success(201, response));
+    }
+
+    @PatchMapping("/notification")
+    public ResponseEntity<ApiResponse<UserInfoResponse>> changeNotificationConfig(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @RequestParam(required = true) Boolean isNotificationEnabled
+    ) {
+
+        UserInfoResponse response = userService.updateNotificationEnabled(userDetails.getId(),
+            isNotificationEnabled);
 
         return ResponseEntity
             .status(HttpStatus.CREATED)

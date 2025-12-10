@@ -31,7 +31,7 @@ public class UserService {
         return UserInfoResponse.from(user);
     }
 
-    public ImageFileResponse updateProfileImage(Long userId, MultipartFile file) {
+    public UserInfoResponse updateProfileImage(Long userId, MultipartFile file) {
 
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
@@ -39,7 +39,7 @@ public class UserService {
 
         user.updateProfileImage(image.url());
 
-        return ImageFileResponse.from(image);
+        return UserInfoResponse.from(user);
     }
 
     public UserInfoResponse updateProfileInfo(Long userId, ProfileUpdateRequest request) {
@@ -57,6 +57,15 @@ public class UserService {
         if (request.getProfileMessage() != null) {
             user.updateProfileMessage(request.getProfileMessage());
         }
+
+        return UserInfoResponse.from(user);
+    }
+
+    public UserInfoResponse updateNotificationEnabled(Long userId, Boolean isNotificationEnabled) {
+
+        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+
+        user.updateNotificationEnabled(isNotificationEnabled);
 
         return UserInfoResponse.from(user);
     }

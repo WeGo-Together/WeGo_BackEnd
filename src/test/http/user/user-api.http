@@ -44,7 +44,10 @@ Content-Type: application/json
 
 {
   "nickName": "예은",
-  "notificationEnabled": false,
   "mbti": "ISTP",
   "profileMessage": "앙냥냥"
 }
+
+### 알림 설정 변경
+PATCH http://localhost:8080/api/v1/users/notification?isNotificationEnabled=true
+Authorization: Bearer {{accessToken}}
