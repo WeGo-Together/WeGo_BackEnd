@@ -10,12 +10,11 @@ Content-Type: application/json
 }
 
 > {%
-  // 응답 구조에 따라 수정 필요
-  // 예: { "userId": 1, ... } 라면 아래처럼 유지
+  // 예: { "success": true, "data": { "userId": 1, ... } }
   client.global.set("userId", response.body.data.userId);
 %}
 
-### 로그인
+### 로그인(HOST)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -60,12 +59,12 @@ POST http://localhost:8080/api/v1/groups/create?userId={{userId}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
-
 {
   "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
   "location": "서울 강남구",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2025-12-10T19:00:00",
+  "endTime": "2025-12-10T21:00:00",
   "tags": [
     "자바",
     "백엔드",
@@ -88,7 +87,7 @@ Authorization: Bearer {{accessToken}}
 }
 
 > {%
-  // 그룹 ID 저장 (응답 구조에 맞게 조정)
+  // 예: { "success": true, "data": { "id": 201, ... } }
   client.global.set("groupId_png_jpg", response.body.data.id);
 %}
 
@@ -104,8 +103,6 @@ Content-Type: application/json
 }
 
 > {%
-  // 응답 구조에 따라 수정 필요
-  // 예: { "userId": 1, ... } 라면 아래처럼 유지
   client.global.set("memberId1", response.body.data.userId);
 %}
 
@@ -123,14 +120,11 @@ Content-Type: application/json
 %}
 
 ### 모임 참여 (MEMBER 1)
-POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend
-    ?userId=2
+POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend?userId={{memberId1}}
 Content-Type: application/json
 Authorization: Bearer {{accessTokenByMember1}}
 
-{
-
-}
+{}
 
 ### 회원가입(MEMBER 2)
 POST http://localhost:8080/api/v1/auth/signup
@@ -144,9 +138,7 @@ Content-Type: application/json
 }
 
 > {%
-  // 응답 구조에 따라 수정 필요
-  // 예: { "userId": 1, ... } 라면 아래처럼 유지
-  client.global.set("memberId1", response.body.data.userId);
+  client.global.set("memberId2", response.body.data.userId);
 %}
 
 ### 로그인 (MEMBER 2)
@@ -154,7 +146,7 @@ POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "test1@example.com",
+  "email": "test2@example.com",
   "password": "Test1234!@#"
 }
 
@@ -163,21 +155,15 @@ Content-Type: application/json
 %}
 
 ### 모임 참여 (MEMBER 2)
-POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend
-    ?userId=3
+POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend?userId={{memberId2}}
 Content-Type: application/json
 Authorization: Bearer {{accessTokenByMember2}}
 
-{
+{}
 
-}
-
-### 모임 취소 (MEMBER 1)
-POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/cancel
-    ?userId=2
+### 모임 참여 취소 (MEMBER 1)
+POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/cancel?userId={{memberId1}}
 Content-Type: application/json
 Authorization: Bearer {{accessTokenByMember1}}
 
-{
-
-}
+{}
