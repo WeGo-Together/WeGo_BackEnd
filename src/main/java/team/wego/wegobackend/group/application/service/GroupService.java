@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
+import team.wego.wegobackend.group.application.dto.request.UpdateGroupRequest;
 import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupListResponse;
 import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
@@ -33,6 +34,7 @@ import team.wego.wegobackend.group.domain.repository.GroupImageRepository;
 import team.wego.wegobackend.group.domain.repository.GroupRepository;
 import team.wego.wegobackend.group.domain.repository.GroupTagRepository;
 import team.wego.wegobackend.group.domain.repository.GroupUserRepository;
+import team.wego.wegobackend.image.application.service.ImageUploadService;
 import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.tag.domain.repository.TagRepository;
 import team.wego.wegobackend.user.domain.User;
@@ -49,6 +51,8 @@ public class GroupService {
     private final GroupImageRepository groupImageRepository;
     private final GroupTagRepository groupTagRepository;
     private final GroupUserRepository groupUserRepository;
+
+    private final ImageUploadService imageUploadService;
 
     private void validateCreateGroupRequest(CreateGroupRequest request) {
         if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
@@ -214,11 +218,8 @@ public class GroupService {
                             .findFirst()
                             .orElse(null);
 
-                    return GroupImageItemResponse.from(
-                            main,
-                            main.getImageUrl(),
-                            (thumb != null) ? thumb.getImageUrl() : null
-                    );
+                    return GroupImageItemResponse.from(main, thumb);
+
                 })
                 .toList();
     }
@@ -385,11 +386,7 @@ public class GroupService {
                             .findFirst()
                             .orElse(null);
 
-                    return GroupImageItemResponse.from(
-                            main,
-                            main.getImageUrl(),
-                            (thumb != null) ? thumb.getImageUrl() : null
-                    );
+                    return GroupImageItemResponse.from(main, thumb);
                 })
                 .toList();
 
@@ -471,4 +468,103 @@ public class GroupService {
     }
 
 
+    private void updateGroupTags(Group group, List<String> tagNames) {
+        if (tagNames == null) { // null이면 "태그는 건드리지 않는다"는 의미로 처리
+            return;
+        }
+        group.getGroupTags().clear();
+        saveGroupTags(group, tagNames);
+    }
+
+    private void validateUpdateGroupRequest(UpdateGroupRequest request, int currentAttendCount) {
+        // 모임 시간 검증: 둘 다 있을 때만 비교
+        if (request.startTime() != null
+                && request.endTime() != null
+                && !request.endTime().isAfter(request.startTime())) {
+            throw new GroupException(GroupErrorCode.INVALID_TIME_RANGE);
+        }
+
+        // 최소 인원 검증
+        if (request.maxParticipants() == null || request.maxParticipants() < 2) {
+            throw new GroupException(GroupErrorCode.INVALID_MAX_PARTICIPANTS);
+        }
+
+        // 현재 참여 인원보다 작게 줄일 수 없음
+        if (request.maxParticipants() < currentAttendCount) {
+            throw new GroupException(
+                    GroupErrorCode.INVALID_MAX_PARTICIPANTS_LESS_THAN_CURRENT,
+                    currentAttendCount
+            );
+        }
+    }
+
+    @Transactional
+    public GetGroupResponse updateGroup(Long userId, Long groupId, UpdateGroupRequest request) {
+        // 1. 모임 조회
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // 2. 권한 체크: HOST만 수정 가능
+        if (!group.getHost().getId().equals(userId)) {
+            throw new GroupException(
+                    GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP,
+                    groupId,
+                    userId
+            );
+        }
+
+        // 3. 현재 ATTEND 인원 수 (HOST 포함)
+        int currentAttendCount = (int) group.getUsers().stream()
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .count();
+
+        // 4. 요청 값 검증 (시간 / 최대 인원 / 현재 인원 대비)
+        validateUpdateGroupRequest(request, currentAttendCount);
+
+        // 5. 엔티티 필드 수정 (이미지는 건드리지 않음)
+        group.update(
+                request.title(),
+                request.location(),
+                request.locationDetail(),
+                request.startTime(),
+                request.endTime(),
+                request.description(),
+                request.maxParticipants()
+        );
+
+        // 6. 태그 수정
+        updateGroupTags(group, request.tags());
+
+        // 7. 수정 결과 응답 (현재 유저 기준)
+        return buildGetGroupResponse(group, userId);
+    }
+
+    @Transactional
+    public void deleteGroup(Long userId, Long groupId) {
+        // 1. 모임 조회 (soft delete 고려 쿼리 사용 중이지만, 여기서는 실제 삭제)
+        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId)
+                );
+
+        // 2. HOST 권한 체크
+        if (!group.getHost().getId().equals(userId)) {
+            throw new GroupException(
+                    GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP, // 삭제도 동일 코드 재사용
+                    groupId,
+                    userId
+            );
+        }
+
+        // 3. S3 이미지 삭제 (이미지 URL -> key 변환은 ImageUploadService 가 담당)
+        List<String> imageUrls = group.getImages().stream()
+                .map(GroupImage::getImageUrl)
+                .filter(Objects::nonNull)
+                .toList();
+
+        imageUploadService.deleteAllByUrls(imageUrls);
+
+        groupRepository.delete(group);
+    }
 }
