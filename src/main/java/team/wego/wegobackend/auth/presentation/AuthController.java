@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,7 @@ import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
 import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
 import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
 import team.wego.wegobackend.common.response.ApiResponse;
+import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
 
 @Slf4j
@@ -71,14 +74,8 @@ public class AuthController implements AuthControllerDocs {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
-        // Refresh Token 쿠키만 삭제
-        Cookie deleteCookie = new Cookie("refreshToken", null);
-        deleteCookie.setPath("/");
-        deleteCookie.setMaxAge(0);
-        deleteCookie.setHttpOnly(true);
-        deleteCookie.setSecure(true);
-        deleteCookie.setAttribute("SameSite", "Strict");
-        response.addCookie(deleteCookie);
+
+        deleteRefreshTokenCookie(response);
 
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
@@ -86,6 +83,22 @@ public class AuthController implements AuthControllerDocs {
                 204,
                 true
             ));
+    }
+
+    /**
+     * 회원탈퇴
+     * */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<ApiResponse<String>> withDraw(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        HttpServletResponse response
+    ) {
+
+        deleteRefreshTokenCookie(response);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, "회원탈퇴 성공"));
     }
 
     /**
@@ -120,6 +133,19 @@ public class AuthController implements AuthControllerDocs {
         cookie.setMaxAge((int) jwtTokenProvider.getRefreshTokenExpiration());
         cookie.setAttribute("SameSite", "Strict");
         return cookie;
+    }
+
+    /**
+     * Refresh Token HttpOnly 쿠키 제거
+     */
+    private void deleteRefreshTokenCookie(HttpServletResponse response) {
+        Cookie deleteCookie = new Cookie("refreshToken", null);
+        deleteCookie.setPath("/");
+        deleteCookie.setMaxAge(0);
+        deleteCookie.setHttpOnly(true);
+        deleteCookie.setSecure(true);
+        deleteCookie.setAttribute("SameSite", "Strict");
+        response.addCookie(deleteCookie);
     }
     //TODO : 개발 토큰 발급 엔드포인트 추가
 }

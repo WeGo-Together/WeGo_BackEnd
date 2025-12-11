@@ -113,7 +113,6 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(201, "팔로우 성공"));
     }
 
-    //TODO : 팔로우 삭제 API
     @DeleteMapping("/unfollow")
     public ResponseEntity<ApiResponse<String>> unFollow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -122,8 +121,8 @@ public class UserController implements UserControllerDocs {
         followService.unFollow(unFollowNickname, userDetails.getId());
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(201, "팔로우 취소 성공"));
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, "팔로우 취소 성공"));
     }
 
     //TODO : 팔로우 목록 조회 API

@@ -138,6 +138,10 @@ public class User extends BaseTimeEntity {
         this.notificationEnabled = flag;
     }
 
+    public void updatedeleted(Boolean flag) {
+        this.deleted = flag;
+    }
+
     public void updateMbti(String mbti) {
         this.mbti = mbti;
     }
