@@ -112,6 +112,7 @@ public class AuthService {
     /**
      * 회원탈퇴
      */
+    @Transactional
     public void withDraw(Long userId) {
 
         User user = userRepository.findById(userId)

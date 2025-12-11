@@ -94,6 +94,7 @@ public class AuthController implements AuthControllerDocs {
         HttpServletResponse response
     ) {
 
+        authService.withDraw(userDetails.getId());
         deleteRefreshTokenCookie(response);
 
         return ResponseEntity
