@@ -12,6 +12,7 @@ import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
 import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
 import team.wego.wegobackend.auth.exception.DeletedUserException;
 import team.wego.wegobackend.auth.exception.InvalidPasswordException;
+import team.wego.wegobackend.auth.exception.NicknameAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.UserAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.common.exception.AppErrorCode;
@@ -35,14 +36,16 @@ public class AuthService {
 
     /**
      * 회원가입
-     *
-     * @return
      */
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        // 이메일 중복 체크
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new UserAlreadyExistsException();
+        }
+
+        if (userRepository.existsByNickName(request.getNickName())) {
+            throw new NicknameAlreadyExistsException();
         }
 
         User user = User.builder().email(request.getEmail())
