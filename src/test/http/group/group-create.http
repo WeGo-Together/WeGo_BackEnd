@@ -328,6 +328,3 @@ Authorization: Bearer {{accessToken}}
   ]
 }
 
-> {%
-  client.global.set("groupId_webp", response.body.data.id);
-%}
