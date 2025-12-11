@@ -74,7 +74,7 @@ public class UserController implements UserControllerDocs{
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestBody ProfileUpdateRequest request
     ) {
-        log.info(String.valueOf(userDetails));
+
         UserInfoResponse response = userService.updateProfileInfo(userDetails.getId(), request);
 
         return ResponseEntity

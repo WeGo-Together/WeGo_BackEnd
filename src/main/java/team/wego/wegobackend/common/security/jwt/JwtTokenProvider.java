@@ -80,8 +80,8 @@ public class JwtTokenProvider {
         return getClaims(token).getSubject();
     }
 
-    public String getRoleFromToken(String token) {
-        return getClaims(token).get("role", String.class);
+    public Long getRoleFromToken(String token) {
+        return getClaims(token).get("role", Long.class);
     }
 
     public String getTokenType(String token) {

@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.common.response.ErrorResponse;
@@ -112,11 +113,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Public 엔드포인트인지 확인
+     * Public 엔드포인트 확인
      */
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getRequestURI();
         String method = request.getMethod();
+
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
 
         //TODO : PUBLIC_PATTERNS 관리 포인트 개선 필요 (메서드까지 관리 확장)
         if ("GET".equals(method) && pathMatcher.match("/api/v1/users/*", path)) {
