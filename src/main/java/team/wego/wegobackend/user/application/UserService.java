@@ -47,7 +47,7 @@ public class UserService {
 
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
-        if (request.getNickName() != null) {
+        if (request.getNickName() != null && !request.getNickName().equals(user.getNickName())) {
             boolean isExistNickname = userRepository.existsByNickName(request.getNickName());
             if (isExistNickname) {
                 throw new SameNicknameException();
