@@ -7,7 +7,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +21,6 @@ import team.wego.wegobackend.common.security.Role;
 @Entity
 @Table(name = "users")
 @Getter
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
 
@@ -66,6 +68,13 @@ public class User extends BaseTimeEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private Boolean deleted = false;
+
+    @OneToMany(mappedBy = "follower")
+    private List<Follow> followings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "followee")
+    private List<Follow> followers = new ArrayList<>();
+
 
     @Builder
     public User(String email, String password, String nickName, Role role) {

@@ -7,9 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.image.application.dto.ImageFileResponse;
+import team.wego.wegobackend.user.application.FollowService;
 import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
@@ -30,6 +33,7 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 public class UserController implements UserControllerDocs{
 
     private final UserService userService;
+    private final FollowService followService;
 
     @GetMapping("/test")
     public ResponseEntity<ApiResponse<String>> test(
@@ -96,4 +100,22 @@ public class UserController implements UserControllerDocs{
             .body(ApiResponse.success(200, response));
     }
 
+    @PostMapping("/follow/{userId}")
+    public ResponseEntity<ApiResponse<String>> follow(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @Valid @PathVariable("userId") Long userId
+    ) {
+
+        followService.follow(userDetails.getId(), userId);
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success(201, "팔로우 성공"));
+    }
+
+    //TODO : 팔로우 삭제 API
+
+    //TODO : 팔로우 목록 조회 API
+
+    //TODO : 팔로워 목록 조회 API
 }
