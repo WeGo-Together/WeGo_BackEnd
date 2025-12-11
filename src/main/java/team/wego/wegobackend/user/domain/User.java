@@ -51,17 +51,17 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_message", length = 500)
     private String profileMessage;
 
-    @Column(name = "followee_count")
-    private int followeesCnt;
+    @Column(name = "followee_count", columnDefinition = "int default 0")
+    private Integer followeesCnt;
 
-    @Column(name = "follower_count")
-    private int followersCnt;
+    @Column(name = "follower_count", columnDefinition = "int default 0")
+    private Integer followersCnt;
 
-    @Column(name = "group_joined_count")
-    private int groupJoinedCnt;
+    @Column(name = "group_joined_count", columnDefinition = "int default 0")
+    private Integer groupJoinedCnt;
 
-    @Column(name = "group_created_count")
-    private int groupCreatedCnt;
+    @Column(name = "group_created_count", columnDefinition = "int default 0")
+    private Integer groupCreatedCnt;
 
     @Column(name = "notification_enabled", nullable = false)
     private Boolean notificationEnabled = false;
