@@ -1,0 +1,79 @@
+### 0. 회원가입(HOST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo",
+  "phoneNumber": "010-1234-5678"
+}
+
+> {%
+  client.global.set("userId", response.body.data.userId);
+%}
+
+### 0.  HOST 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 첫 번째 페이지 (keyword 없음)
+GET http://localhost:8080/api/v1/groups?size=5
+Authorization: Bearer {{hostAccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("cursor_noKeyword_page1", nextCursor);
+  }
+%}
+
+### 1-2. 두 번째 페이지 (keyword 없음)
+GET http://localhost:8080/api/v1/groups?size=5&cursor={{cursor_noKeyword_page1}}
+Authorization: Bearer {{hostAccessToken}}
+
+> {%
+  const data = response.body.data;
+  const nextCursor = data.nextCursor;
+
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("cursor_noKeyword_page2", nextCursor);
+  }
+%}
+
+### 1-3. 세 번째 페이지 (keyword 없음)
+GET http://localhost:8080/api/v1/groups?size=5&cursor={{cursor_noKeyword_page2}}
+Authorization: Bearer {{hostAccessToken}}
+
+> {%
+  const data = response.body.data;
+  const nextCursor = data.nextCursor;
+
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("cursor_noKeyword_page3", nextCursor);
+  }
+%}
+
+### 2-1. 첫 페이지 (keyword = 스터디)
+GET http://localhost:8080/api/v1/groups?keyword=스터디&size=5
+Authorization: Bearer {{hostAccessToken}}
+
+{}
+
+
+### (선택) 로그인 안 한 상태에서 모임 상세 조회
+GET http://localhost:8080/api/v1/groups/1
+
+### 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
+GET http://localhost:8080/api/v1/groups/1
+Authorization: Bearer {{hostAccessToken}}

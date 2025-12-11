@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
 import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
 import team.wego.wegobackend.group.application.dto.request.UpdateGroupRequest;
@@ -118,14 +119,16 @@ public class GroupService {
     }
 
     @Transactional
-    public CreateGroupResponse createGroup(Long hostUserId, CreateGroupRequest request) {
+    public CreateGroupResponse createGroup(CustomUserDetails userDetails,
+            CreateGroupRequest request) {
         // 0. 기본 검증
         validateCreateGroupRequest(request);
 
         // 1. HOST 조회
-        User host = userRepository.findById(hostUserId)
+        User host = userRepository.findById(userDetails.getId())
                 .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, hostUserId));
+                        () -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND,
+                                userDetails.getId()));
 
         // 2. Group 생성 및 저장
         Group group = Group.create(
@@ -227,15 +230,16 @@ public class GroupService {
     }
 
     @Transactional
-    public GetGroupResponse attendGroup(Long groupId, Long memberId) {
+    public GetGroupResponse attendGroup(CustomUserDetails userDetails, Long groupId) {
         // 0. Group 조회 (삭제된 모임 제외)
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // 1. member 조회
-        User member = userRepository.findById(memberId)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, memberId));
+        User member = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND,
+                        userDetails.getId()));
 
         // 2. 이미 GroupUser row가 있는지 확인 (한 모임/유저당 한 row 가정)
         GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
@@ -243,7 +247,8 @@ public class GroupService {
 
         if (groupUser != null && groupUser.getStatus() == ATTEND) {
             // 이미 참여 중인 경우
-            throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId, memberId);
+            throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId,
+                    userDetails.getId());
         }
 
         // 3. 정원 체크 (ATTEND 상태인 인원 수 기준)
@@ -263,52 +268,50 @@ public class GroupService {
             // dirty checking 으로 업데이트
         }
 
-        return buildGetGroupResponse(group, memberId);
+        return buildGetGroupResponse(group, userDetails.getId());
     }
 
     @Transactional
-    public GetGroupResponse cancelAttendGroup(Long groupId, Long memberId) {
+    public GetGroupResponse cancelAttendGroup(CustomUserDetails userDetails, Long groupId) {
         // 0. Group 조회 (soft delete 고려)
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // 1. member 조회
-        User member = userRepository.findById(memberId)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, memberId));
+        User member = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND,
+                        userDetails.getId()));
 
         // 2. GroupUser 찾기
         GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
                 .orElseThrow(() -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId,
-                        memberId));
+                        userDetails.getId()));
 
         // 3. HOST는 나갈 수 없음
         if (groupUser.getGroupRole() == GroupRole.HOST) {
-            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId, memberId);
+            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId,
+                    userDetails.getId());
         }
 
         // 4. 이미 나간 상태면 예외
         if (groupUser.getStatus() == LEFT) {
-            throw new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, memberId);
+            throw new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, userDetails.getId());
         }
 
         // 5. 참여 취소 (leave)
         groupUser.leave();
 
         // 6. 최신 모임 상세 응답 반환
-        return buildGetGroupResponse(group, memberId);
+        return buildGetGroupResponse(group, userDetails.getId());
     }
 
     @Transactional(readOnly = true)
     public GetGroupListResponse getGroupList(String keyword, Long cursor, int size) {
 
-        // 1. size 기본 방어 로직 (1 ~ 50 사이로 제한)
         int pageSize = Math.max(1, Math.min(size, 50));
-
-        // 2. keyword가 비었으면 null로 통일해서 쿼리 단에서 처리
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
 
-        // 3. limit = pageSize + 1: 다음 페이지 여부 판단용
         List<Group> groups = groupRepository.findGroupsWithKeywordAndCursor(
                 normalizedKeyword,
                 cursor,
@@ -316,12 +319,16 @@ public class GroupService {
         );
 
         Long nextCursor = null;
+        List<Group> pageContent = groups;
+
         if (groups.size() > pageSize) {
-            Group lastExtra = groups.remove(pageSize); // size+1 중 마지막 하나 제거
-            nextCursor = lastExtra.getId();           // 그 id를 다음 커서로 사용
+            // 실제로 내려줄 마지막 아이템 기준으로 커서 설정
+            nextCursor = groups.get(pageSize - 1).getId();
+            // 응답은 pageSize 개까지만 잘라서 내려줌
+            pageContent = groups.subList(0, pageSize);
         }
 
-        List<GroupListItemResponse> items = groups.stream()
+        List<GroupListItemResponse> items = pageContent.stream()
                 .map(this::toGroupListItemResponse)
                 .toList();
 
@@ -450,12 +457,12 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    public GetGroupResponse getGroup(Long groupId, Long currentUserId) {
+    public GetGroupResponse getGroup(CustomUserDetails userDetails, Long groupId) {
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
-        return buildGetGroupResponse(group, currentUserId);
+        return buildGetGroupResponse(group, userDetails.getId());
     }
 
     @Transactional(readOnly = true)
@@ -501,18 +508,19 @@ public class GroupService {
     }
 
     @Transactional
-    public GetGroupResponse updateGroup(Long userId, Long groupId, UpdateGroupRequest request) {
+    public GetGroupResponse updateGroup(CustomUserDetails userDetails, Long groupId,
+            UpdateGroupRequest request) {
         // 1. 모임 조회
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // 2. 권한 체크: HOST만 수정 가능
-        if (!group.getHost().getId().equals(userId)) {
+        if (!group.getHost().getId().equals(userDetails.getId())) {
             throw new GroupException(
                     GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP,
                     groupId,
-                    userId
+                    userDetails.getId()
             );
         }
 
@@ -539,11 +547,11 @@ public class GroupService {
         updateGroupTags(group, request.tags());
 
         // 7. 수정 결과 응답 (현재 유저 기준)
-        return buildGetGroupResponse(group, userId);
+        return buildGetGroupResponse(group, userDetails.getId());
     }
 
     @Transactional
-    public void deleteGroup(Long userId, Long groupId) {
+    public void deleteGroup(CustomUserDetails userDetails, Long groupId) {
         // 1. 모임 조회 (soft delete 고려 쿼리 사용 중이지만, 여기서는 실제 삭제)
         Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
@@ -551,11 +559,11 @@ public class GroupService {
                 );
 
         // 2. HOST 권한 체크
-        if (!group.getHost().getId().equals(userId)) {
+        if (!group.getHost().getId().equals(userDetails.getId())) {
             throw new GroupException(
                     GroupErrorCode.NO_PERMISSION_TO_DELETE_GROUP,
                     groupId,
-                    userId
+                    userDetails.getId()
             );
         }
 
@@ -572,7 +580,7 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public GetGroupListResponse getMyGroups(
-            Long userId,
+            CustomUserDetails userDetails,
             String type,
             Long cursor,
             int size
@@ -582,9 +590,9 @@ public class GroupService {
         int pageSize = Math.max(1, Math.min(size, 50));
 
         return switch (myGroupType) {
-            case CURRENT -> getMyCurrentGroups(userId, cursor, pageSize);
-            case MY_POST -> getMyPostGroups(userId, cursor, pageSize);
-            case PAST -> getMyPastGroups(userId, cursor, pageSize);
+            case CURRENT -> getMyCurrentGroups(userDetails.getId(), cursor, pageSize);
+            case MY_POST -> getMyPostGroups(userDetails.getId(), cursor, pageSize);
+            case PAST -> getMyPastGroups(userDetails.getId(), cursor, pageSize);
         };
     }
 
@@ -603,12 +611,14 @@ public class GroupService {
         );
 
         Long nextCursor = null;
+        List<Group> pageContent = groups;
+
         if (groups.size() > size) {
-            Group lastExtra = groups.remove(size);
-            nextCursor = lastExtra.getId();
+            nextCursor = groups.get(size - 1).getId();
+            pageContent = groups.subList(0, size);
         }
 
-        List<GroupListItemResponse> items = groups.stream()
+        List<GroupListItemResponse> items = pageContent.stream()
                 .map(this::toGroupListItemResponse)
                 .toList();
 
@@ -623,12 +633,14 @@ public class GroupService {
         );
 
         Long nextCursor = null;
+        List<Group> pageContent = groups;
+
         if (groups.size() > size) {
-            Group lastExtra = groups.remove(size);
-            nextCursor = lastExtra.getId();
+            nextCursor = groups.get(size - 1).getId();
+            pageContent = groups.subList(0, size);
         }
 
-        List<GroupListItemResponse> items = groups.stream()
+        List<GroupListItemResponse> items = pageContent.stream()
                 .map(this::toGroupListItemResponse)
                 .toList();
 
@@ -650,12 +662,14 @@ public class GroupService {
         );
 
         Long nextCursor = null;
+        List<Group> pageContent = groups;
+
         if (groups.size() > size) {
-            Group lastExtra = groups.remove(size);
-            nextCursor = lastExtra.getId();
+            nextCursor = groups.get(size - 1).getId();
+            pageContent = groups.subList(0, size);
         }
 
-        List<GroupListItemResponse> items = groups.stream()
+        List<GroupListItemResponse> items = pageContent.stream()
                 .map(this::toGroupListItemResponse)
                 .toList();
 

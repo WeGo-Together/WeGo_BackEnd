@@ -1,0 +1,330 @@
+### 0. 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo",
+  "phoneNumber": "010-1234-5678"
+}
+
+> {%
+  client.global.set("userId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.accessToken);
+%}
+
+
+### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("img0_main",  images[0].imageUrl440x240);
+  client.global.set("img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("img1_main",  images[1].imageUrl440x240);
+  client.global.set("img1_thumb", images[1].imageUrl100x100);
+%}
+
+
+### 1-2. 모임 생성 (png/jpg 업로드 결과 URL로 생성)
+POST http://localhost:8080/api/v1/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "PNG/JPG 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{img0_main}}",
+      "imageUrl100x100": "{{img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{img1_main}}",
+      "imageUrl100x100": "{{img1_thumb}}"
+    }
+  ]
+}
+
+> {%
+  // 그룹 ID 저장
+  client.global.set("groupId_png_jpg", response.body.data.id);
+%}
+
+
+### 2-1. 모임 이미지 선 업로드 (webp 2장 + png 1장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp2.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp2.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("webp_img0_main",  images[0].imageUrl440x240);
+  client.global.set("webp_img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("webp_img1_main",  images[1].imageUrl440x240);
+  client.global.set("webp_img1_thumb", images[1].imageUrl100x100);
+
+  client.global.set("webp_img2_main",  images[2].imageUrl440x240);
+  client.global.set("webp_img2_thumb", images[2].imageUrl100x100);
+%}
+
+
+### 2-2. 모임 생성 (WEBP 업로드 결과 URL로 생성)
+POST http://localhost:8080/api/v1/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - WEBP 테스트",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "WEBP 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{webp_img0_main}}",
+      "imageUrl100x100": "{{webp_img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{webp_img1_main}}",
+      "imageUrl100x100": "{{webp_img1_thumb}}"
+    },
+    {
+      "sortOrder": 2,
+      "imageUrl440x240": "{{webp_img2_main}}",
+      "imageUrl100x100": "{{webp_img2_thumb}}"
+    }
+  ]
+}
+
+
+### 3-1. 모임 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("img0_main",  images[0].imageUrl440x240);
+  client.global.set("img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("img1_main",  images[1].imageUrl440x240);
+  client.global.set("img1_thumb", images[1].imageUrl100x100);
+%}
+
+
+### 3-2. 모임 생성(endTime 필드 없이 생성. null도 가능) (png/jpg 업로드 결과 URL로 생성)
+POST http://localhost:8080/api/v1/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": null,
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "PNG/JPG 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{img0_main}}",
+      "imageUrl100x100": "{{img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{img1_main}}",
+      "imageUrl100x100": "{{img1_thumb}}"
+    }
+  ]
+}
+
+### 4. 예외발생: 모임 이미지 선 업로드 (4장 → 예외 발생 기대: IMAGE_UPLOAD_EXCEED)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp2.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp2.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../image/resources/img2.jpg
+--boundary--
+
+
+### 5-1. 예외준비: 모임 이미지 선 업로드 (webp 2장 + png 1장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp1.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="test-webp2.webp"
+Content-Type: image/webp
+
+< ../image/resources/test-webp2.webp
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("webp_img0_main",  images[0].imageUrl440x240);
+  client.global.set("webp_img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("webp_img1_main",  images[1].imageUrl440x240);
+  client.global.set("webp_img1_thumb", images[1].imageUrl100x100);
+
+  client.global.set("webp_img2_main",  images[2].imageUrl440x240);
+  client.global.set("webp_img2_thumb", images[2].imageUrl100x100);
+%}
+
+
+### 5-2. 예외발생: 모임 생성 (WEBP 업로드 결과 URL로 생성 + 이미 지난 날짜로 생성 시도)
+POST http://localhost:8080/api/v1/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - WEBP 테스트",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2025-12-10T19:00:00",
+  "endTime": "2025-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "WEBP 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{webp_img0_main}}",
+      "imageUrl100x100": "{{webp_img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{webp_img1_main}}",
+      "imageUrl100x100": "{{webp_img1_thumb}}"
+    },
+    {
+      "sortOrder": 2,
+      "imageUrl440x240": "{{webp_img2_main}}",
+      "imageUrl100x100": "{{webp_img2_thumb}}"
+    }
+  ]
+}
+

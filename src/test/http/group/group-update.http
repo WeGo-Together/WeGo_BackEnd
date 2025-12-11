@@ -1,4 +1,4 @@
-### 회원가입(HOST)
+### 0-1. HOST 회원가입
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -10,10 +10,11 @@ Content-Type: application/json
 }
 
 > {%
-  client.global.set("userId", response.body.data.userId);
+  client.global.set("hostUserId", response.body.data.userId);
 %}
 
-### 로그인(HOST)
+
+### 0-2. HOST 로그인
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -23,14 +24,14 @@ Content-Type: application/json
 }
 
 > {%
-  client.global.set("accessToken", response.body.data.accessToken);
+  client.global.set("hostAccessToken", response.body.data.accessToken);
 %}
 
 
 ### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
@@ -56,21 +57,22 @@ Content-Type: image/jpeg
 
 
 ### 1-2. 모임 생성 (업로드된 URL로 생성)
-POST http://localhost:8080/api/v1/groups/create?userId={{userId}}
+POST http://localhost:8080/api/v1/groups/create
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 {
-  "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
+  "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트 (원본)",
   "location": "서울 강남구",
   "locationDetail": "강남역 2번 출구 근처 카페",
-  "startTime": "2025-12-10T19:00:00",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
   "tags": [
     "자바",
     "백엔드",
     "스터디"
   ],
-  "description": "PNG/JPG 업로드 후 URL을 이용해서 모임을 생성하는 테스트입니다.",
+  "description": "PNG/JPG 업로드 후 URL을 이용해서 모임을 생성하는 원본 테스트입니다.",
   "maxParticipants": 12,
   "images": [
     {
@@ -87,11 +89,73 @@ Authorization: Bearer {{accessToken}}
 }
 
 > {%
-  client.global.set("groupId_png_jpg", response.body.data.id);
+  const groupId = response.body.data.id;
+  client.global.set("groupId_png_jpg", groupId);
 %}
 
+### 2-1. 모임 내용 수정 - 정상 케이스
+PATCH http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
 
-### 회원가입(MEMBER 1)
+{
+  "title": "강남 자바 스터디 - 수정된 제목",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2025-12-11T19:30:00",
+  "endTime": "2025-12-11T21:30:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디",
+    "수정태그"
+  ],
+  "description": "모임 내용을 수정한 케이스입니다. 장소/시간/태그/설명/정원 모두 변경.",
+  "maxParticipants": 12
+}
+
+
+### 2-2. 예외발생: 모임 내용 수정 - 잘못된 maxParticipants (1명 → 예외 기대)
+###  - INVALID_MAX_PARTICIPANTS 또는 관련 에러 응답을 확인해보면 됨
+PATCH http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "강남 자바 스터디 - 잘못된 정원 테스트",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2025-12-11T19:30:00",
+  "endTime": "2025-12-11T21:30:00",
+  "tags": [
+    "자바",
+    "백엔드"
+  ],
+  "description": "최대 인원을 1명으로 줄이는 잘못된 요청입니다.",
+  "maxParticipants": 1
+}
+
+### 2-3. 예외발생: 모임 내용 수정 - 잘못된 maxParticipants (15명 → 예외 기대)
+###  - INVALID_MAX_PARTICIPANTS 또는 관련 에러 응답을 확인해보면 됨
+PATCH http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "강남 자바 스터디 - 잘못된 정원 테스트",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2025-12-11T19:30:00",
+  "endTime": "2025-12-11T21:30:00",
+  "tags": [
+    "자바",
+    "백엔드"
+  ],
+  "description": "모임: 최대 인원은 최대 12명 이하이어야 합니다.",
+  "maxParticipants": 15
+}
+
+### 2-3-1. MEMBER1 회원가입
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -103,21 +167,52 @@ Content-Type: application/json
 }
 
 > {%
-  // 응답 구조에 맞게 조정
   client.global.set("memberId1", response.body.data.userId);
 %}
 
-### 모임 참여 (MEMBER 1)
-POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend?userId={{memberId1}}
+### 2-3-2. MEMBER1 로그인
+POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member1AccessToken", response.body.data.accessToken);
+%}
+
+### 2-3-3. 예외발생: MEMBER1 이 모임 수정 시도 → NO_PERMISSION_TO_UPDATE_GROUP 기대
+PATCH http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{
+  "title": "멤버가 수정 시도한 제목",
+  "location": "서울 강북구",
+  "locationDetail": "수정 불가 케이스",
+  "startTime": "2025-12-12T10:00:00",
+  "endTime": "2025-12-12T12:00:00",
+  "tags": [
+    "권한테스트"
+  ],
+  "description": "모임: 해당 모임을 수정할 권한이 없습니다. 모임 ID: 1 회원 ID: 2",
+  "maxParticipants": 5
+}
+
+### 3-1. (선행) MEMBER1 모임 참여 - 참가 인원 증가용 (선택 사항)
+POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
 
 
-
-### 2-1. 모임 이미지 수정용 새 이미지 업로드 (예: 1장만)
+### 3-2. 모임 이미지 수정용 새 이미지 업로드 (1장)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img3.jpeg"
@@ -129,15 +224,15 @@ Content-Type: image/jpeg
 > {%
   const images = response.body.data.images;
 
-  // 이번에는 1장만 업로드했다고 가정
   client.global.set("new_img0_main",  images[0].imageUrl440x240);
   client.global.set("new_img0_thumb", images[0].imageUrl100x100);
 %}
 
-### 2-2. 모임 이미지 수정 (기존 2장 → 새 이미지 1장으로 교체)
-PATCH http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}?userId={{userId}}
+
+### 3-3. 모임 이미지 수정 (기존 2장 → 새 이미지 1장으로 교체)
+PATCH http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 [
   {
@@ -148,10 +243,10 @@ Authorization: Bearer {{accessToken}}
 ]
 
 
-### 2-3. 모임 이미지 수정용 새 이미지 업로드 (3장)
+### 3-4. 모임 이미지 수정용 새 이미지 업로드 (3장)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
@@ -173,7 +268,6 @@ Content-Type: image/webp
 > {%
   const images = response.body.data.images;
 
-  // 3장 업로드했다고 가정
   client.global.set("new3_img0_main",  images[0].imageUrl440x240);
   client.global.set("new3_img0_thumb", images[0].imageUrl100x100);
 
@@ -185,12 +279,10 @@ Content-Type: image/webp
 %}
 
 
-
-
-### 2-4. 모임 이미지 수정 (기존 이미지 → 새 이미지 3장으로 교체)
-PATCH http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}?userId={{userId}}
+### 3-5. 모임 이미지 수정 (새 이미지 3장으로 교체)
+PATCH http://localhost:8080/api/v1/groups/images/{{groupId_png_jpg}}
 Content-Type: application/json
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 [
   {
@@ -211,11 +303,10 @@ Authorization: Bearer {{accessToken}}
 ]
 
 
-
-### 2-5. 모임 이미지 수정용 새 이미지 업로드 (4장 - 실패 예상)
+### 3-6. 예외발생: 모임 이미지 선 업로드 (4장 - 실패 예상: 최대 3장 제한)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{hostAccessToken}}
 
 --boundary
 Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
