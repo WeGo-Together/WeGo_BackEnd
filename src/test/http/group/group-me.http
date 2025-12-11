@@ -146,8 +146,8 @@ Authorization: Bearer {{hostAccessToken}}
   "title": "강남 자바 스터디 - PAST",
   "location": "서울 강남구",
   "locationDetail": "강남역 2번 출구 근처 카페",
-  "startTime": "2026-01-10T19:00:00",
-  "endTime": "2026-01-10T21:00:00",
+  "startTime": "2025-01-10T19:00:00",
+  "endTime": "2025-01-10T21:00:00",
   "tags": [
     "자바",
     "과거모임"
@@ -188,7 +188,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] current page1:", data.items);
 
   const nextCursor = data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
@@ -202,7 +201,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] current page2:", data.items);
 %}
 
 
@@ -212,7 +210,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] myPost page1:", data.items);
 
   const nextCursor = data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
@@ -226,7 +223,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] myPost page2:", data.items);
 %}
 
 
@@ -236,7 +232,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] past page1:", data.items);
 
   const nextCursor = data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
@@ -250,7 +245,6 @@ Authorization: Bearer {{hostAccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[HOST] past page2:", data.items);
 %}
 
 ### 5-1. MEMBER1 기준 - 현재 참여 중인 모임 (type=current, 첫 페이지)
@@ -259,7 +253,6 @@ Authorization: Bearer {{member1AccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[MEMBER1] current page1:", data.items);
 
   const nextCursor = data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
@@ -273,7 +266,6 @@ Authorization: Bearer {{member1AccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[MEMBER1] current page2:", data.items);
 %}
 
 
@@ -283,7 +275,6 @@ Authorization: Bearer {{member1AccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[MEMBER1] past page1:", data.items);
 
   const nextCursor = data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
@@ -297,5 +288,4 @@ Authorization: Bearer {{member1AccessToken}}
 
 > {%
   const data = response.body.data;
-  console.log("[MEMBER1] past page2:", data.items);
 %}
