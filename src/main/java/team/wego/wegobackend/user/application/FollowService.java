@@ -1,11 +1,9 @@
 package team.wego.wegobackend.user.application;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.wego.wegobackend.user.domain.Follow;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.exception.ExistFollowException;
 import team.wego.wegobackend.user.exception.SameFollowException;
@@ -23,24 +21,19 @@ public class FollowService {
 
     private final UserRepository userRepository;
 
-    public void follow(Long followId, Long followerId) {
-        if(followerId.equals(followId)) {
-            throw new SameFollowException();
-        }
-
-        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followId)) {
-            throw new ExistFollowException();
-        }
-
+    public void follow(String followNickname, Long followerId) {
         User follower = userRepository.findById(followerId)
             .orElseThrow(UserNotFoundException::new);
 
-        User follow = userRepository.findById(followId)
+        if (followNickname.equals(follower.getNickName())) {
+            throw new SameFollowException();
+        }
+
+        User follow = userRepository.findByNickName(followNickname)
             .orElseThrow(UserNotFoundException::new);
 
-        followRepository.save(Follow.builder()
-            .follower(follower)
-            .follow(follow)
-            .build());
+        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, follow.getId())) {
+            throw new ExistFollowException();
+        }
     }
 }

@@ -46,6 +46,6 @@ public interface UserControllerDocs {
     @Operation(summary = "팔로우 등록 API", description = "요청 ID에 해당하는 사용자를 팔로우합니다.")
     ResponseEntity<ApiResponse<String>> follow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        @Valid @PathVariable("userId") Long userId
+        @Valid @RequestParam("followNickname") String followNickname
     );
 }

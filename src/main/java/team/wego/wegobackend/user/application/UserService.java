@@ -11,6 +11,7 @@ import team.wego.wegobackend.image.domain.ImageFile;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 import team.wego.wegobackend.user.domain.User;
+import team.wego.wegobackend.user.exception.SameNicknameException;
 import team.wego.wegobackend.user.exception.UserNotFoundException;
 import team.wego.wegobackend.user.repository.UserRepository;
 
@@ -47,6 +48,11 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
         if (request.getNickName() != null) {
+            boolean isExistNickname = userRepository.existsByNickName(request.getNickName());
+            if (isExistNickname) {
+                throw new SameNicknameException();
+            }
+
             user.updateNickName(request.getNickName());
         }
 

@@ -30,7 +30,7 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-public class UserController implements UserControllerDocs{
+public class UserController implements UserControllerDocs {
 
     private final UserService userService;
     private final FollowService followService;
@@ -100,13 +100,13 @@ public class UserController implements UserControllerDocs{
             .body(ApiResponse.success(200, response));
     }
 
-    @PostMapping("/follow/{userId}")
+    @PostMapping("/follow")
     public ResponseEntity<ApiResponse<String>> follow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        @Valid @PathVariable("userId") Long userId
+        @Valid @RequestParam("followNickname") String followNickname
     ) {
 
-        followService.follow(userId, userDetails.getId());
+        followService.follow(followNickname, userDetails.getId());
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
