@@ -27,7 +27,7 @@ import team.wego.wegobackend.group.application.service.GroupService;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/groups")
 @RestController
-public class GroupController {
+public class GroupController implements GroupControllerDocs {
 
     private final GroupService groupService;
 
