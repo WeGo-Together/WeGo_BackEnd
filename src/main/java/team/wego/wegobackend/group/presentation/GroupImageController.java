@@ -65,9 +65,7 @@ public class GroupImageController {
     ) {
         groupImageService.deleteGroupImages(userDetails, groupId);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.success(HttpStatus.OK.value(), null));
+        return ResponseEntity.noContent().build();
     }
 
 }
