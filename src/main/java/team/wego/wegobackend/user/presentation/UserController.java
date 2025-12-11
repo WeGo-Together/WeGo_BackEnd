@@ -47,6 +47,7 @@ public class UserController implements UserControllerDocs{
 
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profile(@PathVariable Long userId) {
+        log.debug("프로필 조회 API 호출");
         UserInfoResponse response = userService.getProfile(userId);
 
         return ResponseEntity
@@ -73,7 +74,7 @@ public class UserController implements UserControllerDocs{
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestBody ProfileUpdateRequest request
     ) {
-
+        log.info(String.valueOf(userDetails));
         UserInfoResponse response = userService.updateProfileInfo(userDetails.getId(), request);
 
         return ResponseEntity

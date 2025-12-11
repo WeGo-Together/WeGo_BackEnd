@@ -8,10 +8,9 @@ public class SecurityEndpoints {
         "/h2-console/**",
         "/error",
 
+        //SpringDoc
         "/swagger-ui/**",
         "/swagger-ui.html",
-
-        // API Docs
         "/api-docs/**",
         "/v*/api-docs/**",
     };

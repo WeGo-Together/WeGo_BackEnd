@@ -71,10 +71,10 @@ public class AuthService {
             throw new DeletedUserException();
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(),
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
             user.getRole().name());
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
 
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
@@ -99,10 +99,8 @@ public class AuthService {
             throw new DeletedUserException();
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(
-            user.getEmail(),
-            user.getRole().name()
-        );
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
+            user.getRole().name());
 
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
