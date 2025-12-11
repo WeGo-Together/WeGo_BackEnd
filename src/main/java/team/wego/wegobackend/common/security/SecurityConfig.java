@@ -3,6 +3,7 @@ package team.wego.wegobackend.common.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
@@ -29,6 +30,7 @@ public class SecurityConfig {
 
         http
             .authorizeHttpRequests((auth) -> auth
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/*").permitAll()
                 .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()
                 .anyRequest().authenticated()
             );

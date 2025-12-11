@@ -2,7 +2,6 @@ package team.wego.wegobackend.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -12,11 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.common.response.ErrorResponse;
@@ -53,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 String email = jwtTokenProvider.getEmailFromToken(jwt);
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(email);
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
@@ -66,11 +65,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.debug("JWT 인증 성공: {}", email);
 
-                filterChain.doFilter(request, response);
-                return;
+            }
+            else {
+                if(!isPublicEndpoint(request)) {
+                    sendJsonError(response, "토큰을 찾을 수 없습니다.");
+                    return;
+                }
             }
 
-            sendJsonError(response, "토큰을 찾을 수 없습니다.");
+            filterChain.doFilter(request, response);
+
 
         } catch (ExpiredTokenException | InvalidTokenException |UserNotFoundException e) {
             sendJsonError(response, e.getMessage());
@@ -106,5 +110,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         );
 
         objectMapper.writeValue(response.getWriter(), errorResponse);
+    }
+
+    /**
+     * Public 엔드포인트 확인
+     */
+    private boolean isPublicEndpoint(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
+
+        //TODO : PUBLIC_PATTERNS 관리 포인트 개선 필요 (메서드까지 관리 확장)
+        if ("GET".equals(method) && pathMatcher.match("/api/v1/users/*", path)) {
+            return true;
+        }
+
+        // SecurityEndpoints.PUBLIC_PATTERNS 체크
+        return Arrays.stream(SecurityEndpoints.PUBLIC_PATTERNS)
+            .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 }

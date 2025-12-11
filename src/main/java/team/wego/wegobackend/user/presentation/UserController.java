@@ -27,7 +27,7 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-public class UserController {
+public class UserController implements UserControllerDocs{
 
     private final UserService userService;
 
@@ -47,6 +47,7 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profile(@PathVariable Long userId) {
+        log.debug("프로필 조회 API 호출");
         UserInfoResponse response = userService.getProfile(userId);
 
         return ResponseEntity

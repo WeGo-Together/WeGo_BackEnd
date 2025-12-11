@@ -46,20 +46,21 @@ public class JwtTokenProvider {
     /**
      * JWT 토큰 생성
      */
-    public String createAccessToken(String email, String role) {
-        return createToken(email, role, accessTokenExpiration, "access");
+    public String createAccessToken(Long userId, String email, String role) {
+        return createToken(userId, email, role, accessTokenExpiration, "access");
     }
 
-    public String createRefreshToken(String email) {
-        return createToken(email, null, refreshTokenExpiration, "refresh");
+    public String createRefreshToken(Long userId, String email) {
+        return createToken(userId, email, null, refreshTokenExpiration, "refresh");
     }
 
-    private String createToken(String email, String role, long expiration, String type) {
+    private String createToken(Long userId, String email, String role, long expiration, String type) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         JwtBuilder builder = Jwts.builder()
             .subject(email)
+            .claim("userId", userId)
             .claim("type", type)
             .issuedAt(now)
             .expiration(expiryDate);
@@ -71,12 +72,16 @@ public class JwtTokenProvider {
         return builder.signWith(secretKey, Jwts.SIG.HS256).compact();
     }
 
+    public String getTokenUserId(String token) {
+        return getClaims(token).get("userId", String.class);
+    }
+
     public String getEmailFromToken(String token) {
         return getClaims(token).getSubject();
     }
 
-    public String getRoleFromToken(String token) {
-        return getClaims(token).get("role", String.class);
+    public Long getRoleFromToken(String token) {
+        return getClaims(token).get("role", Long.class);
     }
 
     public String getTokenType(String token) {
