@@ -112,11 +112,12 @@ public class AuthService {
     /**
      * 회원탈퇴
      */
-    public ResponseEntity<ApiResponse<?>> withDraw(Long userId) {
+    public void withDraw(Long userId) {
 
         User user = userRepository.findById(userId)
             .orElseThrow(UserNotFoundException::new);
 
         user.updatedeleted(true);
+
     }
 }
