@@ -2,6 +2,7 @@ package team.wego.wegobackend.auth.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import team.wego.wegobackend.auth.exception.InvalidPasswordException;
 import team.wego.wegobackend.auth.exception.UserAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.common.exception.AppErrorCode;
+import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.Role;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
@@ -105,5 +107,18 @@ public class AuthService {
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
         return RefreshResponse.of(newAccessToken, expiresIn);
+    }
+
+    /**
+     * 회원탈퇴
+     */
+    @Transactional
+    public void withDraw(Long userId) {
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(UserNotFoundException::new);
+
+        user.updatedeleted(true);
+
     }
 }

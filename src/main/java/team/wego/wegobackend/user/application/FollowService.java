@@ -43,6 +43,9 @@ public class FollowService {
             .follower(follower)
             .follow(follow)
             .build());
+
+        follower.increaseFolloweeCount();
+        follow.increaseFollowerCount();
     }
 
     public void unFollow(String unFollowNickname, Long followerId) {
@@ -61,5 +64,8 @@ public class FollowService {
             .orElseThrow(NotFoundFollowException::new);
 
         followRepository.delete(followEntity);
+
+        follower.decreaseFolloweeCount();
+        follow.decreaseFollowerCount();
     }
 }
