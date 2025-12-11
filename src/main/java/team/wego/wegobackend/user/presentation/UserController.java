@@ -106,7 +106,7 @@ public class UserController implements UserControllerDocs{
         @Valid @PathVariable("userId") Long userId
     ) {
 
-        followService.follow(userDetails.getId(), userId);
+        followService.follow(userId, userDetails.getId());
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
