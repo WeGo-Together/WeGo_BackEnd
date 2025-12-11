@@ -26,7 +26,7 @@ import team.wego.wegobackend.group.application.service.GroupImageService;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/groups/images")
 @RestController
-public class GroupImageController {
+public class GroupImageController implements GroupImageControllerDocs  {
 
     private final GroupImageService groupImageService;
 
