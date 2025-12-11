@@ -23,20 +23,20 @@ public class FollowService {
 
     private final UserRepository userRepository;
 
-    public void follow(Long followId, Long followerId) {
-        if(followerId.equals(followId)) {
-            throw new SameFollowException();
-        }
-
-        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followId)) {
-            throw new ExistFollowException();
-        }
-
+    public void follow(String followNickname, Long followerId) {
         User follower = userRepository.findById(followerId)
             .orElseThrow(UserNotFoundException::new);
 
-        User follow = userRepository.findById(followId)
+        if (followNickname.equals(follower.getNickName())) {
+            throw new SameFollowException();
+        }
+
+        User follow = userRepository.findByNickName(followNickname)
             .orElseThrow(UserNotFoundException::new);
+
+        if (followRepository.existsByFollowerIdAndFolloweeId(followerId, follow.getId())) {
+            throw new ExistFollowException();
+        }
 
         followRepository.save(Follow.builder()
             .follower(follower)
