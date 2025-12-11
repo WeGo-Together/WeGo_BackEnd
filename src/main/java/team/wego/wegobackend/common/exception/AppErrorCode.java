@@ -26,6 +26,8 @@ public enum AppErrorCode implements ErrorCode {
     ALREADY_EXISTS_USER(HttpStatus.BAD_REQUEST, "회원 : 이미 가입한 회원입니다."),
     INVALID_PASSWORD_VALUE(HttpStatus.BAD_REQUEST, "회원 : 비밀번호가 일치하지 않습니다."),
     DELETED_USER(HttpStatus.BAD_REQUEST, "회원 : 탈퇴한 회원입니다."),
+    NOT_SAME_FOLLOW(HttpStatus.BAD_REQUEST, "회원 : 자기 자신을 팔로우할 수 없습니다."),
+    ALREADY_EXIST_FOLLOW(HttpStatus.BAD_REQUEST, "회원 : 이미 팔로우 중입니다."),
 
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 만료된 토큰입니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 유효하지 않은 토큰입니다.")

@@ -72,16 +72,16 @@ public class JwtTokenProvider {
         return builder.signWith(secretKey, Jwts.SIG.HS256).compact();
     }
 
-    public String getTokenUserId(String token) {
-        return getClaims(token).get("userId", String.class);
+    public Long getTokenUserId(String token) {
+        return getClaims(token).get("userId", Long.class);
     }
 
     public String getEmailFromToken(String token) {
         return getClaims(token).getSubject();
     }
 
-    public Long getRoleFromToken(String token) {
-        return getClaims(token).get("role", Long.class);
+    public String getRoleFromToken(String token) {
+        return getClaims(token).get("role", String.class);
     }
 
     public String getTokenType(String token) {
