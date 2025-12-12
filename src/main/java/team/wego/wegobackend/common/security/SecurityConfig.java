@@ -70,7 +70,8 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "https://wego.monster",
                 "https://api.wego.monster",
-                "https://local.wego.monster"));
+                "https://local.wego.monster",
+                "https://local.wego.monster:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
