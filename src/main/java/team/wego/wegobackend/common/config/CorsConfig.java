@@ -17,7 +17,8 @@ public class CorsConfig {
                         "http://localhost:3000",
                         "https://wego.monster",
                         "https://api.wego.monster",
-                        "https://local.wego.monster"
+                        "https://local.wego.monster",
+                        "https://local.wego.monster:3000"
                     )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
