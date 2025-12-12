@@ -69,7 +69,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "https://wego.monster",
-                "https://api.wego.monster"));
+                "https://api.wego.monster",
+                "https://local.wego.monster"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
