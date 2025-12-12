@@ -13,6 +13,7 @@ import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import team.wego.wegobackend.common.response.ErrorResponse;
@@ -26,7 +27,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApp(AppException ex,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         ErrorCode code = ex.getErrorCode();
 
         String title = ((Enum<?>) code).name();
@@ -35,23 +36,23 @@ public class GlobalExceptionHandler {
         String errorCode = title;
 
         return ResponseEntity.status(code.getHttpStatus())
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        code.getHttpStatus(),
-                        ex.getMessage(),
-                        instance,
-                        errorCode,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                ex.getMessage(),
+                instance,
+                errorCode,
+                null
+            ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleInvalid(MethodArgumentNotValidException ex,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         List<FieldError> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(err -> FieldError.of(err.getField(), err.getDefaultMessage()))
-                .toList();
+            .map(err -> FieldError.of(err.getField(), err.getDefaultMessage()))
+            .toList();
 
         AppErrorCode code = AppErrorCode.INVALID_INPUT_VALUE;
         String title = code.name();  // INVALID_INPUT_VALUE
@@ -59,25 +60,25 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        HttpStatus.BAD_REQUEST,
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        errors
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                HttpStatus.BAD_REQUEST,
+                code.getMessageTemplate(),
+                instance,
+                title,
+                errors
+            ));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraint(ConstraintViolationException ex,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         List<ErrorResponse.FieldError> errors = ex.getConstraintViolations().stream()
-                .map(v -> ErrorResponse.FieldError.of(
-                        v.getPropertyPath().toString(),
-                        v.getMessage()))
-                .toList();
+            .map(v -> ErrorResponse.FieldError.of(
+                v.getPropertyPath().toString(),
+                v.getMessage()))
+            .toList();
 
         AppErrorCode code = AppErrorCode.INVALID_INPUT_VALUE;
         String title = code.name();
@@ -85,20 +86,20 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        HttpStatus.BAD_REQUEST,
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        errors
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                HttpStatus.BAD_REQUEST,
+                code.getMessageTemplate(),
+                instance,
+                title,
+                errors
+            ));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         log.error("잘못된 JSON 본문(파싱 실패/형식 오류)(400): {}", rootCauseMessage(ex), ex);
 
         AppErrorCode code = AppErrorCode.INVALID_INPUT_VALUE;
@@ -107,21 +108,21 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        HttpStatus.BAD_REQUEST,
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                HttpStatus.BAD_REQUEST,
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotAllowed(
-            HttpRequestMethodNotSupportedException ex,
-            HttpServletRequest request) {
+        HttpRequestMethodNotSupportedException ex,
+        HttpServletRequest request) {
         log.error("지원하지 않는 HTTP 메서드(405): {}", rootCauseMessage(ex), ex);
 
         AppErrorCode code = AppErrorCode.METHOD_NOT_ALLOWED;
@@ -130,20 +131,20 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        HttpStatus.METHOD_NOT_ALLOWED,
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                HttpStatus.METHOD_NOT_ALLOWED,
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         log.error("JPA 엔티티 미발견(404): {}", rootCauseMessage(ex), ex);
         AppErrorCode code = AppErrorCode.ENTITY_NOT_FOUND;
         String title = code.name();
@@ -151,21 +152,21 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        HttpStatus.NOT_FOUND,
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                HttpStatus.NOT_FOUND,
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(HttpMessageNotWritableException.class)
     public ResponseEntity<ErrorResponse> handleNotWritable(
-            HttpMessageNotWritableException ex,
-            HttpServletRequest request) {
+        HttpMessageNotWritableException ex,
+        HttpServletRequest request) {
         log.error("응답 직렬화 실패(500): {}", rootCauseMessage(ex), ex);
 
         AppErrorCode code = AppErrorCode.RESP_BODY_WRITE_ERROR;
@@ -174,21 +175,21 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(code.getHttpStatus())
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        code.getHttpStatus(),
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
     public ResponseEntity<ErrorResponse> handleNotAcceptable(
-            HttpMediaTypeNotAcceptableException ex,
-            HttpServletRequest request) {
+        HttpMediaTypeNotAcceptableException ex,
+        HttpServletRequest request) {
         log.warn("콘텐츠 협상 실패(406): {}", rootCauseMessage(ex));
 
         AppErrorCode code = AppErrorCode.MEDIA_TYPE_NOT_ACCEPTABLE;
@@ -197,21 +198,21 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(code.getHttpStatus())
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        code.getHttpStatus(),
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleUnsupported(
-            HttpMediaTypeNotSupportedException ex,
-            HttpServletRequest request) {
+        HttpMediaTypeNotSupportedException ex,
+        HttpServletRequest request) {
         log.warn("미지원 콘텐츠 타입(415): {}", rootCauseMessage(ex));
 
         AppErrorCode code = AppErrorCode.UNSUPPORTED_MEDIA_TYPE;
@@ -220,15 +221,38 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(code.getHttpStatus())
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        code.getHttpStatus(),
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleNotParameter(
+        MissingServletRequestParameterException ex,
+        HttpServletRequest request) {
+        log.warn("입력 파라메터 X (400): {}", rootCauseMessage(ex));
+
+        AppErrorCode code = AppErrorCode.NOT_FOUND_PARAMETER;
+        String title = code.name();
+        String type = toProblemType(title);
+        String instance = request.getRequestURI();
+
+        return ResponseEntity.status(code.getHttpStatus())
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     @ExceptionHandler(Exception.class)
@@ -241,15 +265,15 @@ public class GlobalExceptionHandler {
         String instance = request.getRequestURI();
 
         return ResponseEntity.status(code.getHttpStatus())
-                .body(ErrorResponse.of(
-                        type,
-                        title,
-                        code.getHttpStatus(),
-                        code.getMessageTemplate(),
-                        instance,
-                        title,
-                        null
-                ));
+            .body(ErrorResponse.of(
+                type,
+                title,
+                code.getHttpStatus(),
+                code.getMessageTemplate(),
+                instance,
+                title,
+                null
+            ));
     }
 
     private static String rootCauseMessage(Throwable ex) {
