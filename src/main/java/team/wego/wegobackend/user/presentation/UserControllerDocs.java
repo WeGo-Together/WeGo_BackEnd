@@ -13,14 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
+import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Tag(name = "유저 API", description = "유저와 관련된 API 리스트 \uD83D\uDC08")
 public interface UserControllerDocs {
-
-    @Operation(summary = "테스트 API", description = "서버 로직 테스트를 위한 엔드포인트입니다.")
-    ResponseEntity<ApiResponse<String>> test(
-        @AuthenticationPrincipal CustomUserDetails userDetails);
 
     @Operation(summary = "유저 프로필 조회 API", description = "PathVariable로 들어온 userId에 해당하는 유저 프로필에 대한 응답")
     ResponseEntity<ApiResponse<UserInfoResponse>> profile(@PathVariable Long userId);
@@ -53,5 +50,15 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<String>> unFollow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestParam("unFollowNickname") String unFollowNickname
+    );
+
+    @Operation(summary = "이메일 중복 검사 API", description = "이메일 중복검사에 대한 응답은 bool값입니다.")
+    ResponseEntity<ApiResponse<AvailabilityResponse>> checkEmailAvailability(
+        @RequestParam("email") String email
+    );
+
+    @Operation(summary = "닉네임 중복 검사 API", description = "닉네임 중복검사에 대한 응답은 bool값입니다.")
+    ResponseEntity<ApiResponse<AvailabilityResponse>> checkNicknameAvailability(
+        @RequestParam("nickname") String nickname
     );
 }

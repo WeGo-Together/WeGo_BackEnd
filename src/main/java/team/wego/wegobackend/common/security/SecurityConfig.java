@@ -35,7 +35,7 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/groups/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/groups").permitAll()
                         .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()

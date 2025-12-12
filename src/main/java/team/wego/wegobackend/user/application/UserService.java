@@ -1,5 +1,6 @@
 package team.wego.wegobackend.user.application;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import team.wego.wegobackend.image.application.dto.ImageFileResponse;
 import team.wego.wegobackend.image.application.service.ImageUploadService;
 import team.wego.wegobackend.image.domain.ImageFile;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
+import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.exception.SameNicknameException;
@@ -74,5 +76,17 @@ public class UserService {
         user.updateNotificationEnabled(isNotificationEnabled);
 
         return UserInfoResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse checkEmailAvailability(String email) {
+
+        return new AvailabilityResponse(!userRepository.existsByEmail(email));
+    }
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse checkNicknameAvailability(String nickname) {
+
+        return new AvailabilityResponse(!userRepository.existsByNickName(nickname));
     }
 }
