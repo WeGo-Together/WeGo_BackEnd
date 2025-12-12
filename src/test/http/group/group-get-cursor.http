@@ -77,3 +77,6 @@ GET http://localhost:8080/api/v1/groups/1
 ### 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
 GET http://localhost:8080/api/v1/groups/1
 Authorization: Bearer {{hostAccessToken}}
+
+### (선택) 로그인 안 한 상태에서 모임 목록 조회
+GET http://localhost:8080/api/v1/groups?size=5
