@@ -24,6 +24,7 @@ import team.wego.wegobackend.image.application.dto.ImageFileResponse;
 import team.wego.wegobackend.user.application.FollowService;
 import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
+import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Slf4j
@@ -35,23 +36,12 @@ public class UserController implements UserControllerDocs {
     private final UserService userService;
     private final FollowService followService;
 
-    @GetMapping("/test")
-    public ResponseEntity<ApiResponse<String>> test(
-        @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        log.info(LocalDateTime.now() + "test endpoint call, userId -> {}", userDetails.getId());
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(ApiResponse.success(
-                200,
-                true,
-                "Test Success"
-            ));
-    }
-
+    /**
+     * 프로필 조회
+     * */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profile(@PathVariable Long userId) {
-        log.debug("프로필 조회 API 호출");
+
         UserInfoResponse response = userService.getProfile(userId);
 
         return ResponseEntity
@@ -60,6 +50,9 @@ public class UserController implements UserControllerDocs {
                 response));
     }
 
+    /**
+     * 프로필 이미지 변경
+     * */
     @PatchMapping("/profile-image")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profileImage(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -73,6 +66,9 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(200, response));
     }
 
+    /**
+     * 프로필 정보 변경
+     * */
     @PatchMapping("/profile")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profileInfo(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -86,6 +82,9 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(200, response));
     }
 
+    /**
+     * 알림 설정 변경
+     * */
     @PatchMapping("/notification")
     public ResponseEntity<ApiResponse<UserInfoResponse>> changeNotificationConfig(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -100,10 +99,13 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(200, response));
     }
 
+    /**
+     * 팔로우 요청
+     * */
     @PostMapping("/follow")
     public ResponseEntity<ApiResponse<String>> follow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        @Valid @RequestParam("followNickname") String followNickname
+        @RequestParam("followNickname") String followNickname
     ) {
 
         followService.follow(followNickname, userDetails.getId());
@@ -113,11 +115,15 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(201, "팔로우 성공"));
     }
 
+    /**
+     * 팔로우 취소
+     * */
     @DeleteMapping("/unfollow")
     public ResponseEntity<ApiResponse<String>> unFollow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        @Valid @RequestParam("unFollowNickname") String unFollowNickname
+        @RequestParam("unFollowNickname") String unFollowNickname
     ) {
+
         followService.unFollow(unFollowNickname, userDetails.getId());
 
         return ResponseEntity
@@ -125,7 +131,33 @@ public class UserController implements UserControllerDocs {
             .body(ApiResponse.success(200, "팔로우 취소 성공"));
     }
 
-    //TODO : 팔로우 목록 조회 API
+    /**
+     * 이메일 중복검사
+     * */
+    @GetMapping("/email/availability")
+    public ResponseEntity<ApiResponse<AvailabilityResponse>> checkEmailAvailability(
+        @RequestParam("email") String email
+    ) {
 
-    //TODO : 팔로워 목록 조회 API
+        AvailabilityResponse response = userService.checkEmailAvailability(email);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
+    }
+
+    /**
+     * 닉네임 중복검사
+     * */
+    @GetMapping("/nickname/availability")
+    public ResponseEntity<ApiResponse<AvailabilityResponse>> checkNicknameAvailability(
+        @RequestParam("nickname") String nickname
+    ) {
+
+        AvailabilityResponse response = userService.checkNicknameAvailability(nickname);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
+    }
 }
