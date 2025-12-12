@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,7 +31,7 @@ public class GroupImageController implements GroupImageControllerDocs  {
 
     private final GroupImageService groupImageService;
 
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PreUploadGroupImageResponse>> uploadImages(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam("images") List<MultipartFile> images
@@ -43,7 +44,7 @@ public class GroupImageController implements GroupImageControllerDocs  {
                 .body(ApiResponse.success(HttpStatus.CREATED.value(), response));
     }
 
-    @PatchMapping("/{groupId}")
+    @PatchMapping(value = "/{groupId}")
     public ResponseEntity<ApiResponse<List<GroupImageItemResponse>>> updateGroupImages(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
@@ -58,7 +59,7 @@ public class GroupImageController implements GroupImageControllerDocs  {
     }
 
 
-    @DeleteMapping("/{groupId}")
+    @DeleteMapping(value = "/{groupId}")
     public ResponseEntity<ApiResponse<Void>> deleteGroupImages(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
