@@ -1,5 +1,6 @@
 package team.wego.wegobackend.common.security;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -29,30 +33,50 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .authorizeHttpRequests((auth) -> auth
-                    .requestMatchers(HttpMethod.GET, "/api/v1/users/*").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/groups/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/groups").permitAll()
-                .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()
-                .anyRequest().authenticated()
-            );
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests((auth) -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/groups/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/groups").permitAll()
+                        .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated()
+                );
 
         http
-            .headers(headers -> headers.frameOptions(
-                FrameOptionsConfig::sameOrigin))   // H2DB Console 활용을 위해 추가
-            .csrf((auth) -> auth.disable())
-            .formLogin((auth) -> auth.disable())
-            .httpBasic((auth) -> auth.disable());
+                .headers(headers -> headers.frameOptions(
+                        FrameOptionsConfig::sameOrigin))   // H2DB Console 활용을 위해 추가
+                .csrf((auth) -> auth.disable())
+                .formLogin((auth) -> auth.disable())
+                .httpBasic((auth) -> auth.disable());
 
         http
-            .sessionManagement(
-                (session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(
+                        (session) -> session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS));
 
         http
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    //TODO : CORS 설정 추가
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "https://wego.monster",
+                "https://api.wego.monster"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }
+
