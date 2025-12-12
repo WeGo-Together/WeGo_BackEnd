@@ -52,16 +52,16 @@ public class User extends BaseTimeEntity {
     private String profileMessage;
 
     @Column(name = "followee_count", columnDefinition = "int default 0")
-    private Integer followeesCnt;
+    private Integer followeesCnt = 0;
 
     @Column(name = "follower_count", columnDefinition = "int default 0")
-    private Integer followersCnt;
+    private Integer followersCnt = 0;
 
     @Column(name = "group_joined_count", columnDefinition = "int default 0")
-    private Integer groupJoinedCnt;
+    private Integer groupJoinedCnt = 0;
 
     @Column(name = "group_created_count", columnDefinition = "int default 0")
-    private Integer groupCreatedCnt;
+    private Integer groupCreatedCnt = 0;
 
     @Column(name = "notification_enabled", nullable = false)
     private Boolean notificationEnabled = false;
