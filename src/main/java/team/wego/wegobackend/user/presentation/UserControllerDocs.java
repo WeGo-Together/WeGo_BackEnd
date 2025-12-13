@@ -1,8 +1,11 @@
 package team.wego.wegobackend.user.presentation;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +17,7 @@ import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
+import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Tag(name = "유저 API", description = "유저와 관련된 API 리스트 \uD83D\uDC08")
@@ -50,6 +54,13 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<String>> unFollow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestParam("unFollowNickname") String unFollowNickname
+    );
+
+    @Operation(summary = "팔로우 리스트 조회 API", description = "userId에 해당하는 유저의 팔로우 리스트를 조회합니다.")
+    ResponseEntity<ApiResponse<FollowListResponse>> followList(
+        @Parameter(description = "조회할 유저 ID") @PathVariable Long userId,
+        @Parameter(description = "페이지네이션 커서 (첫 페이지는 null)") @RequestParam(required = false) Long cursor,
+        @Parameter(description = "조회 개수 (1-100)") @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     );
 
     @Operation(summary = "이메일 중복 검사 API", description = "이메일 중복검사에 대한 응답은 bool값입니다.")

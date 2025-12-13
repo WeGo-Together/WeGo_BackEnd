@@ -1,10 +1,13 @@
 package team.wego.wegobackend.user.presentation;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +28,7 @@ import team.wego.wegobackend.user.application.FollowService;
 import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
+import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Slf4j
@@ -53,7 +57,7 @@ public class UserController implements UserControllerDocs {
     /**
      * 프로필 이미지 변경
      * */
-    @PatchMapping("/profile-image")
+    @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserInfoResponse>> profileImage(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @RequestPart("file") MultipartFile file
@@ -129,6 +133,23 @@ public class UserController implements UserControllerDocs {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(200, "팔로우 취소 성공"));
+    }
+
+    /**
+     * 팔로우 리스트 조회
+     * */
+    @GetMapping("/{userId}/follow")
+    public ResponseEntity<ApiResponse<FollowListResponse>> followList(
+        @PathVariable Long userId, //다른 유저 조회를 위한 파라메터
+        @RequestParam(required = false) Long cursor,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+    ) {
+
+        FollowListResponse response = followService.followList(userId, cursor, size);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
     }
 
     /**
