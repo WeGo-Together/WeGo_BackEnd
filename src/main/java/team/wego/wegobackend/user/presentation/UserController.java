@@ -42,11 +42,17 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 프로필 조회
-     * */
+     */
     @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<UserInfoResponse>> profile(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<UserInfoResponse>> profile(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long userId
+    ) {
 
-        UserInfoResponse response = userService.getProfile(userId);
+        UserInfoResponse response = userService.getProfile(
+            userDetails == null ? null : userDetails.getId(),
+            userId
+        );
 
         return ResponseEntity
             .status(HttpStatus.OK)
@@ -56,7 +62,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 프로필 이미지 변경
-     * */
+     */
     @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserInfoResponse>> profileImage(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -72,7 +78,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 프로필 정보 변경
-     * */
+     */
     @PatchMapping("/profile")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profileInfo(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -88,7 +94,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 알림 설정 변경
-     * */
+     */
     @PatchMapping("/notification")
     public ResponseEntity<ApiResponse<UserInfoResponse>> changeNotificationConfig(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -105,7 +111,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 팔로우 요청
-     * */
+     */
     @PostMapping("/follow")
     public ResponseEntity<ApiResponse<String>> follow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -121,7 +127,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 팔로우 취소
-     * */
+     */
     @DeleteMapping("/unfollow")
     public ResponseEntity<ApiResponse<String>> unFollow(
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -137,7 +143,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 팔로우 리스트 조회
-     * */
+     */
     @GetMapping("/{userId}/follow")
     public ResponseEntity<ApiResponse<FollowListResponse>> followList(
         @PathVariable Long userId, //다른 유저 조회를 위한 파라메터
@@ -154,7 +160,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 이메일 중복검사
-     * */
+     */
     @GetMapping("/email/availability")
     public ResponseEntity<ApiResponse<AvailabilityResponse>> checkEmailAvailability(
         @RequestParam("email") String email
@@ -169,7 +175,7 @@ public class UserController implements UserControllerDocs {
 
     /**
      * 닉네임 중복검사
-     * */
+     */
     @GetMapping("/nickname/availability")
     public ResponseEntity<ApiResponse<AvailabilityResponse>> checkNicknameAvailability(
         @RequestParam("nickname") String nickname

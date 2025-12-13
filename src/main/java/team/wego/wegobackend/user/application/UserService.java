@@ -15,6 +15,7 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.exception.SameNicknameException;
 import team.wego.wegobackend.user.exception.UserNotFoundException;
+import team.wego.wegobackend.user.repository.FollowRepository;
 import team.wego.wegobackend.user.repository.UserRepository;
 
 @Slf4j
@@ -24,14 +25,27 @@ import team.wego.wegobackend.user.repository.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
     private final ImageUploadService imageUploadService;
 
     @Transactional(readOnly = true)
-    public UserInfoResponse getProfile(Long userId) {
+    public UserInfoResponse getProfile(Long loginUserId, Long targetUserId) {
 
-        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        User targetUser = userRepository.findById(targetUserId)
+            .orElseThrow(UserNotFoundException::new);
 
-        return UserInfoResponse.from(user);
+        // 비로그인 or 본인 조회
+        if (loginUserId == null || loginUserId.equals(targetUserId)) {
+            return UserInfoResponse.from(targetUser);
+        }
+
+        User loginUser = userRepository.findById(loginUserId)
+            .orElseThrow(UserNotFoundException::new);
+
+        boolean isFollow = followRepository.existsByFollowerIdAndFolloweeId(loginUserId,
+            targetUserId);
+
+        return UserInfoResponse.from(targetUser, isFollow);
     }
 
     public UserInfoResponse updateProfileImage(Long userId, MultipartFile file) {
