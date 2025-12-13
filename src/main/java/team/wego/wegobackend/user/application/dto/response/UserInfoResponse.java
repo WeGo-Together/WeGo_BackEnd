@@ -37,6 +37,8 @@ public class UserInfoResponse {
 
     private Boolean isNotificationEnabled;
 
+    private Boolean isFollow;
+
     private LocalDateTime createdAt;
 
     public static UserInfoResponse from(User user) {
@@ -52,6 +54,24 @@ public class UserInfoResponse {
             .groupJoinedCnt(user.getGroupJoinedCnt())
             .groupCreatedCnt(user.getGroupCreatedCnt())
             .isNotificationEnabled(user.getNotificationEnabled())
+            .createdAt(user.getCreatedAt())
+            .build();
+    }
+
+    public static UserInfoResponse from(User user, Boolean isFollow) {
+        return UserInfoResponse.builder()
+            .userId(user.getId())
+            .email(user.getEmail())
+            .nickName(user.getNickName())
+            .mbti(user.getMbti())
+            .profileImage(user.getProfileImage())
+            .profileMessage(user.getProfileMessage())
+            .followeesCnt(user.getFolloweesCnt())
+            .followersCnt(user.getFollowersCnt())
+            .groupJoinedCnt(user.getGroupJoinedCnt())
+            .groupCreatedCnt(user.getGroupCreatedCnt())
+            .isNotificationEnabled(user.getNotificationEnabled())
+            .isFollow(isFollow)
             .createdAt(user.getCreatedAt())
             .build();
     }

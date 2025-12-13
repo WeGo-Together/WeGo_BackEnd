@@ -72,9 +72,10 @@ public class FollowService {
         follow.decreaseFollowerCount();
     }
 
+    @Transactional(readOnly = true)
     public FollowListResponse followList(Long userId, Long cursor, Integer size) {
 
-        if(!userRepository.existsById(userId)) {
+        if (!userRepository.existsById(userId)) {
             throw new UserNotFoundException();
         }
 
