@@ -1,9 +1,12 @@
 package team.wego.wegobackend.user.application;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
+import team.wego.wegobackend.user.application.dto.response.FollowResponse;
 import team.wego.wegobackend.user.domain.Follow;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.exception.ExistFollowException;
@@ -67,5 +70,18 @@ public class FollowService {
 
         follower.decreaseFolloweeCount();
         follow.decreaseFollowerCount();
+    }
+
+    public FollowListResponse followList(Long userId, Long cursor, Integer size) {
+
+        if(!userRepository.existsById(userId)) {
+            throw new UserNotFoundException();
+        }
+
+        List<FollowResponse> list = followRepository.findFollowingList(userId, cursor, size);
+
+        Long nextCursor = list.isEmpty() ? null : list.getLast().getFollowId();
+
+        return new FollowListResponse(list, nextCursor);
     }
 }

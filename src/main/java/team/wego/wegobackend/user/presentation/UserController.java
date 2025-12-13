@@ -1,6 +1,8 @@
 package team.wego.wegobackend.user.presentation;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import team.wego.wegobackend.user.application.FollowService;
 import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
+import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Slf4j
@@ -135,14 +138,18 @@ public class UserController implements UserControllerDocs {
     /**
      * 팔로우 리스트 조회
      * */
-    @GetMapping("/follow")
-    public ResponseEntity<ApiResponse<?>> followList(
-
+    @GetMapping("/{userId}/follow")
+    public ResponseEntity<ApiResponse<FollowListResponse>> followList(
+        @PathVariable Long userId, //다른 유저 조회를 위한 파라메터
+        @RequestParam(required = false) Long cursor,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
+
+        FollowListResponse response = followService.followList(userId, cursor, size);
 
         return ResponseEntity
             .status(HttpStatus.OK)
-            .body(ApiResponse.success(200, "팔로우 리스트 조회 성공"));
+            .body(ApiResponse.success(200, response));
     }
 
     /**
