@@ -1,5 +1,4 @@
-package team.wego.wegobackend.group.application.dto.request;
-
+package team.wego.wegobackend.group.application.dto.v1.request;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -10,7 +9,8 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record UpdateGroupRequest(
+public record CreateGroupRequest(
+
         @NotBlank(message = "모임: 제목은 필수 입니다.")
         String title,
 
@@ -34,5 +34,9 @@ public record UpdateGroupRequest(
         @NotNull(message = "모임: 최대 인원은 필수 입니다.")
         @Min(value = 2, message = "모임: 최대 인원은 최소 2명 이상이어야 합니다.")
         @Max(value = 12, message = "모임: 최대 인원은 최대 12명 이하이어야 합니다.")
-        Integer maxParticipants
-) {}
+        Integer maxParticipants,
+
+        List<CreateGroupImageRequest> images
+) {
+
+}

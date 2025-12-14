@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.application.dto.response;
+package team.wego.wegobackend.group.application.dto.v1.response;
 
 public record CreatedBy(
         Long userId,

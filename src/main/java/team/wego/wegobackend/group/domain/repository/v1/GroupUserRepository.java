@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.domain.repository;
+package team.wego.wegobackend.group.domain.repository.v1;
 
 import java.util.List;
 import java.util.Optional;

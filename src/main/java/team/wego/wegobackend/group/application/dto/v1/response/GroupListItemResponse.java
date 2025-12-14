@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.application.dto.response;
+package team.wego.wegobackend.group.application.dto.v1.response;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.application.service;
+package team.wego.wegobackend.group.application.service.v1;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,16 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.group.application.dto.request.UpdateGroupImageItemRequest;
-import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
-import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageItemResponse;
-import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageResponse;
+import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupImageItemRequest;
+import team.wego.wegobackend.group.application.dto.v1.response.GroupImageItemResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.PreUploadGroupImageItemResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.PreUploadGroupImageResponse;
 import team.wego.wegobackend.group.domain.entity.Group;
 import team.wego.wegobackend.group.domain.entity.GroupImage;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
-import team.wego.wegobackend.group.domain.repository.GroupImageRepository;
-import team.wego.wegobackend.group.domain.repository.GroupRepository;
+import team.wego.wegobackend.group.domain.repository.v1.GroupImageRepository;
+import team.wego.wegobackend.group.domain.repository.v1.GroupRepository;
 import team.wego.wegobackend.image.application.service.ImageUploadService;
 import team.wego.wegobackend.image.domain.ImageFile;
 

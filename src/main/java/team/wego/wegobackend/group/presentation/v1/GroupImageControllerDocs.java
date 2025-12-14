@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.presentation;
+package team.wego.wegobackend.group.presentation.v1;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.group.application.dto.request.UpdateGroupImageItemRequest;
-import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
-import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageResponse;
+import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupImageItemRequest;
+import team.wego.wegobackend.group.application.dto.v1.response.GroupImageItemResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.PreUploadGroupImageResponse;
 
 @Tag(name = "모임 이미지 API", description = "모임 이미지 업로드/수정/삭제와 관련된 API 리스트 🐈")
 public interface GroupImageControllerDocs {

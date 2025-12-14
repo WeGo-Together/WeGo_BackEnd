@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.presentation;
+package team.wego.wegobackend.group.presentation.v1;
 
 
 import jakarta.validation.Valid;
@@ -19,10 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.group.application.dto.request.UpdateGroupImageItemRequest;
-import team.wego.wegobackend.group.application.dto.response.GroupImageItemResponse;
-import team.wego.wegobackend.group.application.dto.response.PreUploadGroupImageResponse;
-import team.wego.wegobackend.group.application.service.GroupImageService;
+import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupImageItemRequest;
+import team.wego.wegobackend.group.application.dto.v1.response.GroupImageItemResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.PreUploadGroupImageResponse;
+import team.wego.wegobackend.group.application.service.v1.GroupImageService;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/groups/images")
