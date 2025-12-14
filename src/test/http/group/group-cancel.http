@@ -62,8 +62,8 @@ Authorization: Bearer {{host2AccessToken}}
   "title": "참여 취소 테스트용 자바 스터디",
   "location": "서울 서초구",
   "locationDetail": "교대역 1번 출구 근처 카페",
-  "startTime": "2025-12-11T19:00:00",
-  "endTime": "2025-12-11T21:00:00",
+  "startTime": "2026-12-11T19:00:00",
+  "endTime": "2026-12-11T21:00:00",
   "tags": [
     "참여취소테스트",
     "자바"
