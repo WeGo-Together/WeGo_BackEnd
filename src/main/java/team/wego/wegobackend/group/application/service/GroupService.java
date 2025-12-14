@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -57,11 +58,20 @@ public class GroupService {
 
     private final ImageUploadService imageUploadService;
 
+    private static final int GROUP_LIST_IMAGE_LIMIT = 3;
+    private static final int MAX_PAGE_SIZE = 50;
+
+    private static final String MAIN_IMAGE_SIZE_TOKEN = "440x240";
+    private static final String THUMB_IMAGE_SIZE_TOKEN = "100x100";
+
+    /* =========================
+     * Create
+     * ========================= */
+
     private void validateCreateGroupRequest(CreateGroupRequest request) {
         if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
             throw new GroupException(GroupErrorCode.INVALID_TIME_RANGE);
         }
-
         if (request.maxParticipants() == null || request.maxParticipants() < 2) {
             throw new GroupException(GroupErrorCode.INVALID_MAX_PARTICIPANTS);
         }
@@ -72,7 +82,6 @@ public class GroupService {
             return;
         }
 
-        // 1. null, 공백 제거 + trim + 중복 제거
         List<String> normalized = tagNames.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
@@ -84,13 +93,10 @@ public class GroupService {
             return;
         }
 
-        // 2. 이미 존재하는 태그 조회
         List<Tag> existingTags = tagRepository.findByNameIn(normalized);
-
         Map<String, Tag> tagByName = existingTags.stream()
                 .collect(Collectors.toMap(Tag::getName, Function.identity()));
 
-        // 3. 없는 태그는 새로 생성
         List<Tag> newTags = normalized.stream()
                 .filter(name -> !tagByName.containsKey(name))
                 .map(Tag::create)
@@ -98,16 +104,11 @@ public class GroupService {
 
         if (!newTags.isEmpty()) {
             List<Tag> saved = tagRepository.saveAll(newTags);
-            // 새로 생성된 태그도 map에 추가
             saved.forEach(tag -> tagByName.put(tag.getName(), tag));
         }
 
-        // 4. GroupTag 저장 (normalized 순서대로)
         List<GroupTag> groupTags = normalized.stream()
-                .map(name -> {
-                    Tag tag = tagByName.get(name); // 무조건 존재
-                    return GroupTag.create(group, tag);
-                })
+                .map(name -> GroupTag.create(group, tagByName.get(name)))
                 .toList();
 
         groupTagRepository.saveAll(groupTags);
@@ -121,19 +122,20 @@ public class GroupService {
         host.increaseGroupCreatedCount();
     }
 
+    private User findUserByUserId(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, userId));
+    }
+
     @Transactional
     public CreateGroupResponse createGroup(CustomUserDetails userDetails,
             CreateGroupRequest request) {
-        // 0. 기본 검증
+        Long userId = userDetails.getId();
+
         validateCreateGroupRequest(request);
 
-        // 1. HOST 조회
-        User host = userRepository.findById(userDetails.getId())
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND,
-                                userDetails.getId()));
+        User host = findUserByUserId(userId);
 
-        // 2. Group 생성 및 저장
         Group group = Group.create(
                 request.title(),
                 request.location(),
@@ -146,57 +148,36 @@ public class GroupService {
         );
         groupRepository.save(group);
 
-        // 3. HOST를 GroupUser(HOST)로 저장
         registerHost(group, host);
 
-        // 4. 태그 저장 (이름 기반)
         saveGroupTags(group, request.tags());
 
-        // 5. 이미지 URL 기반으로 GroupImage 생성 + 응답 DTO 구성
         List<GroupImageItemResponse> imageResponses = saveGroupImagesByUrl(group, request.images());
 
-        // 6. 응답 생성 (그룹 + 이미지 모두 포함)
         return CreateGroupResponse.from(group, imageResponses);
     }
 
-    /**
-     * CreateGroupRequest.images 안에 들어있는 imageUrl440x240 / imageUrl100x100 을 사용해서 GroupImage 엔티티를
-     * 생성하고 저장한 뒤, 응답 DTO로 변환합니다.
-     */
-    private List<GroupImageItemResponse> saveGroupImagesByUrl(
-            Group group,
-            List<CreateGroupImageRequest> imageRequests
-    ) {
+    private List<GroupImageItemResponse> saveGroupImagesByUrl(Group group,
+            List<CreateGroupImageRequest> imageRequests) {
         if (imageRequests == null || imageRequests.isEmpty()) {
             return List.of();
         }
 
-        // sortOrder 기준 정렬
         List<CreateGroupImageRequest> sorted = imageRequests.stream()
                 .filter(Objects::nonNull)
-                .sorted((a, b) -> {
-                    int s1 = a.sortOrder() != null ? a.sortOrder() : 0;
-                    int s2 = b.sortOrder() != null ? b.sortOrder() : 0;
-                    return Integer.compare(s1, s2);
-                })
+                .sorted(Comparator.comparingInt(req -> sortOrderOrZero(req.sortOrder())))
                 .toList();
 
-        // 엔티티 2배 생성 (한 이미지는 440, 100 두 행)
         List<GroupImage> entities = new java.util.ArrayList<>();
 
         for (CreateGroupImageRequest req : sorted) {
             int sortOrder = req.sortOrder() != null ? req.sortOrder() : 0;
 
-            // MAIN: 440x240
             if (req.imageUrl440x240() != null && !req.imageUrl440x240().isBlank()) {
-                GroupImage main = GroupImage.create(group, req.imageUrl440x240(), sortOrder);
-                entities.add(main);
+                entities.add(GroupImage.create(group, req.imageUrl440x240(), sortOrder));
             }
-
-            // THUMB: 100x100
             if (req.imageUrl100x100() != null && !req.imageUrl100x100().isBlank()) {
-                GroupImage thumb = GroupImage.create(group, req.imageUrl100x100(), sortOrder);
-                entities.add(thumb);
+                entities.add(GroupImage.create(group, req.imageUrl100x100(), sortOrder));
             }
         }
 
@@ -204,234 +185,176 @@ public class GroupService {
             groupImageRepository.saveAll(entities);
         }
 
-        // sortOrder 기준으로 묶어서 "논리적인 한 장" 단위로 응답 DTO 생성
         Map<Integer, List<GroupImage>> byOrder = entities.stream()
-                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        GroupImage::getSortOrder,
+                        TreeMap::new,
+                        Collectors.toList()
+                ));
 
-        return byOrder.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())  // sortOrder 오름차순
-                .map(entry -> {
-                    int sortOrder = entry.getKey();
-                    List<GroupImage> list = entry.getValue();
-
-                    // 440x240 행
-                    GroupImage main = list.stream()
-                            .filter(img -> img.getImageUrl().contains("440x240"))
-                            .findFirst()
-                            .orElse(list.getFirst()); // 혹시 패턴이 안 맞으면 첫 번째를 대표로
-
-                    // 100x100 행
-                    GroupImage thumb = list.stream()
-                            .filter(img -> img.getImageUrl().contains("100x100"))
-                            .findFirst()
-                            .orElse(null);
-
-                    return GroupImageItemResponse.from(main, thumb);
-
-                })
+        return byOrder.values().stream()
+                .map(this::toImageItem)
+                .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private int sortOrderOrZero(Integer sortOrder) {
+        return sortOrder != null ? sortOrder : 0;
+    }
+
+    /* =========================
+     * Common Finders
+     * ========================= */
+
+    private Group findActiveGroup(Long groupId) {
+        return groupRepository.findByIdAndDeletedAtIsNull(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+    }
+
+    private User findMember(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, userId));
+    }
+
+    /* =========================
+     * Attend / Cancel Attend
+     * ========================= */
+
+    private void validateNotAlreadyAttend(GroupUser groupUser, Long groupId, Long userId) {
+        if (groupUser != null && groupUser.getStatus() == ATTEND) {
+            throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId, userId);
+        }
+    }
+
+    private void validateCapacity(Group group) {
+        long currentAttendCount = groupUserRepository.countByGroupAndStatus(group, ATTEND);
+        if (currentAttendCount >= group.getMaxParticipants()) {
+            throw new GroupException(GroupErrorCode.GROUP_CAPACITY_EXCEEDED, group.getId());
+        }
+    }
+
+    private boolean upsertAttend(Group group, User member, GroupUser groupUser) {
+        if (groupUser == null) {
+            groupUserRepository.save(GroupUser.create(group, member, GroupRole.MEMBER));
+            return true; // 최초 참여
+        }
+        groupUser.reAttend(); // LEFT -> ATTEND (재참여)
+        return false;
     }
 
     @Transactional
     public GetGroupResponse attendGroup(CustomUserDetails userDetails, Long groupId) {
-        // 0. Group 조회 (삭제된 모임 제외)
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+        Long userId = userDetails.getId();
 
-        // 1. member 조회
-        User member = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND,
-                        userDetails.getId()));
+        Group group = findActiveGroup(groupId);
+        User member = findMember(userId);
 
-        // 2. 이미 GroupUser row가 있는지 확인 (한 모임/유저당 한 row 가정)
-        GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
-                .orElse(null);
+        GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member).orElse(null);
 
-        if (groupUser != null && groupUser.getStatus() == ATTEND) {
-            // 이미 참여 중인 경우
-            throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId,
-                    userDetails.getId());
-        }
+        validateNotAlreadyAttend(groupUser, groupId, userId);
+        validateCapacity(group);
 
-        // 3. 정원 체크 (ATTEND 상태인 인원 수 기준)
-        long currentAttendCount = groupUserRepository.countByGroupAndStatus(group, ATTEND);
-        if (currentAttendCount >= group.getMaxParticipants()) {
-            throw new GroupException(GroupErrorCode.GROUP_CAPACITY_EXCEEDED, groupId);
-        }
-
-        // 유니크 참여 카운트는 "처음 참여"일 때만 올리기
-        if (groupUser == null) {
-            GroupUser newGroupUser = GroupUser.create(group, member, GroupRole.MEMBER);
-            groupUserRepository.save(newGroupUser);
-
+        boolean firstJoin = upsertAttend(group, member, groupUser);
+        if (firstJoin) {
             member.increaseGroupJoinedCount();
-        } else if (groupUser.getStatus() == LEFT) {
-            groupUser.reAttend(); // 재참여: 카운트 증가 X
         }
 
-        return buildGetGroupResponse(group, userDetails.getId());
+        return buildGetGroupResponse(group, userId);
     }
 
     @Transactional
     public GetGroupResponse cancelAttendGroup(CustomUserDetails userDetails, Long groupId) {
-        // 0. Group 조회 (soft delete 고려)
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+        Long userId = userDetails.getId();
 
-        // 1. member 조회
-        User member = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND,
-                        userDetails.getId()));
+        Group group = findActiveGroup(groupId);
+        User member = findMember(userId);
 
-        // 2. GroupUser 찾기
-        GroupUser groupUser = groupUserRepository.findByGroupAndUser(group, member)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId,
-                        userDetails.getId()));
+        GroupUser groupUser = findGroupUserOrThrow(group, member, groupId, userId);
 
-        // 3. HOST는 나갈 수 없음
-        if (groupUser.getGroupRole() == GroupRole.HOST) {
-            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId,
-                    userDetails.getId());
-        }
+        validateHostCannotLeave(groupUser, groupId, userId);
+        validateCurrentlyAttend(groupUser, groupId, userId);
 
-        // 4. 이미 나간 상태면 예외
-        if (groupUser.getStatus() == LEFT) {
-            throw new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, userDetails.getId());
-        }
-
-        // 5. 참여 취소 (leave)
         groupUser.leave();
 
-        // 6. 최신 모임 상세 응답 반환
-        return buildGetGroupResponse(group, userDetails.getId());
+        return buildGetGroupResponse(group, userId);
+    }
+
+    private GroupUser findGroupUserOrThrow(Group group, User member, Long groupId, Long userId) {
+        return groupUserRepository.findByGroupAndUser(group, member)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, userId));
+    }
+
+    private void validateHostCannotLeave(GroupUser groupUser, Long groupId, Long userId) {
+        if (groupUser.getGroupRole() == GroupRole.HOST) {
+            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId, userId);
+        }
+    }
+
+    private void validateCurrentlyAttend(GroupUser groupUser, Long groupId, Long userId) {
+        if (groupUser.getStatus() == LEFT) {
+            throw new GroupException(GroupErrorCode.NOT_ATTEND_GROUP, groupId, userId);
+        }
+    }
+
+    /* =========================
+     * Group List
+     * ========================= */
+
+    private int clampPageSize(int size) {
+        return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String trimmed = keyword.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 
     @Transactional(readOnly = true)
     public GetGroupListResponse getGroupList(String keyword, Long cursor, int size) {
+        int pageSize = clampPageSize(size);
+        String normalizedKeyword = normalizeKeyword(keyword);
 
-        int pageSize = Math.max(1, Math.min(size, 50));
-        String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
-
-        List<Group> groups = groupRepository.findGroupsWithKeywordAndCursor(
-                normalizedKeyword,
-                cursor,
-                pageSize + 1
+        List<Group> fetched = groupRepository.findGroupsWithKeywordAndCursor(
+                normalizedKeyword, cursor, pageSize + 1
         );
 
-        Long nextCursor = null;
-        List<Group> pageContent = groups;
-
-        if (groups.size() > pageSize) {
-            // 실제로 내려줄 마지막 아이템 기준으로 커서 설정
-            nextCursor = groups.get(pageSize - 1).getId();
-            // 응답은 pageSize 개까지만 잘라서 내려줌
-            pageContent = groups.subList(0, pageSize);
-        }
-
-        List<GroupListItemResponse> items = pageContent.stream()
-                .map(this::toGroupListItemResponse)
-                .toList();
-
-        return GetGroupListResponse.of(items, nextCursor);
+        return toGroupListResponse(fetched, pageSize);
     }
 
     private GroupListItemResponse toGroupListItemResponse(Group group) {
-        // sortOrder 기준으로 묶어서 대표(440x240)만 선택
-        Map<Integer, List<GroupImage>> byOrder = group.getImages().stream()
-                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
-
-        List<String> imageUrls = byOrder.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .limit(3) // 논리적인 3장까지만
-                .map(entry -> {
-                    List<GroupImage> list = entry.getValue();
-                    return list.stream()
-                            .filter(img -> img.getImageUrl().contains("440x240"))
-                            .findFirst()
-                            .orElse(list.get(0))
-                            .getImageUrl();
-                })
-                .toList();
-
-        List<String> tagNames = group.getGroupTags().stream()
-                .map(GroupTag::getTag)
-                .map(Tag::getName)
-                .toList();
-
-        int participantCount = (int) group.getUsers().stream()
-                .filter(gu -> gu.getStatus() == ATTEND)
-                .count();
-
+        List<String> imageUrls = extractMainImageUrls(group);
+        List<String> tagNames = extractTagNames(group);
+        int participantCount = countAttenders(group);
         CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
 
-        return GroupListItemResponse.of(
-                group,
-                imageUrls,
-                tagNames,
-                participantCount,
-                createdBy
-        );
+        return GroupListItemResponse.of(group, imageUrls, tagNames, participantCount, createdBy);
     }
 
+    /* =========================
+     * Get Group (Detail)
+     * ========================= */
 
     private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
-        // 1) 이미지: sortOrder 기준으로 묶어서 440 + 100 세트 만들기
-        Map<Integer, List<GroupImage>> byOrder = group.getImages().stream()
-                .collect(Collectors.groupingBy(GroupImage::getSortOrder));
+        List<GroupImageItemResponse> images = extractImageItems(group);
+        List<String> tagNames = extractTagNames(group);
 
-        List<GroupImageItemResponse> images = byOrder.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey()) // sortOrder 기준
-                .map(entry -> {
-                    int sortOrder = entry.getKey();
-                    List<GroupImage> list = entry.getValue();
+        List<GroupUser> attendingUsers = extractAttendingUsers(group);
+        int participantCount = attendingUsers.size();
 
-                    GroupImage main = list.stream()
-                            .filter(img -> img.getImageUrl().contains("440x240"))
-                            .findFirst()
-                            .orElse(list.getFirst());
-
-                    GroupImage thumb = list.stream()
-                            .filter(img -> img.getImageUrl().contains("100x100"))
-                            .findFirst()
-                            .orElse(null);
-
-                    return GroupImageItemResponse.from(main, thumb);
-                })
-                .toList();
-
-        // 2) 태그 이름
-        List<String> tagNames = group.getGroupTags().stream()
-                .map(GroupTag::getTag)
-                .map(Tag::getName)
-                .toList();
-
-        // 3) 현재 참여 인원 수 (status == ATTEND 인 인원만)
-        int participantCount = (int) group.getUsers().stream()
-                .filter(gu -> gu.getStatus() == ATTEND)
-                .count();
-
-        // 4) 만든 사람 정보
-        CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
-
-        // 5) 현재 요청 유저의 참여 상태 (currentUserId가 null일 수도 있음)
-        UserStatusResponse userStatus;
-        if (currentUserId == null) {
-            userStatus = UserStatusResponse.notJoined();
-        } else {
-            userStatus = group.getUsers().stream()
-                    .filter(gu -> gu.getUser().getId().equals(currentUserId))
-                    .filter(gu -> gu.getStatus() == ATTEND)
-                    .findFirst()
-                    .map(gu -> UserStatusResponse.fromJoined(gu.getJoinedAt()))
-                    .orElse(UserStatusResponse.notJoined());
-        }
-
-        // 6) 참여 중인 멤버 리스트 (status == ATTEND)
-        List<JoinedMemberResponse> joinedMembers = group.getUsers().stream()
-                .filter(gu -> gu.getStatus() == ATTEND)
+        List<GroupUser> attendingSorted = attendingUsers.stream()
                 .sorted(Comparator.comparing(GroupUser::getJoinedAt))
+                .toList();
+
+        CreatedByResponse createdBy = CreatedByResponse.from(group.getHost());
+        UserStatusResponse userStatus = resolveUserStatus(attendingUsers, currentUserId);
+
+        List<JoinedMemberResponse> joinedMembers = attendingSorted.stream()
                 .map(JoinedMemberResponse::from)
                 .toList();
 
@@ -446,41 +369,177 @@ public class GroupService {
         );
     }
 
-    private String resolveThumbnailUrl(String mainUrl) {
-        if (mainUrl == null || mainUrl.isBlank()) {
-            return null;
-        }
-
-        if (mainUrl.contains("440x240")) {
-            return mainUrl.replace("440x240", "100x100");
-        }
-
-        return mainUrl;
+    private GetGroupResponse getGroupInternal(Long groupId, Long currentUserId) {
+        Group group = findActiveGroup(groupId);
+        return buildGetGroupResponse(group, currentUserId);
     }
 
     @Transactional(readOnly = true)
     public GetGroupResponse getGroup(CustomUserDetails userDetails, Long groupId) {
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
-
-        return buildGetGroupResponse(group, userDetails.getId());
+        return getGroupInternal(groupId, userDetails.getId());
     }
 
     @Transactional(readOnly = true)
     public GetGroupResponse getGroup(Long groupId) {
-        // 익명 / 비로그인 / userId 모르는 경우
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
-
-        // currentUserId = null로 넘기면 userStatus.notJoined()
-        return buildGetGroupResponse(group, null);
+        return getGroupInternal(groupId, null);
     }
 
+    /* =========================
+     * Image / Tag / User extractors
+     * ========================= */
+
+    private Map<Integer, List<GroupImage>> groupImagesBySortOrder(Group group) {
+        if (group.getImages() == null || group.getImages().isEmpty()) {
+            return Map.of();
+        }
+
+        return group.getImages().stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        GroupImage::getSortOrder,
+                        TreeMap::new,
+                        Collectors.toList()
+                ));
+    }
+
+    private List<GroupImageItemResponse> extractImageItems(Group group) {
+        Map<Integer, List<GroupImage>> byOrder = groupImagesBySortOrder(group);
+        if (byOrder.isEmpty()) {
+            return List.of();
+        }
+
+        return byOrder.values().stream()
+                .map(this::toImageItem)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private List<String> extractMainImageUrls(Group group) {
+        Map<Integer, List<GroupImage>> byOrder = groupImagesBySortOrder(group);
+        if (byOrder.isEmpty()) {
+            return List.of();
+        }
+
+        return byOrder.values().stream()
+                .limit(GroupService.GROUP_LIST_IMAGE_LIMIT)
+                .map(this::pickMainImageUrl)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private GroupImageItemResponse toImageItem(List<GroupImage> images) {
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+
+        GroupImage main = findByTokenOrNull(images, MAIN_IMAGE_SIZE_TOKEN);
+        if (main == null) {
+            main = findFirstWithUrl(images);
+        }
+        if (main == null) {
+            return null;
+        }
+
+        GroupImage thumb = findByTokenOrNull(images, THUMB_IMAGE_SIZE_TOKEN);
+        return GroupImageItemResponse.from(main, thumb);
+    }
+
+    private String pickMainImageUrl(List<GroupImage> images) {
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+
+        GroupImage main = findByTokenOrNull(images, MAIN_IMAGE_SIZE_TOKEN);
+        if (main != null) {
+            return main.getImageUrl();
+        }
+
+        GroupImage any = findFirstWithUrl(images);
+        return any != null ? any.getImageUrl() : null;
+    }
+
+    private GroupImage findFirstWithUrl(List<GroupImage> images) {
+        return images.stream()
+                .filter(Objects::nonNull)
+                .filter(img -> img.getImageUrl() != null && !img.getImageUrl().isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private GroupImage findByTokenOrNull(List<GroupImage> images, String token) {
+        return images.stream()
+                .filter(Objects::nonNull)
+                .filter(img -> img.getImageUrl() != null && img.getImageUrl().contains(token))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<String> extractTagNames(Group group) {
+        if (group.getGroupTags() == null || group.getGroupTags().isEmpty()) {
+            return List.of();
+        }
+
+        return group.getGroupTags().stream()
+                .map(GroupTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getName)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private int countAttenders(Group group) {
+        if (group.getUsers() == null || group.getUsers().isEmpty()) {
+            return 0;
+        }
+
+        return (int) group.getUsers().stream()
+                .filter(Objects::nonNull)
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .count();
+    }
+
+    private List<GroupUser> extractAttendingUsers(Group group) {
+        if (group.getUsers() == null || group.getUsers().isEmpty()) {
+            return List.of();
+        }
+
+        return group.getUsers().stream()
+                .filter(Objects::nonNull)
+                .filter(gu -> gu.getStatus() == ATTEND)
+                .toList();
+    }
+
+    private UserStatusResponse resolveUserStatus(List<GroupUser> attendingUsers,
+            Long currentUserId) {
+        if (currentUserId == null) {
+            return UserStatusResponse.notJoined();
+        }
+
+        return attendingUsers.stream()
+                .filter(gu -> gu.getUser() != null && currentUserId.equals(gu.getUser().getId()))
+                .findFirst()
+                .map(gu -> UserStatusResponse.fromJoined(gu.getJoinedAt()))
+                .orElse(UserStatusResponse.notJoined());
+    }
+
+    private List<String> extractAllImageUrls(Group group) {
+        if (group.getImages() == null || group.getImages().isEmpty()) {
+            return List.of();
+        }
+
+        return group.getImages().stream()
+                .filter(Objects::nonNull)
+                .map(GroupImage::getImageUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .toList();
+    }
+
+    /* =========================
+     * Update / Delete
+     * ========================= */
 
     private void updateGroupTags(Group group, List<String> tagNames) {
-        if (tagNames == null) { // null이면 "태그는 건드리지 않는다"는 의미로 처리
+        if (tagNames == null) { // null이면 "태그는 건드리지 않는다"
             return;
         }
         group.getGroupTags().clear();
@@ -488,19 +547,16 @@ public class GroupService {
     }
 
     private void validateUpdateGroupRequest(UpdateGroupRequest request, int currentAttendCount) {
-        // 모임 시간 검증: 둘 다 있을 때만 비교
         if (request.startTime() != null
                 && request.endTime() != null
                 && !request.endTime().isAfter(request.startTime())) {
             throw new GroupException(GroupErrorCode.INVALID_TIME_RANGE);
         }
 
-        // 최소 인원 검증
         if (request.maxParticipants() == null || request.maxParticipants() < 2) {
             throw new GroupException(GroupErrorCode.INVALID_MAX_PARTICIPANTS);
         }
 
-        // 현재 참여 인원보다 작게 줄일 수 없음
         if (request.maxParticipants() < currentAttendCount) {
             throw new GroupException(
                     GroupErrorCode.INVALID_MAX_PARTICIPANTS_LESS_THAN_CURRENT,
@@ -512,29 +568,16 @@ public class GroupService {
     @Transactional
     public GetGroupResponse updateGroup(CustomUserDetails userDetails, Long groupId,
             UpdateGroupRequest request) {
-        // 1. 모임 조회
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+        Long userId = userDetails.getId();
+        Group group = findActiveGroup(groupId);
 
-        // 2. 권한 체크: HOST만 수정 가능
-        if (!group.getHost().getId().equals(userDetails.getId())) {
-            throw new GroupException(
-                    GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP,
-                    groupId,
-                    userDetails.getId()
-            );
+        if (!group.getHost().getId().equals(userId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_UPDATE_GROUP, groupId, userId);
         }
 
-        // 3. 현재 ATTEND 인원 수 (HOST 포함)
-        int currentAttendCount = (int) group.getUsers().stream()
-                .filter(gu -> gu.getStatus() == ATTEND)
-                .count();
-
-        // 4. 요청 값 검증 (시간 / 최대 인원 / 현재 인원 대비)
+        int currentAttendCount = countAttenders(group);
         validateUpdateGroupRequest(request, currentAttendCount);
 
-        // 5. 엔티티 필드 수정 (이미지는 건드리지 않음)
         group.update(
                 request.title(),
                 request.location(),
@@ -545,58 +588,29 @@ public class GroupService {
                 request.maxParticipants()
         );
 
-        // 6. 태그 수정
         updateGroupTags(group, request.tags());
 
-        // 7. 수정 결과 응답 (현재 유저 기준)
-        return buildGetGroupResponse(group, userDetails.getId());
+        return buildGetGroupResponse(group, userId);
     }
 
     @Transactional
     public void deleteGroup(CustomUserDetails userDetails, Long groupId) {
-        // 1. 모임 조회 (soft delete 고려 쿼리 사용 중이지만, 여기서는 실제 삭제)
-        Group group = groupRepository.findByIdAndDeletedAtIsNull(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId)
-                );
+        Long userId = userDetails.getId();
+        Group group = findActiveGroup(groupId);
 
-        // 2. HOST 권한 체크
-        if (!group.getHost().getId().equals(userDetails.getId())) {
-            throw new GroupException(
-                    GroupErrorCode.NO_PERMISSION_TO_DELETE_GROUP,
-                    groupId,
-                    userDetails.getId()
-            );
+        if (!group.getHost().getId().equals(userId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_DELETE_GROUP, groupId, userId);
         }
 
-        // 3. S3 이미지 삭제 (이미지 URL -> key 변환은 ImageUploadService 가 담당)
-        List<String> imageUrls = group.getImages().stream()
-                .map(GroupImage::getImageUrl)
-                .filter(Objects::nonNull)
-                .toList();
-
-        imageUploadService.deleteAllByUrls(imageUrls);
-
+        imageUploadService.deleteAllByUrls(extractAllImageUrls(group));
         groupRepository.delete(group);
     }
 
-    private void decreaseJoinedCountForAttenders(Group group) {
-        List<GroupUser> attenders = groupUserRepository.findAllByGroupAndStatusFetchUser(group,
-                ATTEND);
-
-        attenders.forEach(gu -> gu.getUser().decreaseGroupJoinedCount());
-    }
-
     @Transactional(readOnly = true)
-    public GetGroupListResponse getMyGroups(
-            CustomUserDetails userDetails,
-            String type,
-            Long cursor,
-            int size
-    ) {
+    public GetGroupListResponse getMyGroups(CustomUserDetails userDetails, String type, Long cursor,
+            int size) {
         MyGroupType myGroupType = MyGroupType.from(type);
-
-        int pageSize = Math.max(1, Math.min(size, 50));
+        int pageSize = clampPageSize(size);
 
         return switch (myGroupType) {
             case CURRENT -> getMyCurrentGroups(userDetails.getId(), cursor, pageSize);
@@ -607,82 +621,45 @@ public class GroupService {
 
     private GetGroupListResponse getMyCurrentGroups(Long userId, Long cursor, int size) {
         LocalDateTime now = LocalDateTime.now();
-
-        // 지금은 ATTEND 만 사용, 나중에 LEFT 도 포함하려면 여기만 변경하면 됨
         List<String> statuses = List.of(ATTEND.name());
 
-        List<Group> groups = groupRepository.findCurrentGroupsByUser(
-                userId,
-                statuses,
-                cursor,
-                now,
-                size + 1   // 다음 페이지 여부 판단용
+        List<Group> fetched = groupRepository.findCurrentGroupsByUser(
+                userId, statuses, cursor, now, size + 1
         );
 
-        Long nextCursor = null;
-        List<Group> pageContent = groups;
-
-        if (groups.size() > size) {
-            nextCursor = groups.get(size - 1).getId();
-            pageContent = groups.subList(0, size);
-        }
-
-        List<GroupListItemResponse> items = pageContent.stream()
-                .map(this::toGroupListItemResponse)
-                .toList();
-
-        return GetGroupListResponse.of(items, nextCursor);
+        return toGroupListResponse(fetched, size);
     }
 
     private GetGroupListResponse getMyPostGroups(Long userId, Long cursor, int size) {
-        List<Group> groups = groupRepository.findMyPostGroupsByHost(
-                userId,
-                cursor,
-                size + 1
+        List<Group> fetched = groupRepository.findMyPostGroupsByHost(
+                userId, cursor, size + 1
         );
 
-        Long nextCursor = null;
-        List<Group> pageContent = groups;
-
-        if (groups.size() > size) {
-            nextCursor = groups.get(size - 1).getId();
-            pageContent = groups.subList(0, size);
-        }
-
-        List<GroupListItemResponse> items = pageContent.stream()
-                .map(this::toGroupListItemResponse)
-                .toList();
-
-        return GetGroupListResponse.of(items, nextCursor);
+        return toGroupListResponse(fetched, size);
     }
+
 
     private GetGroupListResponse getMyPastGroups(Long userId, Long cursor, int size) {
         LocalDateTime now = LocalDateTime.now();
-
-        // 추후 LEFT 포함하고 싶으면 여기만 변경
         List<String> statuses = List.of(ATTEND.name());
 
-        List<Group> groups = groupRepository.findPastGroupsByUser(
-                userId,
-                statuses,
-                cursor,
-                now,
-                size + 1
+        List<Group> fetched = groupRepository.findPastGroupsByUser(
+                userId, statuses, cursor, now, size + 1
         );
 
-        Long nextCursor = null;
-        List<Group> pageContent = groups;
+        return toGroupListResponse(fetched, size);
+    }
 
-        if (groups.size() > size) {
-            nextCursor = groups.get(size - 1).getId();
-            pageContent = groups.subList(0, size);
-        }
+    private GetGroupListResponse toGroupListResponse(List<Group> fetched, int pageSize) {
+        boolean hasNext = fetched.size() > pageSize;
 
-        List<GroupListItemResponse> items = pageContent.stream()
+        List<Group> content = hasNext ? fetched.subList(0, pageSize) : fetched;
+        Long nextCursor = hasNext ? content.get(pageSize - 1).getId() : null;
+
+        List<GroupListItemResponse> items = content.stream()
                 .map(this::toGroupListItemResponse)
                 .toList();
 
         return GetGroupListResponse.of(items, nextCursor);
     }
 }
-
