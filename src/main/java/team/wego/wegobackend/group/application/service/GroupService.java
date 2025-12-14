@@ -113,9 +113,12 @@ public class GroupService {
         groupTagRepository.saveAll(groupTags);
     }
 
-    private void saveHostAsGroupUser(Group group, User host) {
+    private void registerHost(Group group, User host) {
         GroupUser groupUser = GroupUser.create(group, host, GroupRole.HOST);
         groupUserRepository.save(groupUser);
+
+        host.increaseGroupJoinedCount();
+        host.increaseGroupCreatedCount();
     }
 
     @Transactional
@@ -144,7 +147,7 @@ public class GroupService {
         groupRepository.save(group);
 
         // 3. HOST를 GroupUser(HOST)로 저장
-        saveHostAsGroupUser(group, host);
+        registerHost(group, host);
 
         // 4. 태그 저장 (이름 기반)
         saveGroupTags(group, request.tags());
@@ -257,15 +260,14 @@ public class GroupService {
             throw new GroupException(GroupErrorCode.GROUP_CAPACITY_EXCEEDED, groupId);
         }
 
-        // 4. 참여 처리
+        // 유니크 참여 카운트는 "처음 참여"일 때만 올리기
         if (groupUser == null) {
-            // 처음 참여
             GroupUser newGroupUser = GroupUser.create(group, member, GroupRole.MEMBER);
             groupUserRepository.save(newGroupUser);
+
+            member.increaseGroupJoinedCount();
         } else if (groupUser.getStatus() == LEFT) {
-            // 이전에 나갔다가 다시 참여
-            groupUser.reAttend();
-            // dirty checking 으로 업데이트
+            groupUser.reAttend(); // 재참여: 카운트 증가 X
         }
 
         return buildGetGroupResponse(group, userDetails.getId());
@@ -576,6 +578,13 @@ public class GroupService {
         imageUploadService.deleteAllByUrls(imageUrls);
 
         groupRepository.delete(group);
+    }
+
+    private void decreaseJoinedCountForAttenders(Group group) {
+        List<GroupUser> attenders = groupUserRepository.findAllByGroupAndStatusFetchUser(group,
+                ATTEND);
+
+        attenders.forEach(gu -> gu.getUser().decreaseGroupJoinedCount());
     }
 
     @Transactional(readOnly = true)
