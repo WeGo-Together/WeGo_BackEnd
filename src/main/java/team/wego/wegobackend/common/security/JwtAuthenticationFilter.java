@@ -89,6 +89,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
+
+        //SSE 연결을 위한 추출 전략 추가
+        String tokenFromQuery = request.getParameter("accessToken");
+        if (StringUtils.hasText(tokenFromQuery)) {
+            return tokenFromQuery;
+        }
         return null;
     }
 
