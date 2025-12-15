@@ -10,8 +10,8 @@ public enum NotificationType {
     ENTER("모임 참여"),
     EXIT("모임 퇴장"),
     CREATE("모임 생성"),
-    CANCLE("모임 취소")
-    ;
+    CANCEL("모임 취소"),
+    TEST("테스트 알림");
 
     private final String description;
 }

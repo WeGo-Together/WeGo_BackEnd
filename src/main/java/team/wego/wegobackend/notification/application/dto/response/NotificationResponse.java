@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import team.wego.wegobackend.notification.application.dto.NotificationType;
 import team.wego.wegobackend.notification.domain.Notification;
+import team.wego.wegobackend.user.domain.User;
 
 @Getter
 @Builder
@@ -28,8 +29,10 @@ public class NotificationResponse {
             .id(notification.getId())
             .receiverId(notification.getReceiver().getId())
             .actorId(notification.getActor() != null ? notification.getActor().getId() : null)
-            .actorNickname(notification.getActor() != null ? notification.getActor().getNickName() : null)
-            .actorProfileImage(notification.getActor() != null ? notification.getActor().getProfileImage() : null)
+            .actorNickname(
+                notification.getActor() != null ? notification.getActor().getNickName() : null)
+            .actorProfileImage(
+                notification.getActor() != null ? notification.getActor().getProfileImage() : null)
             .type(notification.getType())
             .message(notification.getMessage())
             .isRead(notification.getIsRead())
@@ -37,6 +40,23 @@ public class NotificationResponse {
             .relatedType(notification.getRelatedType())
             .redirectUrl(notification.getRedirectUrl())
             .createdAt(notification.getCreatedAt())
+            .build();
+    }
+
+    public static NotificationResponse from(User user) {
+        return NotificationResponse.builder()
+            .id(user.getId())
+            .receiverId(user.getId())
+            .actorId(user.getId())
+            .actorNickname(user.getNickName())
+            .actorProfileImage(user.getProfileImage())
+            .type(NotificationType.TEST)
+            .message("테스트 알림 응답")
+            .isRead(false)
+            .relatedId(null)
+            .relatedType("TEST")
+            .redirectUrl("https://api.wego.monster/swagger-ui/index.html")
+            .createdAt(LocalDateTime.now())
             .build();
     }
 }
