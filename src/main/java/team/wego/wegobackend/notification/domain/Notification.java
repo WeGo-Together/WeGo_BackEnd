@@ -138,7 +138,7 @@ public class Notification extends BaseTimeEntity {
         return Notification.builder()
             .receiver(receiver)
             .actor(canceler)
-            .type(NotificationType.CANCLE)
+            .type(NotificationType.CANCEL)
             .message(canceler.getNickName() + "님이 모임을 취소하셨습니다.")
             .relatedId(postId)
             .relatedType("POST")
