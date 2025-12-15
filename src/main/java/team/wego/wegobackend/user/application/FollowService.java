@@ -5,6 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.notification.application.SseEmitterService;
+import team.wego.wegobackend.notification.application.dto.NotificationType;
+import team.wego.wegobackend.notification.application.dto.response.NotificationResponse;
+import team.wego.wegobackend.notification.domain.Notification;
+import team.wego.wegobackend.notification.repository.NotificationRepository;
 import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
 import team.wego.wegobackend.user.application.dto.response.FollowResponse;
 import team.wego.wegobackend.user.domain.Follow;
@@ -26,6 +31,10 @@ public class FollowService {
     private final FollowRepository followRepository;
 
     private final UserRepository userRepository;
+
+    private final NotificationRepository notificationRepository;
+
+    private final SseEmitterService sseEmitterService;
 
     public void follow(String followNickname, Long followerId) {
         User follower = userRepository.findById(followerId)
@@ -49,6 +58,14 @@ public class FollowService {
 
         follower.increaseFolloweeCount();
         follow.increaseFollowerCount();
+
+        Notification notification = Notification.createFollowNotification(follow, follower);
+
+        notificationRepository.save(notification);
+
+        // SSE 전송
+        NotificationResponse dto = NotificationResponse.from(notification);
+        sseEmitterService.sendNotification(follow.getId(), dto);
     }
 
     public void unFollow(String unFollowNickname, Long followerId) {
