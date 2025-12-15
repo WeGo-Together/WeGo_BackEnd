@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.application.dto.request;
+package team.wego.wegobackend.group.application.dto.v1.request;
 
 public record CreateGroupImageRequest(
         Integer sortOrder,

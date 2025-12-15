@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.presentation;
+package team.wego.wegobackend.group.presentation.v1;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
-import team.wego.wegobackend.group.application.dto.request.UpdateGroupRequest;
-import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
-import team.wego.wegobackend.group.application.dto.response.GetGroupListResponse;
-import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
+import team.wego.wegobackend.group.application.dto.v1.request.CreateGroupRequest;
+import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupRequest;
+import team.wego.wegobackend.group.application.dto.v1.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.GetGroupListResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.GetGroupResponse;
 
 @Tag(name = "모임 API", description = "모임과 관련된 API 리스트 🐈")
 public interface GroupControllerDocs {

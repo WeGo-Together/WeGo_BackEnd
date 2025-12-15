@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.presentation;
+package team.wego.wegobackend.group.presentation.v1;
 
 
 import jakarta.validation.Valid;
@@ -17,12 +17,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
-import team.wego.wegobackend.group.application.dto.request.UpdateGroupRequest;
-import team.wego.wegobackend.group.application.dto.response.CreateGroupResponse;
-import team.wego.wegobackend.group.application.dto.response.GetGroupListResponse;
-import team.wego.wegobackend.group.application.dto.response.GetGroupResponse;
-import team.wego.wegobackend.group.application.service.GroupService;
+import team.wego.wegobackend.group.application.dto.v1.request.CreateGroupRequest;
+import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupRequest;
+import team.wego.wegobackend.group.application.dto.v1.response.CreateGroupResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.GetGroupListResponse;
+import team.wego.wegobackend.group.application.dto.v1.response.GetGroupResponse;
+import team.wego.wegobackend.group.application.service.v1.GroupService;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/groups")

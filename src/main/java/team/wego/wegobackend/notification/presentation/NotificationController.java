@@ -17,7 +17,6 @@ import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.notification.application.SseEmitterService;
 import team.wego.wegobackend.notification.application.dto.response.NotificationResponse;
-import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
@@ -29,7 +28,6 @@ import team.wego.wegobackend.user.repository.UserRepository;
 public class NotificationController {
 
     private final SseEmitterService sseEmitterService;
-
     private final UserRepository userRepository;    //TEST 의존성 주입
 
     // SSE 연결 엔드포인트
@@ -48,7 +46,6 @@ public class NotificationController {
         User testUser = userRepository.findById(user.getId())
             .orElseThrow(UserNotFoundException::new);
 
-        // SSE 전송
         NotificationResponse dto = NotificationResponse.from(testUser);
         sseEmitterService.sendNotification(user.getId(), dto);
 

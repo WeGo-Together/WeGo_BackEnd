@@ -11,10 +11,10 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.common.security.Role;
-import team.wego.wegobackend.group.application.dto.request.CreateGroupImageRequest;
-import team.wego.wegobackend.group.application.dto.request.CreateGroupRequest;
-import team.wego.wegobackend.group.application.service.GroupService;
-import team.wego.wegobackend.group.domain.repository.GroupRepository;
+import team.wego.wegobackend.group.application.dto.v1.request.CreateGroupImageRequest;
+import team.wego.wegobackend.group.application.dto.v1.request.CreateGroupRequest;
+import team.wego.wegobackend.group.application.service.v1.GroupService;
+import team.wego.wegobackend.group.domain.repository.v1.GroupRepository;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
