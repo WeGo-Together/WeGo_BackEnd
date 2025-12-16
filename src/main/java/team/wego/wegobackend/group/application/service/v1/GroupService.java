@@ -654,8 +654,8 @@ public class GroupService {
             throw new GroupException(GroupErrorCode.GROUP_IMAGE_NOT_FOUND, groupId);
         }
 
-        imageUploadService.deleteOne(null, url);
         groupImageRepository.deleteByGroupAndImageUrl(group, url);
+        imageUploadService.deleteOne(null, url);
     }
 
 }

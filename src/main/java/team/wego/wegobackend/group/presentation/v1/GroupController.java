@@ -128,7 +128,7 @@ public class GroupController implements GroupControllerDocs {
     public ResponseEntity<Void> deleteOne(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
-            @RequestParam(value = "url", required = false) String url
+            @RequestParam(value = "url") String url
     ) {
         groupService.deleteOne(userDetails, groupId, url);
         return ResponseEntity.noContent().build();
