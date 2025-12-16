@@ -1,0 +1,172 @@
+### 0-1. HOST 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo",
+  "phoneNumber": "010-1234-5678"
+}
+
+> {%
+  client.global.set("hostUserId", response.body.data.userId);
+%}
+
+### 0-2. HOST 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("img0_main",  images[0].imageUrl440x240);
+  client.global.set("img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("img1_main",  images[1].imageUrl440x240);
+  client.global.set("img1_thumb", images[1].imageUrl100x100);
+%}
+
+
+### 1-2. 모임 생성 (업로드된 URL로 생성)
+POST http://localhost:8080/api/v1/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - 삭제 테스트용",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "모임 / 이미지 삭제 시나리오 테스트용 모임입니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{img0_main}}",
+      "imageUrl100x100": "{{img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{img1_main}}",
+      "imageUrl100x100": "{{img1_thumb}}"
+    }
+  ]
+}
+
+> {%
+  const groupId = response.body.data.id;
+  client.global.set("groupId_png_jpg", groupId);
+%}
+
+### 2-1. 회원가입(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Heemo",
+  "phoneNumber": "010-1234-5678"
+}
+
+> {%
+  client.global.set("memberId1", response.body.data.userId);
+%}
+
+### 2-2. 로그인(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member1AccessToken", response.body.data.accessToken);
+%}
+
+### 2-3. 모임 참여 (MEMBER 1)
+POST http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 3-1. 모임 상세 조회(삭제 전)
+GET http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Authorization: Bearer {{hostAccessToken}}
+
+
+### 3-1. 모임 이미지 단 건 삭제 - 440x240 (sortOrder=0)
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url={{img0_main}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 3-2. 모임 이미지 단 건 삭제 - 100x100 (sortOrder=0)
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url={{img0_thumb}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 3-3. 모임 상세 조회(삭제 후) - sortOrder=0 이미지 제거 확인
+GET http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 4-1. MEMBER가 모임 이미지 삭제 시도 -> 실패해야 함
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url={{img1_main}}
+Authorization: Bearer {{member1AccessToken}}
+
+### 4-2. key/url 둘 다 없음 -> 400
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one
+Authorization: Bearer {{hostAccessToken}}
+
+### 4-3. 존재하지 않는 url 삭제 시도 -> 404 기대
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url=https://example.com/not-exist.webp
+Authorization: Bearer {{hostAccessToken}}
+
+### 5-1. 같은 이미지 url을 두 번 삭제 -> 204 또는 404 (정책에 맞게)
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url={{img1_main}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 5-2. 같은 이미지 url 다시 삭제
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}/images/one?url={{img1_main}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 6-1. 모임 삭제
+DELETE http://localhost:8080/api/v1/groups/{{groupId_png_jpg}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 6-2. 목록에서 삭제된 모임이 빠졌는지 확인(선택)
+GET http://localhost:8080/api/v1/groups?size=20
+Authorization: Bearer {{hostAccessToken}}
