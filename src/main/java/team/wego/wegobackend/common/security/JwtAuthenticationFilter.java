@@ -142,6 +142,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
 
+
+        if ("GET".equals(method) && pathMatcher.match("/api/v2/groups/**", path)) {
+            return true;
+        }
+
+        if ("GET".equals(method) && pathMatcher.match("/api/v2/group", path)) {
+            return true;
+        }
+
         // SecurityEndpoints.PUBLIC_PATTERNS 체크
         return Arrays.stream(SecurityEndpoints.PUBLIC_PATTERNS)
             .anyMatch(pattern -> pathMatcher.match(pattern, path));
