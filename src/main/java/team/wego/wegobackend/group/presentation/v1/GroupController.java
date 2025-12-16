@@ -72,7 +72,7 @@ public class GroupController implements GroupControllerDocs {
     }
 
     @GetMapping("/{groupId}")
-    public ResponseEntity<ApiResponse<GetGroupResponse>> getGroupResponse(
+    public ResponseEntity<ApiResponse<GetGroupResponse>> getGroup(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
