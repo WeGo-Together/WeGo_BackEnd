@@ -23,6 +23,7 @@ import team.wego.wegobackend.auth.application.dto.response.SignupResponse;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
+import team.wego.wegobackend.auth.exception.NotFoundRefreshTokenException;
 
 @Slf4j
 @RestController
@@ -109,7 +110,7 @@ public class AuthController implements AuthControllerDocs {
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
         @CookieValue(name = "refreshToken", required = false) String refreshToken) {
         if (refreshToken == null) {
-            throw new IllegalArgumentException("Refresh 토큰이 없습니다.");
+            throw new NotFoundRefreshTokenException();
         }
 
         RefreshResponse response = authService.refresh(refreshToken);

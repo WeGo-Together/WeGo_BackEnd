@@ -34,7 +34,8 @@ public enum AppErrorCode implements ErrorCode {
     NOT_FOUND_FOLLOW(HttpStatus.BAD_REQUEST, "회원 : 팔로우 관계를 찾을 수 없습니다."),
 
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 만료된 토큰입니다."),
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 유효하지 않은 토큰입니다.")
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 유효하지 않은 토큰입니다."),
+    NOT_FOUND_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 토큰을 찾을 수 없습니다.")
     ;
 
     private final HttpStatus httpStatus;
