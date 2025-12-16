@@ -3,6 +3,7 @@ package team.wego.wegobackend.image.application.service;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -384,27 +385,30 @@ public class ImageUploadService {
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
     }
 
+
     public String extractKeyFromUrl(String imageUrl) {
-        if (imageUrl == null || imageUrl.isBlank()) {
-            return null;
-        }
+        if (imageUrl == null || imageUrl.isBlank()) return null;
+
+        String clean = imageUrl;
+        int qIdx = clean.indexOf('?');
+        if (qIdx >= 0) clean = clean.substring(0, qIdx);
 
         String endpoint = awsS3Properties.getPublicEndpoint();
         if (endpoint != null && !endpoint.isBlank()) {
             String prefix = endpoint.endsWith("/") ? endpoint : endpoint + "/";
-            if (imageUrl.startsWith(prefix)) {
-                return imageUrl.substring(prefix.length());
+            if (clean.startsWith(prefix)) {
+                return clean.substring(prefix.length());
             }
         }
 
-        // fallback: 마지막 "/" 이후를 key로 사용
-        int idx = imageUrl.lastIndexOf('/');
-        if (idx >= 0 && idx + 1 < imageUrl.length()) {
-            return imageUrl.substring(idx + 1);
+        try {
+            URI uri = URI.create(clean);
+            String path = uri.getPath(); // "/dir/xxx.webp"
+            if (path == null || path.isBlank()) return null;
+            return path.startsWith("/") ? path.substring(1) : path;
+        } catch (IllegalArgumentException e) {
+            return clean; // url이 아니면 key로 간주
         }
-
-        // 그래도 안 되면 전체를 key로 시도 (최악의 경우)
-        return imageUrl;
     }
 
     public void deleteByUrl(String imageUrl) {
@@ -429,6 +433,36 @@ public class ImageUploadService {
 
         if (!keys.isEmpty()) {
             deleteAll(keys);
+        }
+    }
+
+
+    public void deleteOne(String key, String url) {
+        boolean hasKey = key != null && !key.isBlank();
+        boolean hasUrl = url != null && !url.isBlank();
+
+        if (!hasKey && !hasUrl) {
+            throw new ImageException(ImageExceptionCode.KEY_OR_URL_REQUIRED);
+        }
+        if (hasKey && hasUrl) {
+            throw new ImageException(ImageExceptionCode.KEY_AND_URL_CONFLICT);
+        }
+
+        String targetKey = hasUrl ? extractKeyFromUrl(url) : key;
+
+        validateKey(targetKey);
+        delete(targetKey);
+    }
+
+    private void validateKey(String key) {
+        if (key == null || key.isBlank()) {
+            throw new ImageException(ImageExceptionCode.KEY_OR_URL_REQUIRED);
+        }
+        if (key.contains("..") || key.startsWith("/")) {
+            throw new ImageException(ImageExceptionCode.DIR_INVALID_TRAVERSAL);
+        }
+        if (!key.matches("[a-zA-Z0-9_\\-./]+")) {
+            throw new ImageException(ImageExceptionCode.INVALID_IMAGE_KEY, key);
         }
     }
 
