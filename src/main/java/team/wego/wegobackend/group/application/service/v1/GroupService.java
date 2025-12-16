@@ -64,10 +64,6 @@ public class GroupService {
     private static final String MAIN_IMAGE_SIZE_TOKEN = "440x240";
     private static final String THUMB_IMAGE_SIZE_TOKEN = "100x100";
 
-    /* =========================
-     * Create
-     * ========================= */
-
     private void validateCreateGroupRequest(CreateGroupRequest request) {
         if (request.endTime() != null && !request.endTime().isAfter(request.startTime())) {
             throw new GroupException(GroupErrorCode.INVALID_TIME_RANGE);
@@ -203,10 +199,6 @@ public class GroupService {
         return sortOrder != null ? sortOrder : 0;
     }
 
-    /* =========================
-     * Common Finders
-     * ========================= */
-
     private Group findActiveGroup(Long groupId) {
         return groupRepository.findByIdAndDeletedAtIsNull(groupId)
                 .orElseThrow(
@@ -217,10 +209,6 @@ public class GroupService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, userId));
     }
-
-    /* =========================
-     * Attend / Cancel Attend
-     * ========================= */
 
     private void validateNotAlreadyAttend(GroupUser groupUser, Long groupId, Long userId) {
         if (groupUser != null && groupUser.getStatus() == ATTEND) {
@@ -299,10 +287,6 @@ public class GroupService {
         }
     }
 
-    /* =========================
-     * Group List
-     * ========================= */
-
     private int clampPageSize(int size) {
         return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
     }
@@ -335,10 +319,6 @@ public class GroupService {
 
         return GroupListItemResponse.of(group, imageUrls, tagNames, participantCount, createdBy);
     }
-
-    /* =========================
-     * Get Group (Detail)
-     * ========================= */
 
     private GetGroupResponse buildGetGroupResponse(Group group, Long currentUserId) {
         List<GroupImageItemResponse> images = extractImageItems(group);
@@ -383,10 +363,6 @@ public class GroupService {
     public GetGroupResponse getGroup(Long groupId) {
         return getGroupInternal(groupId, null);
     }
-
-    /* =========================
-     * Image / Tag / User extractors
-     * ========================= */
 
     private Map<Integer, List<GroupImage>> groupImagesBySortOrder(Group group) {
         if (group.getImages() == null || group.getImages().isEmpty()) {
@@ -533,11 +509,7 @@ public class GroupService {
                 .filter(url -> url != null && !url.isBlank())
                 .toList();
     }
-
-    /* =========================
-     * Update / Delete
-     * ========================= */
-
+    
     private void updateGroupTags(Group group, List<String> tagNames) {
         if (tagNames == null) { // null이면 "태그는 건드리지 않는다"
             return;
@@ -662,4 +634,28 @@ public class GroupService {
 
         return GetGroupListResponse.of(items, nextCursor);
     }
+
+
+    @Transactional
+    public void deleteOne(CustomUserDetails userDetails, Long groupId, String url) {
+        Long userId = userDetails.getId();
+        Group group = findActiveGroup(groupId);
+
+        if (!group.getHost().getId().equals(userId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_DELETE_GROUP, groupId, userId);
+        }
+
+        if (url == null || url.isBlank()) {
+            throw new GroupException(GroupErrorCode.IMAGE_URL_REQUIRED);
+        }
+
+        boolean exists = groupImageRepository.existsByGroupAndImageUrl(group, url);
+        if (!exists) {
+            throw new GroupException(GroupErrorCode.GROUP_IMAGE_NOT_FOUND, groupId);
+        }
+
+        imageUploadService.deleteOne(null, url);
+        groupImageRepository.deleteByGroupAndImageUrl(group, url);
+    }
+
 }

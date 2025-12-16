@@ -28,7 +28,9 @@ public enum GroupErrorCode implements ErrorCode {
             "모임: 현재 참여 인원 수(%s)보다 작은 값으로 최대 인원을 줄일 수 없습니다."),
     NO_PERMISSION_TO_DELETE_GROUP(HttpStatus.UNAUTHORIZED, "모임: 삭제할 수 있는 권한이 없습니다."),
     MY_GROUP_TYPE_NOT_NULL(HttpStatus.BAD_REQUEST, "모임: MyGroupType 값은 null일 수 없습니다."),
-    INVALID_MY_GROUP_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 MyGroupType: %s");
+    INVALID_MY_GROUP_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 MyGroupType: %s"),
+    IMAGE_URL_REQUIRED(HttpStatus.BAD_REQUEST, "모임 이미지 삭제: url은 필수입니다."),
+    GROUP_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임 이미지가 존재하지 않습니다. groupId=%d");
 
     private final HttpStatus status;
     private final String message;
