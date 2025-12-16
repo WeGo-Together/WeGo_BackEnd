@@ -59,14 +59,16 @@ public record GetGroupResponse(
     public record CreatedByResponse(
             Long userId,
             String nickName,
-            String profileImage
+            String profileImage,
+            String profileMessage
     ) {
 
         public static CreatedByResponse from(User host) {
             return new CreatedByResponse(
                     host.getId(),
                     host.getNickName(),
-                    host.getProfileImage()
+                    host.getProfileImage(),
+                    host.getProfileMessage()
             );
         }
     }
