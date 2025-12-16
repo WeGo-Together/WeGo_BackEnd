@@ -124,6 +124,17 @@ public class GroupController implements GroupControllerDocs {
     }
 
 
+    @DeleteMapping("/{groupId}/images/one")
+    public ResponseEntity<Void> deleteOne(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @RequestParam(value = "url") String url
+    ) {
+        groupService.deleteOne(userDetails, groupId, url);
+        return ResponseEntity.noContent().build();
+    }
+
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<GetGroupListResponse>> getMyGroups(
             @AuthenticationPrincipal CustomUserDetails userDetails,

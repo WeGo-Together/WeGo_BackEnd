@@ -103,11 +103,14 @@ public class ImageController {
     }
 
     @DeleteMapping("/one")
-    public ResponseEntity<Void> deleteOne(@RequestParam("key") String key) {
-        imageUploadService.delete(key);
-
+    public ResponseEntity<Void> deleteOne(
+            @RequestParam(value = "key", required = false) String key,
+            @RequestParam(value = "url", required = false) String url
+    ) {
+        imageUploadService.deleteOne(key, url);
         return ResponseEntity.noContent().build();
     }
+
 
     @DeleteMapping
     public ResponseEntity<Void> deleteMany(@RequestParam("keys") List<String> keys) {
@@ -115,4 +118,6 @@ public class ImageController {
 
         return ResponseEntity.noContent().build();
     }
+
+
 }

@@ -1,7 +1,35 @@
+### 0. 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo"
+}
+
+> {%
+  client.global.set("userId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.accessToken);
+%}
+
 ### 1. 단일 이미지 업로드 (원본)
 POST http://localhost:8080/api/v1/images/original
     ?dir=test
 Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
 
 --boundary
 Content-Disposition: form-data; name="file"; filename="img3.jpeg"
@@ -167,3 +195,9 @@ Content-Type: image/jpeg
 
 < ./resources/not-image.txt
 --boundary--
+
+
+### 이미지 단 건 삭제(key, url 모두 포함)
+DELETE http://localhost:8080/api/v1/images/one
+    ?url=https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/20251216092723_0_4ead2fbf-2109-4351-98c4-54ec2b1c8353.jpeg
+Authorization: Bearer {{accessToken}}

@@ -44,7 +44,19 @@ public enum ImageExceptionCode implements ErrorCode {
             "이미지: dir은 /로 끝나면 안 됩니다."),
 
     DIR_INVALID_PATTERN(HttpStatus.BAD_REQUEST,
-            "이미지: dir에는 알파벳, 숫자, '-', '_', '/'만 사용할 수 있습니다.");
+            "이미지: dir에는 알파벳, 숫자, '-', '_', '/'만 사용할 수 있습니다."),
+
+    KEY_OR_URL_REQUIRED(HttpStatus.BAD_REQUEST,
+            "이미지: key 또는 url 중 하나는 필수입니다."),
+
+    KEY_AND_URL_CONFLICT(HttpStatus.BAD_REQUEST,
+            "이미지: key와 url은 동시에 보낼 수 없습니다. 둘 중 하나만 보내주세요."),
+
+    INVALID_IMAGE_KEY(HttpStatus.BAD_REQUEST,
+            "이미지: 잘못된 key 형식입니다. key=%s"),
+
+    KEY_REQUIRED(HttpStatus.BAD_REQUEST,
+            "이미지: key가 존재하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String messageTemplate;
@@ -58,4 +70,4 @@ public enum ImageExceptionCode implements ErrorCode {
     public String getMessageTemplate() {
         return messageTemplate;
     }
-}
+    }
