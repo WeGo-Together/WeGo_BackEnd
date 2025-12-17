@@ -41,7 +41,23 @@ public class UserController implements UserControllerDocs {
     private final FollowService followService;
 
     /**
-     * 프로필 조회
+     * 프로필 조회(me)
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserInfoResponse>> profile(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+
+        UserInfoResponse response = userService.getProfile(userDetails.getId());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200,
+                response));
+    }
+
+    /**
+     * 프로필 조회(other)
      */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserInfoResponse>> profile(

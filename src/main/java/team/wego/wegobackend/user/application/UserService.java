@@ -29,6 +29,15 @@ public class UserService {
     private final ImageUploadService imageUploadService;
 
     @Transactional(readOnly = true)
+    public UserInfoResponse getProfile(Long userId) {
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(UserNotFoundException::new);
+
+        return UserInfoResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
     public UserInfoResponse getProfile(Long loginUserId, Long targetUserId) {
 
         User targetUser = userRepository.findById(targetUserId)
@@ -38,9 +47,6 @@ public class UserService {
         if (loginUserId == null || loginUserId.equals(targetUserId)) {
             return UserInfoResponse.from(targetUser);
         }
-
-        User loginUser = userRepository.findById(loginUserId)
-            .orElseThrow(UserNotFoundException::new);
 
         boolean isFollow = followRepository.existsByFollowerIdAndFolloweeId(loginUserId,
             targetUserId);
