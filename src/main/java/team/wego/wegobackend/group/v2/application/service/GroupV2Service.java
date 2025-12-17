@@ -5,17 +5,42 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.common.security.CustomUserDetails;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupImageV2Request;
+import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
+import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response.CreatedByV2Response;
+import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2Address;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
+import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.tag.application.service.TagService;
+import team.wego.wegobackend.tag.domain.entity.Tag;
+import team.wego.wegobackend.user.domain.User;
+import team.wego.wegobackend.user.repository.UserRepository;
 
 @RequiredArgsConstructor
 @Service
 public class GroupV2Service {
 
     private final GroupV2QueryRepository groupV2QueryRepository;
+    private final GroupV2Repository groupV2Repository;
+
+    // 태그 호출
+    private final TagService tagService;
+
+    // 회원 호출
+    private final UserRepository userRepository;
+
 
     private static final int MAX_PAGE_SIZE = 50;
     private static final int GROUP_LIST_IMAGE_LIMIT = 3;
@@ -74,5 +99,54 @@ public class GroupV2Service {
                 .toList();
 
         return GetGroupListV2Response.of(items, nextCursor);
+    }
+
+    @Transactional
+    public CreateGroupV2Response create(CustomUserDetails userDetails,
+            CreateGroupV2Request request) {
+
+        // 회원 조회
+        User host = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND,
+                        userDetails.getId())
+                );
+
+        // 모임 주소 생성
+        GroupV2Address address = GroupV2Address.of(request.location(), request.locationDetail());
+
+        // 모임 생성
+        GroupV2 group = GroupV2.create(
+                request.title(),
+                address,
+                request.startTime(),
+                request.endTime(),
+                request.description(),
+                request.maxParticipants(),
+                host
+        );
+
+        // 모임 주최자 생성
+        GroupUserV2.create(group, host, GroupUserV2Role.HOST);
+
+        // 태그 생성 또는 찾기
+        if (request.tags() != null) {
+            List<Tag> tags = tagService.findOrCreateAll(request.tags());
+            for (Tag tag : tags) {
+                GroupTagV2.create(group, tag);
+            }
+        }
+
+        // 이미지 생성
+        if (request.images() != null) {
+            for (CreateGroupImageV2Request imageRequest : request.images()) {
+                GroupImageV2.create(group, imageRequest.sortOrder(), imageRequest.imageUrl440x240(),
+                        imageRequest.imageUrl100x100());
+            }
+        }
+
+        // 모임 저장
+        GroupV2 saved = groupV2Repository.save(group);
+
+        return CreateGroupV2Response.from(saved, host);
     }
 }
