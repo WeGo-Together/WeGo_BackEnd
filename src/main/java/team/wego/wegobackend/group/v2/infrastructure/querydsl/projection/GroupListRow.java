@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.infrastructure.querydsl.projection;
+package team.wego.wegobackend.group.v2.infrastructure.querydsl.projection;
 
 import java.time.LocalDateTime;
 

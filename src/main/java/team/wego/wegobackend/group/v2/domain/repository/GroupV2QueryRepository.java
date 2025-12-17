@@ -1,8 +1,8 @@
-package team.wego.wegobackend.group.domain.repository.v2;
+package team.wego.wegobackend.group.v2.domain.repository;
 
 import java.util.List;
 import java.util.Map;
-import team.wego.wegobackend.group.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
 
 public interface GroupV2QueryRepository {
 
