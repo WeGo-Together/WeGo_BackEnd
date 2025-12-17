@@ -9,6 +9,11 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
 
+    GROUP_IMAGE_VARIANT_REQUIRED(HttpStatus.BAD_REQUEST, "Group Image Variant Required"),
+    GROUP_BANNED_USER(HttpStatus.BAD_REQUEST, "차단된 사용자는 재참여할 수 없습니다."),
+    GROUP_IMAGE_MUST_440_240(HttpStatus.BAD_REQUEST, "모임: 모임 이미지 440x240은 필수입니다."),
+    GROUP_IMAGE_MUST_100_100(HttpStatus.BAD_REQUEST, "모임: 모임 이미지 100x100은 필수입니다."),
+    GROUP_NOT_NULL(HttpStatus.BAD_REQUEST, "모임: 모임은 null일 수 없습니다."),
     HOST_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 호스트 사용자를 찾을 수 없습니다: %s"),
     INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "모임: 종료 시간은 시작 시간보다 뒤여야 합니다."),
     INVALID_MAX_PARTICIPANTS(HttpStatus.BAD_REQUEST, "모임: 최대 인원은 최소 2명 이상이어야 합니다."),
@@ -30,7 +35,10 @@ public enum GroupErrorCode implements ErrorCode {
     MY_GROUP_TYPE_NOT_NULL(HttpStatus.BAD_REQUEST, "모임: MyGroupType 값은 null일 수 없습니다."),
     INVALID_MY_GROUP_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 MyGroupType: %s"),
     IMAGE_URL_REQUIRED(HttpStatus.BAD_REQUEST, "모임 이미지 삭제: url은 필수입니다."),
-    GROUP_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임 이미지가 존재하지 않습니다. groupId=%d");
+    GROUP_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임 이미지가 존재하지 않습니다. groupId=%d"),
+    LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 위치는 필수입니다."),
+    GROUP_STATUS_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 상태는 필수입니다."),
+    GROUP_STATUS_TRANSFER_IMPOSSIBLE(HttpStatus.BAD_REQUEST, "모임: 상태 전이가 불가능합니다. 현재 상태: %s, 요청한 상태: %s");
 
     private final HttpStatus status;
     private final String message;
