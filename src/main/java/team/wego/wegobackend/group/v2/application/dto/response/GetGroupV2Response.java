@@ -2,140 +2,128 @@ package team.wego.wegobackend.group.v2.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import team.wego.wegobackend.group.domain.entity.Group;
-import team.wego.wegobackend.group.domain.entity.GroupImage;
-import team.wego.wegobackend.group.domain.entity.GroupRole;
-import team.wego.wegobackend.group.domain.entity.GroupUser;
+import team.wego.wegobackend.group.v2.application.dto.common.Address;
+import team.wego.wegobackend.group.v2.application.dto.common.CreatedBy;
+import team.wego.wegobackend.group.v2.application.dto.common.GroupImageItem;
+import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
+import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
-
 
 public record GetGroupV2Response(
         Long id,
         String title,
-        String location,
-        String locationDetail,
+        GroupV2Status status,
+        Address address,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        List<GroupImageV2ItemResponse> images,
+        List<GroupImageItem> images,
         List<String> tags,
         String description,
-        int participantCount,
+        long participantCount,
         int maxParticipants,
-        CreatedByResponse createdBy,
+        CreatedBy createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        UserStatusResponse userStatus,
-        List<JoinedMemberResponse> joinedMembers
+        MyMembership myMembership,           // 로그인 아니면 null
+        List<JoinedMember> joinedMembers     // 참여자 목록(ATTEND)
 ) {
 
     public static GetGroupV2Response of(
-            Group group,
-            List<GroupImageV2ItemResponse> images,
-            List<String> tagNames,
-            int participantCount,
-            CreatedByResponse createdBy,
-            UserStatusResponse userStatus,
-            List<JoinedMemberResponse> joinedMembers
+            GroupV2 group,
+            List<GroupImageV2> images,
+            List<GroupUserV2> users,
+            Long userIdOrNull
     ) {
+        List<String> tagNames = group.getGroupTags().stream()
+                .map(GroupTagV2::getTag)
+                .map(Tag::getName)
+                .toList();
+
+        long attendCount = users.stream()
+                .filter(gu -> gu.getStatus() == GroupUserV2Status.ATTEND)
+                .count();
+
+        List<JoinedMember> joinedMembers = users.stream()
+                .filter(gu -> gu.getStatus() == GroupUserV2Status.ATTEND)
+                .map(JoinedMember::from)
+                .toList();
+
+        MyMembership myMembership = (userIdOrNull == null)
+                ? null
+                : MyMembership.from(users, userIdOrNull);
+
+        List<GroupImageItem> imageItems = images.stream()
+                .map(GroupImageItem::from)
+                .toList();
+
         return new GetGroupV2Response(
                 group.getId(),
                 group.getTitle(),
-                group.getLocation(),
-                group.getLocationDetail(),
+                group.getStatus(),
+                Address.from(group.getAddress()),
                 group.getStartTime(),
                 group.getEndTime(),
-                images,
+                imageItems,
                 tagNames,
                 group.getDescription(),
-                participantCount,
+                attendCount,
                 group.getMaxParticipants(),
-                createdBy,
+                CreatedBy.from(group.getHost()),
                 group.getCreatedAt(),
                 group.getUpdatedAt(),
-                userStatus,
+                myMembership,
                 joinedMembers
         );
     }
 
-    public record CreatedByResponse(
-            Long userId,
-            String nickName,
-            String profileImage
-    ) {
-
-        public static CreatedByResponse from(User host) {
-            return new CreatedByResponse(host.getId(), host.getNickName(), host.getProfileImage());
-        }
-
-    }
-
-    public record UserStatusResponse(
+    public record MyMembership(
             boolean isJoined,
-            LocalDateTime joinedAt
+            Long groupUserId,
+            GroupUserV2Role role,
+            GroupUserV2Status status,
+            LocalDateTime joinedAt,
+            LocalDateTime leftAt
     ) {
-
-        public static UserStatusResponse notJoined() {
-            return new UserStatusResponse(false, null);
-        }
-
-        public static UserStatusResponse fromJoined(LocalDateTime joinedAt) {
-            return new UserStatusResponse(true, joinedAt);
+        public static MyMembership from(List<GroupUserV2> users, Long userId) {
+            return users.stream()
+                    .filter(gu -> gu.getUser().getId().equals(userId))
+                    .findFirst()
+                    .map(gu -> new MyMembership(
+                            gu.getStatus() == GroupUserV2Status.ATTEND,
+                            gu.getId(),
+                            gu.getGroupRole(),
+                            gu.getStatus(),
+                            gu.getJoinedAt(),
+                            gu.getLeftAt()
+                    ))
+                    .orElse(new MyMembership(false, null, null, null, null, null));
         }
     }
 
-    public record JoinedMemberResponse(
+    public record JoinedMember(
             Long userId,
-            GroupRole groupRole,
+            Long groupUserId,
+            GroupUserV2Role role,
             String nickName,
             String profileImage,
             LocalDateTime joinedAt
     ) {
-
-        public static JoinedMemberResponse from(GroupUser groupUser) {
+        public static JoinedMember from(GroupUserV2 groupUser) {
             User user = groupUser.getUser();
-            return new JoinedMemberResponse(
+            return new JoinedMember(
                     user.getId(),
+                    groupUser.getId(),
                     groupUser.getGroupRole(),
                     user.getNickName(),
                     user.getProfileImage(),
                     groupUser.getJoinedAt()
             );
-        }
-    }
-
-    public record GroupImageV2ItemResponse(
-            int sortOrder,
-            Long imageId440x240,
-            Long imageId100x100,
-            String imageUrl440x240,
-            String imageUrl100x100
-    ) {
-
-        public static GroupImageV2ItemResponse from(
-                GroupImage main,   // 440x240
-                GroupImage thumb   // 100x100: nullable
-        ) {
-            Long mainId = (main != null) ? main.getId() : null;
-            Long thumbId = (thumb != null) ? thumb.getId() : null;
-
-            int sortOrder = (main != null)
-                    ? main.getSortOrder()
-                    : (thumb != null ? thumb.getSortOrder() : 0);
-
-            String mainUrlVal = (main != null) ? main.getImageUrl() : null;
-            String thumbUrlVal = (thumb != null) ? thumb.getImageUrl() : null;
-
-            return new GroupImageV2ItemResponse(
-                    sortOrder,
-                    mainId,
-                    thumbId,
-                    mainUrlVal,
-                    thumbUrlVal
-            );
-        }
-
-        public static GroupImageV2ItemResponse fromMainOnly(GroupImage main) {
-            return from(main, null);
         }
     }
 }

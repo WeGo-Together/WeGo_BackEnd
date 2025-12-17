@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
 import team.wego.wegobackend.group.v2.application.service.GroupV2Service;
 
 @RequiredArgsConstructor
@@ -37,6 +39,16 @@ public class GroupV2Controller {
                 .body(ApiResponse.success(
                         HttpStatus.CREATED.value(),
                         response));
+    }
+
+    @GetMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<GetGroupV2Response>> getGroup(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+        GetGroupV2Response response = groupV2Service.getGroup(userDetails, groupId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
 

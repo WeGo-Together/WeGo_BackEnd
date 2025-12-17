@@ -14,12 +14,15 @@ import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Resp
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response.CreatedByV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Address;
+import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
+import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
@@ -32,6 +35,8 @@ import team.wego.wegobackend.user.repository.UserRepository;
 @Service
 public class GroupV2Service {
 
+    private final GroupImageV2Repository groupImageV2Repository;
+    private final GroupUserV2Repository groupUserV2Repository;
     private final GroupV2QueryRepository groupV2QueryRepository;
     private final GroupV2Repository groupV2Repository;
 
@@ -149,4 +154,20 @@ public class GroupV2Service {
 
         return CreateGroupV2Response.from(saved, host);
     }
+
+    @Transactional(readOnly = true)
+    public GetGroupV2Response getGroup(CustomUserDetails userDetails, Long groupId) {
+
+        GroupV2 group = groupV2Repository.findGroupWithHostAndTags(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // 컬렉션은 안전하게 따로 보관해서 옮겨야 좋다고 한다.
+        List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
+        List<GroupUserV2> users = groupUserV2Repository.findAllByGroupIdWithUser(groupId);
+
+        return GetGroupV2Response.of(group, images, users, userDetails.getId());
+    }
+
+
 }
