@@ -130,6 +130,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         //TODO : PUBLIC_PATTERNS 관리 포인트 개선 필요 (메서드까지 관리 확장)
+        if(pathMatcher.match("/api/v1/users/me", path)) {
+            return false;
+        }
+
         if ("GET".equals(method) && pathMatcher.match("/api/v1/users/**", path)) {
             return true;
         }

@@ -23,6 +23,11 @@ import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 @Tag(name = "유저 API", description = "유저와 관련된 API 리스트 \uD83D\uDC08")
 public interface UserControllerDocs {
 
+    @Operation(summary = "본인 프로필 조회 API", description = "토큰을 통해서 본인 프로필 정보를 조회합니다. (별도 파라메터 없습니다)")
+    ResponseEntity<ApiResponse<UserInfoResponse>> profile(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    );
+
     @Operation(summary = "유저 프로필 조회 API", description =
         "PathVariable로 들어온 userId에 해당하는 유저 프로필에 대한 응답 \n"
             + "로그인 여부/본인 여부에 따라 팔로우 여부를 null 혹은 true/false로 응답합니다.")
