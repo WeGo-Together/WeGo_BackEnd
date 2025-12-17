@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.domain.repository.v2;
+package team.wego.wegobackend.group.v2.domain.repository;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;

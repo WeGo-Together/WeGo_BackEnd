@@ -1,15 +1,15 @@
-package team.wego.wegobackend.group.application.service.v2;
+package team.wego.wegobackend.group.v2.application.service;
 
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.wego.wegobackend.group.application.dto.v2.response.GetGroupListV2Response;
-import team.wego.wegobackend.group.application.dto.v2.response.GetGroupListV2Response.GroupListItemV2Response;
-import team.wego.wegobackend.group.application.dto.v2.response.GetGroupListV2Response.GroupListItemV2Response.CreatedByV2Response;
-import team.wego.wegobackend.group.domain.repository.v2.GroupV2QueryRepository;
-import team.wego.wegobackend.group.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response.CreatedByV2Response;
+import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
+import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
 
 @RequiredArgsConstructor
 @Service

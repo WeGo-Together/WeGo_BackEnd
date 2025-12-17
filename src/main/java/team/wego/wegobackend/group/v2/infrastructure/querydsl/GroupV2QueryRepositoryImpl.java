@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.infrastructure.querydsl;
+package team.wego.wegobackend.group.v2.infrastructure.querydsl;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
@@ -15,8 +15,8 @@ import team.wego.wegobackend.group.domain.entity.QGroup;
 import team.wego.wegobackend.group.domain.entity.QGroupImage;
 import team.wego.wegobackend.group.domain.entity.QGroupTag;
 import team.wego.wegobackend.group.domain.entity.QGroupUser;
-import team.wego.wegobackend.group.domain.repository.v2.GroupV2QueryRepository;
-import team.wego.wegobackend.group.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
+import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
 import team.wego.wegobackend.tag.domain.entity.QTag;
 import team.wego.wegobackend.user.domain.QUser;
 

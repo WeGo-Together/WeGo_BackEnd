@@ -1,4 +1,4 @@
-package team.wego.wegobackend.group.presentation.v2;
+package team.wego.wegobackend.group.v2.presentation;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
-import team.wego.wegobackend.group.application.dto.v2.response.GetGroupListV2Response;
-import team.wego.wegobackend.group.application.service.v2.GroupV2Service;
+import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.service.GroupV2Service;
 
 @RequiredArgsConstructor
 @RequestMapping("/api/v2/groups")
