@@ -6,3 +6,4 @@ public enum GroupUserV2Status {
     KICKED,
     BANNED
 }
+
