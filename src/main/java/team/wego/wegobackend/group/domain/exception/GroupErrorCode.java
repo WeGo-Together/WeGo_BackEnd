@@ -9,6 +9,13 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
 
+    INVALID_COOLDOWN_SECONDS(HttpStatus.BAD_REQUEST, "모임: 유효하지 않은 쿨다운 정책입니다."),
+    GROUP_CREATE_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "모임: 모임 생성은 연속으로 할 수 없습니다. {%s}초 후 다시 시도해 주세요."),
+    PRE_UPLOADED_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 선 업로드 이미지가 만료되었거나 존재하지 않습니다."),
+    PRE_UPLOADED_IMAGE_OWNER_MISMATCH(HttpStatus.FORBIDDEN, "모임: 선 업로드 이미지를 업로드한 사용자만 사용할 수 있습니다."),
+    REDIS_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "모임: 선 업로드 이미지 저장에 실패했습니다."),
+    REDIS_READ_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "모임: 선 업로드 이미지 조회에 실패했습니다."),
+    GROUP_IMAGE_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 이미지 키는 필수입니다."),
     GROUP_IMAGE_VARIANT_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 variant는 필수입니다."),
     GROUP_BANNED_USER(HttpStatus.BAD_REQUEST, "차단된 사용자는 재참여할 수 없습니다."),
     GROUP_IMAGE_MUST_440_240(HttpStatus.BAD_REQUEST, "모임: 모임 이미지 440x240은 필수입니다."),

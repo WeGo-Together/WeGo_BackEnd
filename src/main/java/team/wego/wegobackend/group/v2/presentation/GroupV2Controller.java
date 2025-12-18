@@ -32,7 +32,7 @@ public class GroupV2Controller {
     private final GroupV2Service groupV2Service;
 
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<CreateGroupV2Response>> createGroup(
+    public ResponseEntity<ApiResponse<CreateGroupV2Response>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody @Valid CreateGroupV2Request request
     ) {
@@ -98,6 +98,8 @@ public class GroupV2Controller {
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
+
+
 
 
 }
