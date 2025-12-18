@@ -26,8 +26,8 @@ Content-Type: application/json
   client.global.set("hostAccessToken", response.body.data.accessToken);
 %}
 
-### 1-1. 모임 V1 이미지 선 업로드 (png / jpg 2장)
-POST http://localhost:8080/api/v1/groups/images/upload
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{hostAccessToken}}
 

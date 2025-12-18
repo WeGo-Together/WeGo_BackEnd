@@ -240,12 +240,14 @@ Authorization: Bearer {{host2AccessToken}}
 GET http://localhost:8080/api/v2/groups?size=5&filter=ALL&includeStatuses=RECRUITING&includeStatuses=FULL&excludeStatuses=FULL
 Authorization: Bearer {{host2AccessToken}}
 
-#################################################################
-# (선택) 비로그인 V2 목록/상세 조회
-#################################################################
-
 ### 7-1. (선택) 로그인 안 한 상태에서 V2 목록 조회
 GET http://localhost:8080/api/v2/groups?size=5
 
 ### 7-2. (선택) 로그인 안 한 상태에서 V2 모임 상세 조회
 GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
+
+
+
+### V2 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
+GET http://localhost:8080/api/v2/groups/{{groupId}}
+Authorization: Bearer {{hostAccessToken}}
