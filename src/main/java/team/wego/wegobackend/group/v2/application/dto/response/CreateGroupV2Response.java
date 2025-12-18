@@ -2,9 +2,8 @@ package team.wego.wegobackend.group.v2.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
-import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2Variant;
-import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2VariantType;
+import team.wego.wegobackend.group.v2.application.dto.common.CreatedBy;
+import team.wego.wegobackend.group.v2.application.dto.common.GroupImageItem;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
@@ -12,7 +11,6 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Address;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
-import team.wego.wegobackend.group.v2.domain.entity.ImageV2Format;
 import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
 
@@ -79,19 +77,6 @@ public record CreateGroupV2Response(
         }
     }
 
-    public record CreatedBy(
-            Long userId,
-            String nickName,
-            String profileImage,
-            String profileMessage
-    ) {
-
-        public static CreatedBy from(User host) {
-            return new CreatedBy(host.getId(), host.getNickName(), host.getProfileImage(),
-                    host.getProfileMessage());
-        }
-    }
-
     public record Membership(
             Long groupUserId,
             Long userId,
@@ -109,44 +94,6 @@ public record CreateGroupV2Response(
                     gu.getStatus(),
                     gu.getJoinedAt(),
                     gu.getLeftAt()
-            );
-        }
-    }
-
-
-    public record GroupImageItem(
-            Long groupImageId,
-            int sortOrder,
-            List<GroupImageVariantItem> variants
-    ) {
-
-        public static GroupImageItem from(GroupImageV2 image) {
-            return new GroupImageItem(
-                    image.getId(),
-                    image.getSortOrder(),
-                    image.getVariants().stream().map(GroupImageVariantItem::from).toList()
-            );
-        }
-    }
-
-    public record GroupImageVariantItem(
-            Long variantId,
-            GroupImageV2VariantType type,
-            int width,
-            int height,
-            ImageV2Format format,
-            String imageUrl
-    ) {
-
-        public static GroupImageVariantItem from(GroupImageV2Variant variant) {
-            GroupImageV2VariantType type = variant.getType();
-            return new GroupImageVariantItem(
-                    variant.getId(),
-                    type,
-                    type.getWidth(),
-                    type.getHeight(),
-                    variant.getFormat(),
-                    variant.getImageUrl()
             );
         }
     }
