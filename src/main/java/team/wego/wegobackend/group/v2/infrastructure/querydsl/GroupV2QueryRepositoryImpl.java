@@ -5,16 +5,20 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import team.wego.wegobackend.group.domain.entity.GroupUserStatus;
-import team.wego.wegobackend.group.domain.entity.QGroup;
-import team.wego.wegobackend.group.domain.entity.QGroupImage;
-import team.wego.wegobackend.group.domain.entity.QGroupTag;
-import team.wego.wegobackend.group.domain.entity.QGroupUser;
+import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2VariantType;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
+import team.wego.wegobackend.group.v2.domain.entity.QGroupImageV2;
+import team.wego.wegobackend.group.v2.domain.entity.QGroupImageV2Variant;
+import team.wego.wegobackend.group.v2.domain.entity.QGroupTagV2;
+import team.wego.wegobackend.group.v2.domain.entity.QGroupUserV2;
+import team.wego.wegobackend.group.v2.domain.entity.QGroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
 import team.wego.wegobackend.tag.domain.entity.QTag;
@@ -27,25 +31,40 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
 
     private final JPAQueryFactory queryFactory;
 
-    private static final String MAIN_TOKEN = "440x240";
-
     @Override
-    public List<GroupListRow> fetchGroupRows(String keyword, Long cursor, int limit) {
-        QGroup group = QGroup.group;
+    public List<GroupListRow> fetchGroupRows(
+            String keyword,
+            Long cursor,
+            int limit,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses
+    ) {
+        QGroupV2 group = QGroupV2.groupV2;
         QUser user = QUser.user;
-        QGroupUser groupUser = QGroupUser.groupUser;
+        QGroupUserV2 groupUser = QGroupUserV2.groupUserV2;
 
         BooleanBuilder where = new BooleanBuilder();
         where.and(group.deletedAt.isNull());
+
+        if (includeStatuses != null && !includeStatuses.isEmpty()) {
+            where.and(group.status.in(includeStatuses));
+        }
+
+        if (excludeStatuses != null && !excludeStatuses.isEmpty()) {
+            where.and(group.status.notIn(excludeStatuses));
+        }
 
         if (keyword != null && !keyword.trim().isBlank()) {
             String key = keyword.trim();
             where.and(
                     group.title.containsIgnoreCase(key)
-                            .or(group.location.containsIgnoreCase(key))
+                            .or(group.address.location.containsIgnoreCase(key))
                             .or(group.description.containsIgnoreCase(key))
+                            // 필요하면 상세주소도 검색 포함 가능
+                            .or(group.address.locationDetail.containsIgnoreCase(key))
             );
         }
+
         if (cursor != null) {
             where.and(group.id.lt(cursor));
         }
@@ -55,8 +74,9 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                         GroupListRow.class,
                         group.id,
                         group.title,
-                        group.location,
-                        group.locationDetail,
+                        group.status,
+                        group.address.location,
+                        group.address.locationDetail,
                         group.startTime,
                         group.endTime,
                         group.description,
@@ -70,13 +90,15 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                 ))
                 .from(group)
                 .join(group.host, user)
-                .leftJoin(group.users, groupUser).on(groupUser.status.eq(GroupUserStatus.ATTEND))
+                .leftJoin(group.users, groupUser)
+                .on(groupUser.status.eq(GroupUserV2Status.ATTEND))
                 .where(where)
                 .groupBy(
                         group.id,
                         group.title,
-                        group.location,
-                        group.locationDetail,
+                        group.status,
+                        group.address.location,
+                        group.address.locationDetail,
                         group.startTime,
                         group.endTime,
                         group.description,
@@ -98,47 +120,55 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
             return Map.of();
         }
 
-        QGroupTag gt = QGroupTag.groupTag;
-        QTag t = QTag.tag;
+        QGroupTagV2 groupTagV2 = QGroupTagV2.groupTagV2;
+        QTag tag = QTag.tag;
 
-        var tuples = queryFactory
-                .select(gt.group.id, t.name)
-                .from(gt)
-                .join(gt.tag, t)
-                .where(gt.group.id.in(groupIds))
+        List<Tuple> tuples = queryFactory
+                .select(groupTagV2.group.id, tag.name)
+                .from(groupTagV2)
+                .join(groupTagV2.tag, tag)
+                .where(groupTagV2.group.id.in(groupIds))
                 .fetch();
 
         return tuples.stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(gt.group.id),
-                        Collectors.mapping(tp -> tp.get(t.name), Collectors.toList())
+                        tuple -> tuple.get(groupTagV2.group.id),
+                        Collectors.mapping(tp -> tp.get(tag.name),
+                                Collectors.toList())
                 ));
     }
 
+
     @Override
     public Map<Long, List<String>> fetchMainImageUrlsByGroupIds(List<Long> groupIds,
-            int perGroupLimit) {
+            int perGroupLimit
+    ) {
         if (groupIds == null || groupIds.isEmpty()) {
             return Map.of();
         }
 
-        QGroupImage gi = QGroupImage.groupImage;
+        QGroupImageV2 groupImageV2 = QGroupImageV2.groupImageV2;
+        QGroupImageV2Variant groupImageV2Variant = QGroupImageV2Variant.groupImageV2Variant;
 
+        // CARD_440_240만 뽑기
         List<Tuple> tuples = queryFactory
-                .select(gi.group.id, gi.sortOrder, gi.imageUrl)
-                .from(gi)
+                .select(groupImageV2.group.id, groupImageV2.sortOrder, groupImageV2Variant.imageUrl)
+                .from(groupImageV2Variant)
+                .join(groupImageV2Variant.groupImage, groupImageV2)
                 .where(
-                        gi.group.id.in(groupIds),
-                        gi.imageUrl.contains(MAIN_TOKEN)
+                        groupImageV2.group.id.in(groupIds),
+                        groupImageV2Variant.type.eq(GroupImageV2VariantType.CARD_440_240)
                 )
-                .orderBy(gi.group.id.desc(), gi.sortOrder.asc(), gi.id.asc())
+                .orderBy(groupImageV2.group.id.desc(),
+                        groupImageV2.sortOrder.asc(),
+                        groupImageV2Variant.id.asc())
                 .fetch();
 
-        Map<Long, List<String>> result = new java.util.HashMap<>();
+        Map<Long, List<String>> result = new HashMap<>();
 
         for (Tuple tuple : tuples) {
-            Long groupId = tuple.get(gi.group.id);
-            String url = tuple.get(gi.imageUrl);
+            Long groupId = tuple.get(groupImageV2.group.id);
+            String url = tuple.get(groupImageV2Variant.imageUrl);
             if (groupId == null || url == null || url.isBlank()) {
                 continue;
             }

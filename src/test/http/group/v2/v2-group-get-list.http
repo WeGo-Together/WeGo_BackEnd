@@ -1,4 +1,4 @@
-### 회원가입(HOST)
+### 회원가입(HOST2)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -13,7 +13,7 @@ Content-Type: application/json
   client.global.set("host2UserId", response.body.data.userId);
 %}
 
-### 로그인(HOST)
+### 로그인(HOST2)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -25,6 +25,7 @@ Content-Type: application/json
 > {%
   client.global.set("host2AccessToken", response.body.data.accessToken);
 %}
+
 
 ### 2-1. 모임 이미지 선 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v1/groups/images/upload
@@ -53,7 +54,7 @@ Content-Type: image/jpeg
   client.global.set("c_img1_thumb", images[1].imageUrl100x100);
 %}
 
-### 2-2. 모임 생성 (취소 테스트용 모임)
+### 2-2. V2 모임 생성 (취소 테스트용 모임)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
@@ -87,7 +88,6 @@ Authorization: Bearer {{host2AccessToken}}
 > {%
   client.global.set("groupId_cancelTest", response.body.data.id);
 %}
-
 
 ### 회원가입(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/signup
@@ -145,7 +145,6 @@ Content-Type: application/json
   client.global.set("c_member2AccessToken", response.body.data.accessToken);
 %}
 
-
 ### 4-1. V2 MEMBER 1 참여
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/attend
 Content-Type: application/json
@@ -167,24 +166,86 @@ Authorization: Bearer {{c_member1AccessToken}}
 
 {}
 
-### 5-2. 예외발생: MEMBER 1 다시 취소 시도 (예외: NOT_ATTEND_GROUP)
+### 5-2. 예외: MEMBER 1 다시 취소 시도 (예외: NOT_ATTEND_GROUP)
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
 Content-Type: application/json
 Authorization: Bearer {{c_member1AccessToken}}
 
 {}
 
-### 5-3. 예외발생: HOST가 자신의 모임 취소 시도
+### 5-3. 예외: HOST가 자신의 모임 취소 시도 (예외: HOST_CANNOT_LEAVE)
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
 
 {}
 
-### 5-4. (선택) 모임 참가자가 현재 모임 상세 조회 - 참여 인원 / 상태 확인
+### 5-4. (선택) V2 모임 상세 조회 - 참여 인원 / 상태 확인
 GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
 Authorization: Bearer {{c_member2AccessToken}}
 
-### 5-5. (선택) 모임 HOST가 현재 모임 상세 조회 - 참여 인원 / 상태 확인
-GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
+### 6-1. V2 목록 첫 페이지 (기본: filter=ACTIVE, keyword 없음)
+GET http://localhost:8080/api/v2/groups?size=5
 Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("v2_cursor_active_page1", nextCursor);
+  }
+%}
+
+### 6-2. V2 목록 두 번째 페이지 (기본: filter=ACTIVE)
+GET http://localhost:8080/api/v2/groups?size=5&cursor={{v2_cursor_active_page1}}
+Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("v2_cursor_active_page2", nextCursor);
+  }
+%}
+
+### 6-3. V2 목록 키워드 검색 (keyword=스터디, filter=ACTIVE)
+GET http://localhost:8080/api/v2/groups?keyword=스터디&size=5&filter=ACTIVE
+Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("v2_cursor_study_active_page1", nextCursor);
+  }
+%}
+
+### 6-4. V2 목록 전체 상태 조회 (filter=ALL)
+GET http://localhost:8080/api/v2/groups?size=5&filter=ALL
+Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("v2_cursor_all_page1", nextCursor);
+  }
+%}
+
+### 6-5. V2 includeStatuses만 지정 (RECRUITING, FULL)
+GET http://localhost:8080/api/v2/groups?size=5&filter=ALL&includeStatuses=RECRUITING&includeStatuses=FULL
+Authorization: Bearer {{host2AccessToken}}
+
+### 6-6. V2 excludeStatuses만 지정 (CANCELLED, FINISHED 제외)
+GET http://localhost:8080/api/v2/groups?size=5&filter=ALL&excludeStatuses=CANCELLED&excludeStatuses=FINISHED
+Authorization: Bearer {{host2AccessToken}}
+
+### 6-7. V2 include + exclude 같이 지정 (exclude 우선: FULL 제외)
+GET http://localhost:8080/api/v2/groups?size=5&filter=ALL&includeStatuses=RECRUITING&includeStatuses=FULL&excludeStatuses=FULL
+Authorization: Bearer {{host2AccessToken}}
+
+#################################################################
+# (선택) 비로그인 V2 목록/상세 조회
+#################################################################
+
+### 7-1. (선택) 로그인 안 한 상태에서 V2 목록 조회
+GET http://localhost:8080/api/v2/groups?size=5
+
+### 7-2. (선택) 로그인 안 한 상태에서 V2 모임 상세 조회
+GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
