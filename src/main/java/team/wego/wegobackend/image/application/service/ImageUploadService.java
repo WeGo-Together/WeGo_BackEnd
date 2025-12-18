@@ -387,11 +387,15 @@ public class ImageUploadService {
 
 
     public String extractKeyFromUrl(String imageUrl) {
-        if (imageUrl == null || imageUrl.isBlank()) return null;
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
 
         String clean = imageUrl;
         int qIdx = clean.indexOf('?');
-        if (qIdx >= 0) clean = clean.substring(0, qIdx);
+        if (qIdx >= 0) {
+            clean = clean.substring(0, qIdx);
+        }
 
         String endpoint = awsS3Properties.getPublicEndpoint();
         if (endpoint != null && !endpoint.isBlank()) {
@@ -404,7 +408,9 @@ public class ImageUploadService {
         try {
             URI uri = URI.create(clean);
             String path = uri.getPath(); // "/dir/xxx.webp"
-            if (path == null || path.isBlank()) return null;
+            if (path == null || path.isBlank()) {
+                return null;
+            }
             return path.startsWith("/") ? path.substring(1) : path;
         } catch (IllegalArgumentException e) {
             return clean; // url이 아니면 key로 간주
@@ -464,6 +470,23 @@ public class ImageUploadService {
         if (!key.matches("[a-zA-Z0-9_\\-./]+")) {
             throw new ImageException(ImageExceptionCode.INVALID_IMAGE_KEY, key);
         }
+    }
+
+    public ImageFile uploadAsWebpWithSizeUsingBaseName(
+            MultipartFile file,
+            String baseName,
+            ImageSize size
+    ) {
+        validateImageSize(file);
+        validateImageContentType(file);
+        validateExtension(file.getOriginalFilename());
+
+        String key = baseName + "_" + size.width() + "x" + size.height() + ".webp";
+        byte[] bytes = convertToWebpWithSize(file, size);
+
+        putToS3(key, bytes, "image/webp");
+        String url = awsS3Properties.getPublicEndpoint() + "/" + key;
+        return new ImageFile(key, url);
     }
 
 

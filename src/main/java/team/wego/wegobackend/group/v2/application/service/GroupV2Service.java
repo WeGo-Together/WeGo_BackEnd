@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
+import team.wego.wegobackend.group.v2.application.dto.common.PreUploadedGroupImage;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupImageV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
@@ -30,6 +31,7 @@ import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.infrastructure.redis.PreUploadedGroupImageRedisRepository;
 import team.wego.wegobackend.tag.application.service.TagService;
 import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
@@ -43,6 +45,9 @@ public class GroupV2Service {
     private final GroupUserV2Repository groupUserV2Repository;
     private final GroupV2QueryRepository groupV2QueryRepository;
     private final GroupV2Repository groupV2Repository;
+    private final PreUploadedGroupImageRedisRepository preUploadedGroupImageRedisRepository;
+
+    private final GroupCreateCooldownService groupCreateCooldownService;
 
     // 태그 호출
     private final TagService tagService;
@@ -163,11 +168,13 @@ public class GroupV2Service {
 
 
     @Transactional
-    public CreateGroupV2Response create(Long userId,
-            CreateGroupV2Request request) {
+    public CreateGroupV2Response create(Long userId, CreateGroupV2Request request,
+            int cooldownSeconds) {
         if (userId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
+
+        groupCreateCooldownService.acquireOrThrowWithRollbackRelease(userId, cooldownSeconds);
 
         // 회원 조회
         User host = userRepository.findById(userId)
@@ -200,10 +207,34 @@ public class GroupV2Service {
         }
 
         // 이미지 생성
-        if (request.images() != null) {
-            for (CreateGroupImageV2Request imageRequest : request.images()) {
-                GroupImageV2.create(group, imageRequest.sortOrder(), imageRequest.imageUrl440x240(),
-                        imageRequest.imageUrl100x100());
+        if (request.images() != null && !request.images().isEmpty()) {
+            for (int i = 0; i < request.images().size(); i++) {
+                CreateGroupImageV2Request imgReq = request.images().get(i);
+
+                String imageKey = imgReq.imageKey();
+                if (imageKey == null || imageKey.isBlank()) {
+                    throw new GroupException(GroupErrorCode.GROUP_IMAGE_KEY_REQUIRED);
+                }
+
+                int sortOrder = (imgReq.sortOrder() != null) ? imgReq.sortOrder() : i;
+
+                PreUploadedGroupImage pre = preUploadedGroupImageRedisRepository.consume(imageKey)
+                        .orElseThrow(() -> new GroupException(
+                                GroupErrorCode.PRE_UPLOADED_IMAGE_NOT_FOUND, imageKey
+                        ));
+
+                if (!userId.equals(pre.uploaderId())) {
+                    throw new GroupException(GroupErrorCode.PRE_UPLOADED_IMAGE_OWNER_MISMATCH,
+                            imageKey);
+                }
+
+                GroupImageV2.create(
+                        group,
+                        sortOrder,
+                        pre.imageKey(),
+                        pre.url440x240(),
+                        pre.url100x100()
+                );
             }
         }
 
