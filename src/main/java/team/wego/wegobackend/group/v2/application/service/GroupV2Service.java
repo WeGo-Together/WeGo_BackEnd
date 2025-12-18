@@ -5,11 +5,12 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupImageV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
+import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response;
@@ -19,8 +20,10 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Address;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
@@ -107,13 +110,15 @@ public class GroupV2Service {
     }
 
     @Transactional
-    public CreateGroupV2Response create(CustomUserDetails userDetails,
+    public CreateGroupV2Response create(Long userId,
             CreateGroupV2Request request) {
+        if (userId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
 
         // 회원 조회
-        User host = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND,
-                        userDetails.getId())
+        User host = userRepository.findById(userId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, userId)
                 );
 
         // 모임 주소 생성
@@ -169,5 +174,107 @@ public class GroupV2Service {
         return GetGroupV2Response.of(group, images, users, userId);
     }
 
+
+    @Transactional
+    public AttendGroupV2Response attend(Long userId, Long groupId) {
+        if (userId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        if (group.getHost().getId().equals(userId)) {
+            throw new GroupException(GroupErrorCode.GROUP_HOST_CANNOT_ATTEND);
+        }
+
+        // 모임 상태 체크
+        if (group.getStatus() != GroupV2Status.RECRUITING) {
+            throw new GroupException(GroupErrorCode.GROUP_NOT_RECRUITING, group.getStatus().name());
+        }
+
+        // 기존 멤버십 조회
+        GroupUserV2 groupUserV2 = groupUserV2Repository.findByGroupIdAndUserId(groupId, userId)
+                .orElse(null);
+
+        if (groupUserV2 != null) {
+            if (groupUserV2.getStatus() == GroupUserV2Status.BANNED) {
+                throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
+            }
+            // 이미 참석중이면 충돌
+            if (groupUserV2.getStatus() == GroupUserV2Status.ATTEND) {
+                throw new GroupException(GroupErrorCode.ALREADY_ATTEND_GROUP, groupId, userId);
+            }
+            // LEFT/KICKED면 재참여 허용
+            groupUserV2.reAttend();
+        } else {
+            // 최초 참석 생성
+            groupUserV2 = GroupUserV2.create(group, userRepository.getReferenceById(userId),
+                    GroupUserV2Role.MEMBER);
+            // create에서 group.addUser로 연관관계 맞추는 구조.
+            // group은 영속 상태여야 한다. (위에서 findById 했으니 ok)
+            groupUserV2Repository.save(groupUserV2);
+        }
+
+        // 5) 정원 체크 수행. 재참여 포함해서 체크하는 게 안전
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+        if (attendCount > group.getMaxParticipants()) {
+            // 방금 reAttend로 늘었는데 초과하면 롤백시키기 위해 예외
+            throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
+        }
+
+        // FULL 자동 전환
+        if (attendCount == group.getMaxParticipants()
+                && group.getStatus() == GroupV2Status.RECRUITING) {
+            group.changeStatus(GroupV2Status.FULL);
+        }
+
+        // 내 멤버십 + 최신 카운트 + 모임 상태 응답
+        MyMembership membership =
+                MyMembership.from(List.of(groupUserV2), userId);
+
+        return AttendGroupV2Response.of(group, attendCount, membership);
+    }
+
+    @Transactional
+    public AttendGroupV2Response left(Long userId, Long groupId) {
+        if (userId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        if (group.getHost().getId().equals(userId)) {
+            throw new GroupException(GroupErrorCode.GROUP_HOST_CANNOT_LEAVE, groupId, userId);
+        }
+
+        GroupUserV2 groupUserV2 = groupUserV2Repository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, userId));
+
+        // ATTEND만 LEFT 가능
+        if (groupUserV2.getStatus() != GroupUserV2Status.ATTEND) {
+            throw new GroupException(GroupErrorCode.GROUP_NOT_ATTEND_STATUS);
+        }
+
+        groupUserV2.leave();
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        // FULL -> RECRUITING 자동 복귀(선택)
+        if (group.getStatus() == GroupV2Status.FULL && attendCount < group.getMaxParticipants()) {
+            group.changeStatus(GroupV2Status.RECRUITING);
+        }
+
+        // 응답
+        MyMembership membership =
+                MyMembership.from(List.of(groupUserV2), userId);
+
+        return AttendGroupV2Response.of(group, attendCount, membership);
+    }
 
 }

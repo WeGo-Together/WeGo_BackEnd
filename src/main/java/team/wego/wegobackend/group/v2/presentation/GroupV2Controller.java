@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
+import team.wego.wegobackend.group.application.dto.v1.response.GetGroupResponse;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
+import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
@@ -32,7 +34,7 @@ public class GroupV2Controller {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody @Valid CreateGroupV2Request request
     ) {
-        CreateGroupV2Response response = groupV2Service.create(userDetails, request);
+        CreateGroupV2Response response = groupV2Service.create(userDetails.getId(), request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -50,6 +52,33 @@ public class GroupV2Controller {
         GetGroupV2Response response = groupV2Service.getGroup(userId, groupId);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @PostMapping("/{groupId}/attend")
+    public ResponseEntity<ApiResponse<AttendGroupV2Response>> attend(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+
+        AttendGroupV2Response response = groupV2Service.attend(userDetails.getId(), groupId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        HttpStatus.OK.value(), response));
+    }
+
+
+    @PostMapping("/{groupId}/left")
+    public ResponseEntity<ApiResponse<AttendGroupV2Response>> left(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+        AttendGroupV2Response response = groupV2Service.left(userDetails.getId(), groupId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
 

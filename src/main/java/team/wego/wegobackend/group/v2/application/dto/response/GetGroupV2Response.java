@@ -5,6 +5,7 @@ import java.util.List;
 import team.wego.wegobackend.group.v2.application.dto.common.Address;
 import team.wego.wegobackend.group.v2.application.dto.common.CreatedBy;
 import team.wego.wegobackend.group.v2.application.dto.common.GroupImageItem;
+import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
@@ -83,31 +84,6 @@ public record GetGroupV2Response(
                 myMembership,
                 joinedMembers
         );
-    }
-
-    public record MyMembership(
-            boolean isJoined,
-            Long groupUserId,
-            GroupUserV2Role role,
-            GroupUserV2Status status,
-            LocalDateTime joinedAt,
-            LocalDateTime leftAt
-    ) {
-
-        public static MyMembership from(List<GroupUserV2> users, Long userId) {
-            return users.stream()
-                    .filter(groupUserV2 -> groupUserV2.getUser().getId().equals(userId))
-                    .findFirst()
-                    .map(groupUserV2 -> new MyMembership(
-                            groupUserV2.getStatus() == GroupUserV2Status.ATTEND,
-                            groupUserV2.getId(),
-                            groupUserV2.getGroupRole(),
-                            groupUserV2.getStatus(),
-                            groupUserV2.getJoinedAt(),
-                            groupUserV2.getLeftAt()
-                    ))
-                    .orElse(new MyMembership(false, null, null, null, null, null));
-        }
     }
 
     public record JoinedMember(

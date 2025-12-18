@@ -1,0 +1,146 @@
+### 회원가입(HOST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostUser",
+  "phoneNumber": "010-0000-0000"
+}
+
+> {%
+  // ApiResponse<{ userId, ... }>
+  client.global.set("hostUserId", response.body.data.userId);
+%}
+
+### 로그인(HOST)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostAccessToken", response.body.data.accessToken);
+%}
+
+### 2-1. 모임 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v1/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+
+  client.global.set("img0_main",  images[0].imageUrl440x240);
+  client.global.set("img0_thumb", images[0].imageUrl100x100);
+
+  client.global.set("img1_main",  images[1].imageUrl440x240);
+  client.global.set("img1_thumb", images[1].imageUrl100x100);
+%}
+
+### 2-2. V2 모임 생성 (업로드된 URL로 생성)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "참여 테스트용 자바 스터디",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": [
+    "참여테스트",
+    "자바",
+    "백엔드"
+  ],
+  "description": "MEMBER들이 참석/중복 참석 예외를 테스트하기 위한 모임입니다.",
+  "maxParticipants": 5,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{img0_main}}",
+      "imageUrl100x100": "{{img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{img1_main}}",
+      "imageUrl100x100": "{{img1_thumb}}"
+    }
+  ]
+}
+
+> {%
+  client.global.set("groupId_attendTest", response.body.data.id);
+%}
+
+### 회원가입(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberOne",
+  "phoneNumber": "010-1111-1111"
+}
+
+> {%
+  client.global.set("memberId1", response.body.data.userId);
+%}
+
+### 로그인(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member1AccessToken", response.body.data.accessToken);
+%}
+
+
+### 4-1. V2 MEMBER1 모임 참여 (성공 케이스)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 4-2. 예외발생: MEMBER1 모임 재참여 시도 (예외: 이미 참여 중)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 4-3. 예외발생: HOST가 자신의 모임에 attend 호출 (예외 혹은 이미 참여 처리 확인)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{}
+
+### 4-4. (선택) 현재 모임 상세 조회 - 참가 상태/인원 수 확인
+GET http://localhost:8080/api/v2/groups/{{groupId_attendTest}}
+Authorization: Bearer {{member1AccessToken}}
+

@@ -91,5 +91,5 @@ Authorization: Bearer {{hostAccessToken}}
 %}
 
 ### V2 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
-GET http://localhost:8080/api/v2/groups/1
+GET http://localhost:8080/api/v2/groups/{{groupId}}
 Authorization: Bearer {{hostAccessToken}}
