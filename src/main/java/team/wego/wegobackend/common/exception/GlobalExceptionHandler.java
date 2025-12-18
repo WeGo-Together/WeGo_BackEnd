@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.http.HttpStatus;
@@ -284,18 +285,34 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             RedisConnectionFailureException.class,
-            RedisSystemException.class,
-            DataAccessException.class
+            RedisSystemException.class
     })
     public ResponseEntity<ErrorResponse> handleRedis(Exception ex, HttpServletRequest request) {
         log.error("Redis 장애(500): {}", rootCauseMessage(ex), ex);
+        return handleApp(new AppException(GroupErrorCode.REDIS_READ_FAILED), request);
+    }
 
-        AppException mapped = new AppException(GroupErrorCode.REDIS_READ_FAILED);
-        return handleApp(mapped, request);
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+
+        log.error("DB 무결성 위반(409): {}", rootCauseMessage(ex), ex);
+
+        // 다시 에러코드 하나 만들자 DB 무결성 안잡았다.
+        return handleApp(new AppException(GroupErrorCode.GROUP_IMAGE_SORT_ORDER_CONFLICT), request);
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleDataAccess(
+            DataAccessException ex, HttpServletRequest request) {
+
+        log.error("DB 접근 오류(500): {}", rootCauseMessage(ex), ex);
+        return handleApp(new AppException(AppErrorCode.INTERNAL_SERVER_ERROR), request);
     }
 
     @ExceptionHandler(JsonProcessingException.class)
-    public ResponseEntity<ErrorResponse> handleJson(JsonProcessingException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleJson(JsonProcessingException ex,
+            HttpServletRequest request) {
         log.error("Jackson 직렬화/역직렬화 실패(500): {}", rootCauseMessage(ex), ex);
         AppException mapped = new AppException(GroupErrorCode.REDIS_READ_FAILED);
         return handleApp(mapped, request);
