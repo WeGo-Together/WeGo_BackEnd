@@ -156,7 +156,7 @@ public class GroupV2Service {
     }
 
     @Transactional(readOnly = true)
-    public GetGroupV2Response getGroup(CustomUserDetails userDetails, Long groupId) {
+    public GetGroupV2Response getGroup(Long userId, Long groupId) {
 
         GroupV2 group = groupV2Repository.findGroupWithHostAndTags(groupId)
                 .orElseThrow(
@@ -166,7 +166,7 @@ public class GroupV2Service {
         List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
         List<GroupUserV2> users = groupUserV2Repository.findAllByGroupIdWithUser(groupId);
 
-        return GetGroupV2Response.of(group, images, users, userDetails.getId());
+        return GetGroupV2Response.of(group, images, users, userId);
     }
 
 

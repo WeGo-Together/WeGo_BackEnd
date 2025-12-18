@@ -46,7 +46,8 @@ public class GroupV2Controller {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
-        GetGroupV2Response response = groupV2Service.getGroup(userDetails, groupId);
+        Long userId = (userDetails == null) ? null : userDetails.getId();
+        GetGroupV2Response response = groupV2Service.getGroup(userId, groupId);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }

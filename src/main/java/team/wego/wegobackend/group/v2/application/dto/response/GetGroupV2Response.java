@@ -49,8 +49,11 @@ public record GetGroupV2Response(
                 .filter(gu -> gu.getStatus() == GroupUserV2Status.ATTEND)
                 .count();
 
+        boolean isHost = group.getHost().getId().equals(userIdOrNull);
+
         List<JoinedMember> joinedMembers = users.stream()
-                .filter(gu -> gu.getStatus() == GroupUserV2Status.ATTEND)
+                .filter(groupUserV2 -> isHost
+                        || groupUserV2.getStatus() == GroupUserV2Status.ATTEND)
                 .map(JoinedMember::from)
                 .toList();
 
@@ -90,17 +93,18 @@ public record GetGroupV2Response(
             LocalDateTime joinedAt,
             LocalDateTime leftAt
     ) {
+
         public static MyMembership from(List<GroupUserV2> users, Long userId) {
             return users.stream()
-                    .filter(gu -> gu.getUser().getId().equals(userId))
+                    .filter(groupUserV2 -> groupUserV2.getUser().getId().equals(userId))
                     .findFirst()
-                    .map(gu -> new MyMembership(
-                            gu.getStatus() == GroupUserV2Status.ATTEND,
-                            gu.getId(),
-                            gu.getGroupRole(),
-                            gu.getStatus(),
-                            gu.getJoinedAt(),
-                            gu.getLeftAt()
+                    .map(groupUserV2 -> new MyMembership(
+                            groupUserV2.getStatus() == GroupUserV2Status.ATTEND,
+                            groupUserV2.getId(),
+                            groupUserV2.getGroupRole(),
+                            groupUserV2.getStatus(),
+                            groupUserV2.getJoinedAt(),
+                            groupUserV2.getLeftAt()
                     ))
                     .orElse(new MyMembership(false, null, null, null, null, null));
         }
@@ -110,19 +114,24 @@ public record GetGroupV2Response(
             Long userId,
             Long groupUserId,
             GroupUserV2Role role,
+            GroupUserV2Status status,
             String nickName,
             String profileImage,
-            LocalDateTime joinedAt
+            LocalDateTime joinedAt,
+            LocalDateTime leftAt
     ) {
+
         public static JoinedMember from(GroupUserV2 groupUser) {
             User user = groupUser.getUser();
             return new JoinedMember(
                     user.getId(),
                     groupUser.getId(),
                     groupUser.getGroupRole(),
+                    groupUser.getStatus(),
                     user.getNickName(),
                     user.getProfileImage(),
-                    groupUser.getJoinedAt()
+                    groupUser.getJoinedAt(),
+                    groupUser.getLeftAt()
             );
         }
     }
