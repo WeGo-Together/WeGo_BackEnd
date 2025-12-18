@@ -207,7 +207,7 @@ public class GroupService {
 
     private User findMember(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new GroupException(GroupErrorCode.MEMBER_NOT_FOUND, userId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, userId));
     }
 
     private void validateNotAlreadyAttend(GroupUser groupUser, Long groupId, Long userId) {
@@ -219,7 +219,7 @@ public class GroupService {
     private void validateCapacity(Group group) {
         long currentAttendCount = groupUserRepository.countByGroupAndStatus(group, ATTEND);
         if (currentAttendCount >= group.getMaxParticipants()) {
-            throw new GroupException(GroupErrorCode.GROUP_CAPACITY_EXCEEDED, group.getId());
+            throw new GroupException(GroupErrorCode.GROUP_IS_FULL, group.getId());
         }
     }
 
@@ -277,7 +277,7 @@ public class GroupService {
 
     private void validateHostCannotLeave(GroupUser groupUser, Long groupId, Long userId) {
         if (groupUser.getGroupRole() == GroupRole.HOST) {
-            throw new GroupException(GroupErrorCode.HOST_CANNOT_LEAVE_OWN_GROUP, groupId, userId);
+            throw new GroupException(GroupErrorCode.GROUP_HOST_CANNOT_LEAVE, groupId, userId);
         }
     }
 

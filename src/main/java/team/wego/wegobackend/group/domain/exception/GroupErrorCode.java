@@ -9,7 +9,7 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
 
-    GROUP_IMAGE_VARIANT_REQUIRED(HttpStatus.BAD_REQUEST, "Group Image Variant Required"),
+    GROUP_IMAGE_VARIANT_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 variant는 필수입니다."),
     GROUP_BANNED_USER(HttpStatus.BAD_REQUEST, "차단된 사용자는 재참여할 수 없습니다."),
     GROUP_IMAGE_MUST_440_240(HttpStatus.BAD_REQUEST, "모임: 모임 이미지 440x240은 필수입니다."),
     GROUP_IMAGE_MUST_100_100(HttpStatus.BAD_REQUEST, "모임: 모임 이미지 100x100은 필수입니다."),
@@ -22,11 +22,11 @@ public enum GroupErrorCode implements ErrorCode {
     GROUP_NOT_FOUND_BY_ID(HttpStatus.NOT_FOUND, "모임: 모임을 찾을 수 없습니다. 모임 ID: %s"),
     IMAGE_UPLOAD_EXCEED(HttpStatus.BAD_REQUEST, "모임: 모임 이미지는 최대 3개 입니다. 현재 이미지 수: %s"),
 
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 회원을 찾을 수 없습니다. 회원 ID: %s"),
+    GROUP_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 회원을 찾을 수 없습니다. 회원 ID: %s"),
     ALREADY_ATTEND_GROUP(HttpStatus.BAD_REQUEST, "모임: 이미 참여 중인 모임입니다. 모임 ID: %s 회원 ID: %s"),
-    GROUP_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "모임: 모임 최대 참가자 수를 초과했습니다. 모임 ID: %s"),
+    GROUP_IS_FULL(HttpStatus.BAD_REQUEST, "모임: 모임 최대 참가자 수를 초과했습니다. 모임 ID: %s"),
     NOT_ATTEND_GROUP(HttpStatus.BAD_REQUEST, "모임: 참여한 적 없거나 이미 나간 상태입니다. 모임 ID: %s 회원 ID: %s"),
-    HOST_CANNOT_LEAVE_OWN_GROUP(HttpStatus.BAD_REQUEST, "모임: HOST는 나갈 수 없습니다. 모임 ID: %s 회원 ID: %s"),
+    GROUP_HOST_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "모임: HOST는 나갈 수 없습니다. 모임 ID: %s 회원 ID: %s"),
     NO_PERMISSION_TO_UPDATE_GROUP(HttpStatus.FORBIDDEN,
             "모임: 해당 모임을 수정할 권한이 없습니다. 모임 ID: %s 회원 ID: %s"),
     INVALID_MAX_PARTICIPANTS_LESS_THAN_CURRENT(HttpStatus.BAD_REQUEST,
@@ -38,7 +38,12 @@ public enum GroupErrorCode implements ErrorCode {
     GROUP_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임 이미지가 존재하지 않습니다. groupId=%d"),
     LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 위치는 필수입니다."),
     GROUP_STATUS_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 상태는 필수입니다."),
-    GROUP_STATUS_TRANSFER_IMPOSSIBLE(HttpStatus.BAD_REQUEST, "모임: 상태 전이가 불가능합니다. 현재 상태: %s, 요청한 상태: %s");
+    GROUP_STATUS_TRANSFER_IMPOSSIBLE(HttpStatus.BAD_REQUEST, "모임: 상태 전이가 불가능합니다. 현재 상태: %s, 요청한 상태: %s"),
+    USER_ID_NULL(HttpStatus.NOT_FOUND, "모임: 회원 ID가 null 입니다."),
+    GROUP_HOST_CANNOT_ATTEND(HttpStatus.BAD_REQUEST, "모임: HOST는 다시 모임에 신청을 할 수 없습니다."),
+    GROUP_NOT_RECRUITING(HttpStatus.BAD_REQUEST, "모임: 모집 상태가 아닙니다. 현재 상태: %s"),
+    GROUP_NOT_ATTEND_STATUS(HttpStatus.BAD_REQUEST, "모임: ATTEND 상태에서만 LEFT 상태로 전이할 수 있습니다.");
+
 
     private final HttpStatus status;
     private final String message;
