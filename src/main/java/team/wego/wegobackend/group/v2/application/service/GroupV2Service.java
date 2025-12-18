@@ -58,6 +58,7 @@ public class GroupV2Service {
 
     private static final int MAX_PAGE_SIZE = 50;
     private static final int GROUP_LIST_IMAGE_LIMIT = 3;
+    private static final int COOL_DOWN_SECONDS = 30;
 
     @Transactional(readOnly = true)
     public GetGroupListV2Response getGroupListV2(
@@ -168,13 +169,12 @@ public class GroupV2Service {
 
 
     @Transactional
-    public CreateGroupV2Response create(Long userId, CreateGroupV2Request request,
-            int cooldownSeconds) {
+    public CreateGroupV2Response create(Long userId, CreateGroupV2Request request) {
         if (userId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
 
-        groupCreateCooldownService.acquireOrThrowWithRollbackRelease(userId, cooldownSeconds);
+        groupCreateCooldownService.acquireOrThrowWithRollbackRelease(userId, COOL_DOWN_SECONDS);
 
         // 회원 조회
         User host = userRepository.findById(userId)

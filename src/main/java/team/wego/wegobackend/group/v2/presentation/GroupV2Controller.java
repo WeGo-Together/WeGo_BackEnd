@@ -34,10 +34,9 @@ public class GroupV2Controller {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupV2Response>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "30") int cooldownSeconds,
             @RequestBody @Valid CreateGroupV2Request request
     ) {
-        CreateGroupV2Response response = groupV2Service.create(userDetails.getId(), request, cooldownSeconds);
+        CreateGroupV2Response response = groupV2Service.create(userDetails.getId(), request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

@@ -76,7 +76,7 @@ Authorization: Bearer {{accessToken}}
     },
     {
       "sortOrder": 1,
-      "imageKey": "{{img1_key}}"ㄱ
+      "imageKey": "{{img1_key}}"
     }
   ]
 }
