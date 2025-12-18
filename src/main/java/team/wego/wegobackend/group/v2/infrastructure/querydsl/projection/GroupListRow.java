@@ -1,16 +1,18 @@
 package team.wego.wegobackend.group.v2.infrastructure.querydsl.projection;
 
 import java.time.LocalDateTime;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 public record GroupListRow(
         Long groupId,
         String title,
+        GroupV2Status status,
         String location,
         String locationDetail,
         LocalDateTime startTime,
         LocalDateTime endTime,
         String description,
-        int maxParticipants,
+        Integer maxParticipants,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         Long hostId,

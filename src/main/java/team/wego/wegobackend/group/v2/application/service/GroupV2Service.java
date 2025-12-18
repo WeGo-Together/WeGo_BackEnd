@@ -10,6 +10,7 @@ import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupImageV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
+import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
@@ -54,14 +55,62 @@ public class GroupV2Service {
     private static final int GROUP_LIST_IMAGE_LIMIT = 3;
 
     @Transactional(readOnly = true)
-    public GetGroupListV2Response getGroupListV2(String keyword, Long cursor, int size) {
+    public GetGroupListV2Response getGroupListV2(
+            String keyword,
+            Long cursor,
+            int size,
+            GroupListFilter filter,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses
+    ) {
+        // filter null 방어
+        filter = (filter == null) ? GroupListFilter.ACTIVE : filter;
 
         int pageSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
 
+        boolean hasInclude = includeStatuses != null && !includeStatuses.isEmpty();
+        boolean hasExclude = excludeStatuses != null && !excludeStatuses.isEmpty();
+
+        // 여기서부터 includes/excludes는 "절대 null 아님" 규칙으로 설정
+        List<GroupV2Status> includes = filter.defaultIncludeStatuses();
+        List<GroupV2Status> excludes = filter.defaultExcludeStatuses();
+
+        // GroupListFilter의 default가 절대 null 반환하지 않게 보장
+        if (includes == null) {
+            includes = List.of();
+        }
+        if (excludes == null) {
+            excludes = List.of();
+        }
+
+        // include가 오면 include가 우선: filter include 무시
+        if (hasInclude) {
+            includes = includeStatuses;
+            // include가 명시된 순간 filter의 exclude까지 섞이면 예측이 어려워져서 초기화
+            excludes = List.of();
+        }
+
+        // exclude가 오면 exclude는 요청값으로 덮어쓰기
+        if (hasExclude) {
+            excludes = excludeStatuses;
+        }
+
+        // 안전장치: filter=ALL이면 "전체"가 맞으므로 기본값 강제 X
+        // filter != ALL이고, 아무것도 안 왔고, includes가 비어있다면 ACTIVE 기본값 적용
+        if (!hasInclude && !hasExclude && filter != GroupListFilter.ALL && includes.isEmpty()) {
+            includes = List.of(GroupV2Status.RECRUITING, GroupV2Status.FULL);
+        }
+
+        // 4) 충돌 제거: exclude 우선한다. 람다 캡처 문제 없애기 위해 Set 연산으로 처리
+        if (!includes.isEmpty() && !excludes.isEmpty()) {
+            // includes가 "전체" 의미(빈 리스트)인 경우엔 여기 들어오지 않음
+            var includeSet = java.util.EnumSet.copyOf(includes);
+            excludes.forEach(includeSet::remove);
+            includes = List.copyOf(includeSet); // 불변 리스트로 정리
+        }
+
         List<GroupListRow> rows = groupV2QueryRepository.fetchGroupRows(
-                keyword,
-                cursor,
-                pageSize + 1
+                keyword, cursor, pageSize + 1, includes, excludes
         );
 
         boolean hasNext = rows.size() > pageSize;
@@ -82,32 +131,36 @@ public class GroupV2Service {
                 groupV2QueryRepository.fetchTagNamesByGroupIds(groupIds);
 
         List<GroupListItemV2Response> items = content.stream()
-                .map(r -> {
-                    int participantCount =
-                            (r.participantCount() == null) ? 0 : r.participantCount().intValue();
-
+                .map(groupListRow -> {
+                    int participantCount = (groupListRow.participantCount() == null) ? 0
+                            : groupListRow.participantCount().intValue();
                     return GroupListItemV2Response.of(
-                            r.groupId(),
-                            r.title(),
-                            r.location(),
-                            r.locationDetail(),
-                            r.startTime(),
-                            r.endTime(),
-                            imageMap.getOrDefault(r.groupId(), List.of()),
-                            tagMap.getOrDefault(r.groupId(), List.of()),
-                            r.description(),
+                            groupListRow.groupId(),
+                            groupListRow.title(),
+                            groupListRow.status(),
+                            groupListRow.location(),
+                            groupListRow.locationDetail(),
+                            groupListRow.startTime(),
+                            groupListRow.endTime(),
+                            imageMap.getOrDefault(groupListRow.groupId(), List.of()),
+                            tagMap.getOrDefault(groupListRow.groupId(), List.of()),
+                            groupListRow.description(),
                             participantCount,
-                            r.maxParticipants(),
-                            CreatedByV2Response.of(r.hostId(), r.hostNickName(),
-                                    r.hostProfileImage()),
-                            r.createdAt(),
-                            r.updatedAt()
+                            groupListRow.maxParticipants(),
+                            CreatedByV2Response.of(
+                                    groupListRow.hostId(),
+                                    groupListRow.hostNickName(),
+                                    groupListRow.hostProfileImage()
+                            ),
+                            groupListRow.createdAt(),
+                            groupListRow.updatedAt()
                     );
                 })
                 .toList();
 
         return GetGroupListV2Response.of(items, nextCursor);
     }
+
 
     @Transactional
     public CreateGroupV2Response create(Long userId,
@@ -162,7 +215,6 @@ public class GroupV2Service {
 
     @Transactional(readOnly = true)
     public GetGroupV2Response getGroup(Long userId, Long groupId) {
-
         GroupV2 group = groupV2Repository.findGroupWithHostAndTags(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
@@ -175,6 +227,7 @@ public class GroupV2Service {
     }
 
 
+    // TODO: 참석, 취소 동시성 해결 필요.
     @Transactional
     public AttendGroupV2Response attend(Long userId, Long groupId) {
         if (userId == null) {
@@ -217,7 +270,7 @@ public class GroupV2Service {
             groupUserV2Repository.save(groupUserV2);
         }
 
-        // 5) 정원 체크 수행. 재참여 포함해서 체크하는 게 안전
+        // 정원 체크 수행. 재참여 포함해서 체크하는 게 안전
         long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
                 GroupUserV2Status.ATTEND);
         if (attendCount > group.getMaxParticipants()) {
@@ -276,5 +329,6 @@ public class GroupV2Service {
 
         return AttendGroupV2Response.of(group, attendCount, membership);
     }
+
 
 }
