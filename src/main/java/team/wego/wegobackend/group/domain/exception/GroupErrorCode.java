@@ -8,9 +8,34 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+    GROUP_IMAGE_SORT_ORDER_CONFLICT(
+            HttpStatus.CONFLICT,
+            "모임: 이미지 정렬 처리 중 충돌이 발생했습니다. 다시 시도해주세요."
+    ),
+    GROUP_IMAGE_NOT_FOUND_IN_GROUP_AFTER_UPDATE(
+            HttpStatus.BAD_REQUEST,
+            "모임: 요청한 이미지 키(%s)를 반영할 수 없습니다. (모임에 없거나 선업로드 이미지가 아닙니다.)"
+    ),
+    TAG_EXCEED_MAX(HttpStatus.BAD_REQUEST, "모임: 태그는 최대 10개까지 가능합니다. (요청=%s)"),
+    TAG_DUPLICATED(HttpStatus.BAD_REQUEST, "모임: 태그가 중복되었습니다."),
+    DUPLICATED_IMAGE_KEY_IN_REQUEST(HttpStatus.BAD_REQUEST, "모임: 이미지 키가 중복되었습니다."),
+    IMAGE_ORDER_EMPTY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "모임: 이미지는 최소 1장 이상이어야 합니다."),
+    TAG_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "모임: 태그 이름이 중복되었습니다."),
 
+    GROUP_TITLE_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 제목은 필수입니다."),
+    GROUP_TITLE_TOO_LONG(HttpStatus.BAD_REQUEST, "모임: 제목은 50자 이하여야 합니다."),
+    GROUP_DESCRIPTION_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 설명은 필수입니다."),
+    GROUP_DESCRIPTION_TOO_LONG(HttpStatus.BAD_REQUEST, "모임: 설명은 300자 이하여야 합니다."),
+
+    GROUP_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 시작 시간은 필수입니다."),
+    GROUP_TIME_INVALID_RANGE(HttpStatus.BAD_REQUEST, "모임: 시작/종료 시간이 올바르지 않습니다. (start < end)"),
+    MAX_PARTICIPANTS_BELOW_ATTEND_COUNT(HttpStatus.CONFLICT, "모임: 현재 참석자 수(%s)보다 정원을 줄일 수 없습니다."),
+    GROUP_ONLY_HOST_CAN_UPDATE(HttpStatus.FORBIDDEN, "모임: 수정 권한이 없습니다."),
+    GROUP_CANNOT_UPDATE_IN_STATUS(HttpStatus.CONFLICT, "모임: 현재 상태(%s)에서는 수정할 수 없습니다."),
+    GROUP_DELETED(HttpStatus.NOT_FOUND, "모임: 삭제된 모임입니다."),
     INVALID_COOLDOWN_SECONDS(HttpStatus.BAD_REQUEST, "모임: 유효하지 않은 쿨다운 정책입니다."),
-    GROUP_CREATE_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "모임: 모임 생성은 연속으로 할 수 없습니다. {%s}초 후 다시 시도해 주세요."),
+    GROUP_CREATE_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS,
+            "모임: 모임 생성은 연속으로 할 수 없습니다. {%s}초 후 다시 시도해 주세요."),
     PRE_UPLOADED_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 선 업로드 이미지가 만료되었거나 존재하지 않습니다."),
     PRE_UPLOADED_IMAGE_OWNER_MISMATCH(HttpStatus.FORBIDDEN, "모임: 선 업로드 이미지를 업로드한 사용자만 사용할 수 있습니다."),
     REDIS_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "모임: 선 업로드 이미지 저장에 실패했습니다."),
@@ -45,7 +70,8 @@ public enum GroupErrorCode implements ErrorCode {
     GROUP_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "모임 이미지가 존재하지 않습니다. groupId=%d"),
     LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 위치는 필수입니다."),
     GROUP_STATUS_REQUIRED(HttpStatus.BAD_REQUEST, "모임: 모임 상태는 필수입니다."),
-    GROUP_STATUS_TRANSFER_IMPOSSIBLE(HttpStatus.BAD_REQUEST, "모임: 상태 전이가 불가능합니다. 현재 상태: %s, 요청한 상태: %s"),
+    GROUP_STATUS_TRANSFER_IMPOSSIBLE(HttpStatus.BAD_REQUEST,
+            "모임: 상태 전이가 불가능합니다. 현재 상태: %s, 요청한 상태: %s"),
     USER_ID_NULL(HttpStatus.NOT_FOUND, "모임: 회원 ID가 null 입니다."),
     GROUP_HOST_CANNOT_ATTEND(HttpStatus.BAD_REQUEST, "모임: HOST는 다시 모임에 신청을 할 수 없습니다."),
     GROUP_NOT_RECRUITING(HttpStatus.BAD_REQUEST, "모임: 모집 상태가 아닙니다. 현재 상태: %s"),

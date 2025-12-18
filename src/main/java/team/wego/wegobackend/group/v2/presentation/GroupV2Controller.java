@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,11 +18,14 @@ import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
+import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.service.GroupV2Service;
+import team.wego.wegobackend.group.v2.application.service.GroupV2UpdateService;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 public class GroupV2Controller {
 
     private final GroupV2Service groupV2Service;
+    private final GroupV2UpdateService groupV2UpdateService;
 
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupV2Response>> create(
@@ -94,12 +99,23 @@ public class GroupV2Controller {
             @RequestParam(required = false) List<GroupV2Status> excludeStatuses
     ) {
         GetGroupListV2Response response =
-                groupV2Service.getGroupListV2(keyword, cursor, size, filter, includeStatuses, excludeStatuses);
+                groupV2Service.getGroupListV2(keyword, cursor, size, filter, includeStatuses,
+                        excludeStatuses);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
 
+    @PatchMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<UpdateGroupV2Response>> update(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @Valid @RequestBody UpdateGroupV2Request request
+    ) {
+        UpdateGroupV2Response response =
+                groupV2UpdateService.update(userDetails.getId(), groupId, request);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
 
 
 }
