@@ -283,10 +283,7 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler({
-            RedisConnectionFailureException.class,
-            RedisSystemException.class
-    })
+    @ExceptionHandler({RedisConnectionFailureException.class, RedisSystemException.class})
     public ResponseEntity<ErrorResponse> handleRedis(Exception ex, HttpServletRequest request) {
         log.error("Redis 장애(500): {}", rootCauseMessage(ex), ex);
         return handleApp(new AppException(GroupErrorCode.REDIS_READ_FAILED), request);
@@ -296,10 +293,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrity(
             DataIntegrityViolationException ex, HttpServletRequest request) {
 
-        log.error("DB 무결성 위반(409): {}", rootCauseMessage(ex), ex);
+        String msg = rootCauseMessage(ex);
+        log.error("DB 무결성 위반(409): {}", msg, ex);
 
-        // 다시 에러코드 하나 만들자 DB 무결성 안잡았다.
-        return handleApp(new AppException(GroupErrorCode.GROUP_IMAGE_SORT_ORDER_CONFLICT), request);
+        // 예: H2 메시지에 constraint 이름이 들어옴
+        // "PUBLIC.UK_GROUP_ID_SORT_ORDER_INDEX_D"
+        if (msg != null && msg.contains("UK_GROUP_ID_SORT_ORDER_INDEX_D")) {
+            return handleApp(new AppException(GroupErrorCode.GROUP_IMAGE_SORT_ORDER_CONFLICT), request);
+        }
+
+        // 나머지는 공통 무결성 위반 코드로 (AppErrorCode 하나 만드는 걸 추천)
+        return handleApp(new AppException(AppErrorCode.DATA_INTEGRITY_VIOLATION), request);
     }
 
     @ExceptionHandler(DataAccessException.class)
