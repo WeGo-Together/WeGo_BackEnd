@@ -64,7 +64,7 @@ public class GroupV2UpdateService {
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
-        // 권한 체크(호스트만)
+        // 권한 체크(호스트만
         if (!group.getHost().getId().equals(userId)) {
             throw new GroupException(GroupErrorCode.GROUP_ONLY_HOST_CAN_UPDATE, groupId, userId);
         }
@@ -72,20 +72,20 @@ public class GroupV2UpdateService {
         // 엔티티 단 공통 가드: deleteAT + CANCELLED, FINISHED 체크하자
         group.assertUpdatable();
 
-        // 1) 스칼라 필드
+        // 1 스칼라 필드
         applyScalarUpdates(group, groupId, request);
 
-        // 2) 상태 변경(요청이 있을 때만)
+        // 2 상태 변경(요청이 있을 때만)
         if (request.status() != null) {
             group.changeStatus(request.status());
         }
 
-        // 3) 태그 변경(null이면 변경 없음)
+        // 3 태그 변경(null이면 변경 없음)
         if (request.tags() != null) {
             applyTags(group, request.tags());
         }
 
-        // 4) 이미지 변경(null이면 변경 없음)
+        // 4 이미지 변경(null이면 변경 없음)
         if (request.imageKeys() != null) {
             applyImagesWithSafeReorder(group, userId, request.imageKeys());
         }
@@ -93,21 +93,21 @@ public class GroupV2UpdateService {
         // dirty checking으로 충분. 그래도 명시적으로 save 해도 무방.
         groupV2Repository.save(group);
 
-// 응답 구성(조회로 안전하게)
+       // 응답 구성(조회로 안전하게)
         List<String> tagNames = group.getGroupTags().stream()
                 .map(gt -> gt.getTag().getName())
                 .toList();
 
-// 이미지는 variants 포함해서 다시 조회
+        // 이미지는 variants 포함해서 다시 조회
         List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
 
-// 정렬 + DTO 변환
+        // 정렬 + DTO 변환
         List<GroupImageItem> imageItems = images.stream()
                 .sorted(Comparator.comparingInt(GroupImageV2::getSortOrder))
                 .map(GroupImageItem::from)
                 .toList();
 
-// 이미지가 0개면 기본 이미지(variants 2개) 1장 내려주기
+        // 이미지가 0개면 기본 이미지(variants 2개) 1장 내려주기
         if (imageItems.isEmpty()) {
             imageItems = List.of(defaultLogoItem());
         }
@@ -162,8 +162,16 @@ public class GroupV2UpdateService {
             group.changeDescription(request.description());
         }
 
-        if (request.location() != null) { // 주소
-            group.changeAddress(GroupV2Address.of(request.location(), request.locationDetail()));
+        if (request.location() != null || request.locationDetail() != null) { // 주소
+            String newLocation = request.location() != null
+                    ? request.location()
+                    : group.getAddress().getLocation();
+
+            String newDetail = request.locationDetail() != null
+                    ? request.locationDetail()
+                    : group.getAddress().getLocationDetail();
+
+            group.changeAddress(GroupV2Address.of(newLocation, newDetail));
         }
 
         // 시간: 둘 중 하나만 와도 엔티티가 최종 검증하도록 설계했으면 각각 호출
@@ -227,9 +235,12 @@ public class GroupV2UpdateService {
                 .map(String::trim)
                 .toList();
 
-        if (desiredKeys.size() > 3) throw new GroupException(GroupErrorCode.IMAGE_UPLOAD_EXCEED, desiredKeys.size());
-        if (new LinkedHashSet<>(desiredKeys).size() != desiredKeys.size())
+        if (desiredKeys.size() > 3) {
+            throw new GroupException(GroupErrorCode.IMAGE_UPLOAD_EXCEED, desiredKeys.size());
+        }
+        if (new LinkedHashSet<>(desiredKeys).size() != desiredKeys.size()) {
             throw new GroupException(GroupErrorCode.DUPLICATED_IMAGE_KEY_IN_REQUEST);
+        }
 
         if (desiredKeys.isEmpty()) {
             new ArrayList<>(group.getImages()).forEach(group::removeImage);
@@ -265,10 +276,13 @@ public class GroupV2UpdateService {
         int temp = TEMP_SORT_ORDER;
         for (String key : toCreateKeys) {
             PreUploadedGroupImage pre = preUploadedGroupImageRedisRepository.consume(key)
-                    .orElseThrow(() -> new GroupException(GroupErrorCode.PRE_UPLOADED_IMAGE_NOT_FOUND, key));
+                    .orElseThrow(
+                            () -> new GroupException(GroupErrorCode.PRE_UPLOADED_IMAGE_NOT_FOUND,
+                                    key));
 
-            if (!userId.equals(pre.uploaderId()))
+            if (!userId.equals(pre.uploaderId())) {
                 throw new GroupException(GroupErrorCode.PRE_UPLOADED_IMAGE_OWNER_MISMATCH, key);
+            }
 
             GroupImageV2.create(group, temp--, pre.imageKey(), pre.url440x240(), pre.url100x100());
         }
@@ -279,7 +293,8 @@ public class GroupV2UpdateService {
 
         for (String key : desiredKeys) {
             if (!afterByKey.containsKey(key)) {
-                throw new GroupException(GroupErrorCode.GROUP_IMAGE_NOT_FOUND_IN_GROUP_AFTER_UPDATE, key);
+                throw new GroupException(GroupErrorCode.GROUP_IMAGE_NOT_FOUND_IN_GROUP_AFTER_UPDATE,
+                        key);
             }
         }
 
