@@ -37,3 +37,4 @@ public class PreUploadedGroupImageRedisConfig {
         return template;
     }
 }
+
