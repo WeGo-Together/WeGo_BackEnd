@@ -37,10 +37,10 @@ Content-Type: image/png
 
 < ../../image/resources/img1.png
 --boundary
-Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Disposition: form-data; name="images"; filename="img4.jpeg"
 Content-Type: image/jpeg
 
-< ../../image/resources/img2.jpg
+< ../../image/resources/img4.jpeg
 --boundary--
 
 > {%

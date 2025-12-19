@@ -1,0 +1,260 @@
+### 0. 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo"
+}
+
+### 0-1. 로그인(HOST) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("accessToken", response.body.data.accessToken);
+%}
+
+
+### 1. UPDATE 테스트 준비: 이미지 선 업로드 3장 (A,B,C)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary
+Content-Disposition: form-data; name="images"; filename="img4.jpeg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img4.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("imgA_key", images[0].imageKey);
+  client.global.set("imgB_key", images[1].imageKey);
+  client.global.set("imgC_key", images[2].imageKey);
+%}
+
+
+### 2. 모임 V2 생성 (A,B,C)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "UPDATE 이미지 테스트 모임",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": ["자바","백엔드","스터디"],
+  "description": "A,B,C 생성 후 update로 A 삭제 + C 대표 + D 추가",
+  "maxParticipants": 12,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{imgA_key}}" },
+    { "sortOrder": 1, "imageKey": "{{imgB_key}}" },
+    { "sortOrder": 2, "imageKey": "{{imgC_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_updateTest", response.body.data.id);
+%}
+
+
+### 3. D 이미지 선 업로드 (추가할 신규 이미지)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="imgD.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("imgD_key", images[0].imageKey);
+%}
+
+
+### 4. PATCH - A 삭제 + C 대표 + D 추가 (최종 순서: C,B,D)
+PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "imageKeys": ["{{imgC_key}}", "{{imgB_key}}", "{{imgD_key}}"]
+}
+
+> {%
+  const body = response.body;
+  const imgs = (body.data && body.data.images) ? body.data.images : body.images;
+
+  client.test("images 배열 존재", () => client.assert(!!imgs));
+
+  client.log("imgs keys = " + JSON.stringify(imgs.map(i => i.imageKey)));
+  client.log("expected C = " + client.global.get("imgC_key"));
+  client.log("expected B = " + client.global.get("imgB_key"));
+  client.log("expected D = " + client.global.get("imgD_key"));
+
+  client.test("images 3개인지", () => client.assert(imgs.length === 3));
+  client.test("정렬 0,1,2인지", () => client.assert(
+      imgs[0].sortOrder === 0 && imgs[1].sortOrder === 1 && imgs[2].sortOrder === 2
+  ));
+
+      client.test("최종 순서가 C,B,D인지", () => client.assert(
+      imgs[0].imageKey === client.global.get("imgC_key") &&
+      imgs[1].imageKey === client.global.get("imgB_key") &&
+      imgs[2].imageKey === client.global.get("imgD_key")
+  ));
+
+  client.test("0번이 C인지", () => client.assert(imgs[0].imageKey === client.global.get("imgC_key")));
+  client.test("1번이 B인지", () => client.assert(imgs[1].imageKey === client.global.get("imgB_key")));
+  client.test("2번이 D인지", () => client.assert(imgs[2].imageKey === client.global.get("imgD_key")));
+%}
+
+
+### 5. PATCH - 태그 중복 예외 기대(TAG_DUPLICATED)
+PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "tags": ["자바", "자바", "스터디"]
+}
+
+
+### 6. PATCH - 태그 10개 초과 예외 기대(TAG_EXCEED_MAX)
+PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "tags": ["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11"]
+}
+
+### 7. PATCH - 이미지 전체 삭제 => 기본 이미지(variants 2개) 내려와야 함
+PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "imageKeys": []
+}
+
+> {%
+  const body = response.body;
+  const imgs = (body.data && body.data.images) ? body.data.images : body.images;
+
+  client.test("images 배열 존재", () => client.assert(!!imgs));
+  client.test("기본 이미지 1개 내려옴", () => client.assert(imgs.length === 1));
+  client.test("default imageKey=DEFAULT", () => client.assert(imgs[0].imageKey === "DEFAULT"));
+  client.test("variants 2개", () => client.assert(imgs[0].variants.length === 2));
+
+  const urls = imgs[0].variants.map(v => v.imageUrl);
+  client.test("기본 440 포함", () => client.assert(urls.includes("https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_440x240.webp")));
+  client.test("기본 100 포함", () => client.assert(urls.includes("https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_100x100.webp")));
+%}
+
+### 이미지 2장 선 업로드 (A, B)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="a.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="b.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("imgA_key", images[0].imageKey);
+  client.global.set("imgB_key", images[1].imageKey);
+%}
+
+
+### 모임 생성 (A 대표, B 2번)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "A,B 이미지 모임",
+  "location": "서울 강남구",
+  "locationDetail": "어딘가",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": ["자바","스터디"],
+  "description": "A 대표, B 보조",
+  "maxParticipants": 12,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{imgA_key}}" },
+    { "sortOrder": 1, "imageKey": "{{imgB_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_ab", response.body.data.id);
+%}
+
+### 신규 이미지 1장 선 업로드 (C)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="c.png"
+Content-Type: image/png
+
+< ../../image/resources/img4.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("imgC_key", images[0].imageKey);
+%}
+
+### PATCH (A 삭제 + B 대표 + C 추가 => 최종 [B, C])
+PATCH http://localhost:8080/api/v2/groups/{{groupId_ab}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "imageKeys": ["{{imgB_key}}", "{{imgC_key}}"]
+}
+
+> {%
+  const body = response.body;
+  const imgs = (body.data && body.data.images) ? body.data.images : body.images;
+
+  client.test("2장인지", () => client.assert(imgs.length === 2));
+  client.test("0번이 B(대표)", () => client.assert(imgs[0].imageKey === client.global.get("imgB_key")));
+  client.test("1번이 C", () => client.assert(imgs[1].imageKey === client.global.get("imgC_key")));
+  client.test("sortOrder 0,1", () => client.assert(imgs[0].sortOrder === 0 && imgs[1].sortOrder === 1));
+%}

@@ -145,6 +145,117 @@ public class GroupV2 extends BaseTimeEntity {
         this.groupTags.add(groupTag);
         groupTag.assignTo(this);
     }
+
+    public void removeTag(GroupTagV2 groupTag) {
+        this.groupTags.remove(groupTag);
+        groupTag.assignTo(null);
+    }
+
+    public void assertUpdatable() {
+        if (this.deletedAt != null) {
+            throw new GroupException(GroupErrorCode.GROUP_DELETED);
+        }
+        if (this.status == GroupV2Status.CANCELLED || this.status == GroupV2Status.FINISHED) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_UPDATE_IN_STATUS, this.status.name());
+        }
+    }
+
+    public void changeTitle(String title) {
+        assertUpdatable();
+
+        if (title == null || title.isBlank()) {
+            throw new GroupException(GroupErrorCode.GROUP_TITLE_REQUIRED);
+        }
+        String trimmed = title.trim();
+        if (trimmed.length() > 50) {
+            throw new GroupException(GroupErrorCode.GROUP_TITLE_TOO_LONG);
+        }
+        this.title = trimmed;
+    }
+
+    public void changeDescription(String description) {
+        assertUpdatable();
+
+        if (description == null || description.isBlank()) {
+            throw new GroupException(GroupErrorCode.GROUP_DESCRIPTION_REQUIRED);
+        }
+        String trimmed = description.trim();
+        if (trimmed.length() > 300) {
+            throw new GroupException(GroupErrorCode.GROUP_DESCRIPTION_TOO_LONG);
+        }
+        this.description = trimmed;
+    }
+
+    public void changeAddress(GroupV2Address address) {
+        assertUpdatable();
+
+        if (address == null) {
+            throw new GroupException(GroupErrorCode.LOCATION_REQUIRED);
+        }
+        this.address = address;
+    }
+
+
+    // 시간은 "부분 수정"을 위해 start/end 단건 변경도 지원하되, 항상 최종 상태에서 start < end 불변식을 만족하자.
+    public void changeStartTime(LocalDateTime startTime) {
+        assertUpdatable();
+
+        if (startTime == null) {
+            throw new GroupException(GroupErrorCode.GROUP_TIME_REQUIRED);
+        }
+        LocalDateTime newStart = startTime;
+        LocalDateTime newEnd = this.endTime; // end는 nullable일 수 있음
+        validateTimeRange(newStart, newEnd);
+        this.startTime = newStart;
+    }
+
+    public void changeEndTime(LocalDateTime endTime) {
+        assertUpdatable();
+
+        // endTime을 null 허용할지 정책 -> 안하는 중!
+        LocalDateTime newStart = this.startTime;
+        LocalDateTime newEnd = endTime;
+        validateTimeRange(newStart, newEnd);
+        this.endTime = newEnd;
+    }
+
+    public void changeTime(LocalDateTime startTime, LocalDateTime endTime) {
+        assertUpdatable();
+
+        if (startTime == null) {
+            throw new GroupException(GroupErrorCode.GROUP_TIME_REQUIRED);
+        }
+        validateTimeRange(startTime, endTime);
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
+    private void validateTimeRange(LocalDateTime start, LocalDateTime end) {
+        // endTime을 필수 아닌 상태다.
+        if (end == null) {
+            return;
+        }
+        if (!start.isBefore(end)) {
+            throw new GroupException(GroupErrorCode.GROUP_TIME_INVALID_RANGE);
+        }
+    }
+
+    public void changeMaxParticipants(Integer maxParticipants) {
+        assertUpdatable();
+
+        if (maxParticipants == null || maxParticipants <= 0) {
+            throw new GroupException(GroupErrorCode.INVALID_MAX_PARTICIPANTS);
+        }
+        this.maxParticipants = maxParticipants;
+    }
+
+    // 사용할 지 안할지 아직 잘 모름
+    public void softDelete() {
+        if (this.deletedAt != null) {
+            return;
+        }
+        this.deletedAt = LocalDateTime.now();
+    }
 }
 
 

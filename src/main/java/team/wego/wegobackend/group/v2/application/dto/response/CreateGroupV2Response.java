@@ -2,6 +2,7 @@ package team.wego.wegobackend.group.v2.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import team.wego.wegobackend.group.v2.application.dto.common.Address;
 import team.wego.wegobackend.group.v2.application.dto.common.CreatedBy;
 import team.wego.wegobackend.group.v2.application.dto.common.GroupImageItem;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
@@ -9,7 +10,6 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
-import team.wego.wegobackend.group.v2.domain.entity.GroupV2Address;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
@@ -65,16 +65,6 @@ public record CreateGroupV2Response(
                 group.getUpdatedAt(),
                 group.getImages().stream().map(GroupImageItem::from).toList()
         );
-    }
-
-    public record Address(
-            String location,
-            String locationDetail
-    ) {
-
-        public static Address from(GroupV2Address address) {
-            return new Address(address.getLocation(), address.getLocationDetail());
-        }
     }
 
     public record Membership(
