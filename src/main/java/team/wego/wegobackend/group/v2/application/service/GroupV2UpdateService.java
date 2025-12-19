@@ -217,6 +217,7 @@ public class GroupV2UpdateService {
 
         // 교체
         new ArrayList<>(group.getGroupTags()).forEach(group::removeTag);
+        em.flush();
         for (Tag tag : tags) {
             GroupTagV2.create(group, tag);
         }
