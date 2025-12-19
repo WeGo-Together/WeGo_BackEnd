@@ -38,7 +38,7 @@ Content-Type: image/jpeg
 
 < ../../image/resources/img2.jpg
 --boundary
-Content-Disposition: form-data; name="images"; filename="img4.jpeg"
+Content-Disposition: form-data; name="images"; filename="img4.jpg"
 Content-Type: image/jpeg
 
 < ../../image/resources/img4.jpg

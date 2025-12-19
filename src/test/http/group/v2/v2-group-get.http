@@ -13,7 +13,8 @@ Content-Type: application/json
   client.global.set("userId", response.body.data.userId);
 %}
 
-### 0.  HOST 로그인
+
+### 0-1. HOST 로그인 - accessToken 발급
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -25,6 +26,7 @@ Content-Type: application/json
 > {%
   client.global.set("hostAccessToken", response.body.data.accessToken);
 %}
+
 
 ### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v2/groups/images/upload
@@ -54,7 +56,7 @@ Content-Type: image/jpeg
 %}
 
 
-### 1-2. 모임 V2 생성 (png/jpg 업로드 결과 URL로 생성)
+### 1-2. 모임 V2 생성 (정상 케이스: 기준일 2026-12-19 이후 날짜로 생성)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
 Authorization: Bearer {{hostAccessToken}}
@@ -63,8 +65,8 @@ Authorization: Bearer {{hostAccessToken}}
   "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
   "location": "서울 강남구",
   "locationDetail": "강남역 2번 출구 근처 카페",
-  "startTime": "2026-12-10T19:00:00",
-  "endTime": "2026-12-10T21:00:00",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
   "tags": [
     "자바",
     "백엔드",
@@ -90,6 +92,40 @@ Authorization: Bearer {{hostAccessToken}}
   client.global.set("groupId", response.body.data.id);
 %}
 
-### V2 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
+
+### 1-3. V2 로그인 후, 현재 유저 기준 참여 상태 포함하여 상세 조회
 GET http://localhost:8080/api/v2/groups/{{groupId}}
 Authorization: Bearer {{hostAccessToken}}
+
+
+### 2-1. 예외발생: 모임 V2 생성 (과거 날짜 - 기준일 2026-12-19 이전 날짜로 생성 시도)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "강남에서 하는 자바 스터디 - 지난 날짜 예외 테스트",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": [
+    "자바",
+    "백엔드",
+    "스터디"
+  ],
+  "description": "기준일(2026-12-19, Asia/Seoul)보다 과거 startTime이면 예외가 떠야 합니다.",
+  "maxParticipants": 12,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageUrl440x240": "{{img0_main}}",
+      "imageUrl100x100": "{{img0_thumb}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageUrl440x240": "{{img1_main}}",
+      "imageUrl100x100": "{{img1_thumb}}"
+    }
+  ]
+}
