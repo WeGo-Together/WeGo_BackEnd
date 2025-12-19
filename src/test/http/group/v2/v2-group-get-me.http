@@ -1,0 +1,153 @@
+### 0. 회원가입 (HOST2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostTwo",
+  "phoneNumber": "010-0000-0001"
+}
+
+> {%
+  client.global.set("host2UserId", response.body.data.userId);
+%}
+
+### 1. 로그인 (HOST2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("host2AccessToken", response.body.data.accessToken);
+%}
+
+### 2. 모임 V2 이미지 선 업로드 (HOST2)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{host2AccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("h2_img0_key", images[0].imageKey);
+  client.global.set("h2_img1_key", images[1].imageKey);
+%}
+
+### 3. V2 모임 생성 (ACTIVE 테스트용)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
+
+{
+  "title": "내 모임(current) 테스트용 - ACTIVE",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["ME_HTTP", "ACTIVE"],
+  "description": "me.http current/active 테스트용 모임입니다.",
+  "maxParticipants": 5,
+  "images": [
+    {
+      "sortOrder": 0,
+      "imageKey": "{{h2_img0_key}}"
+    },
+    {
+      "sortOrder": 1,
+      "imageKey": "{{h2_img1_key}}"
+    }
+  ]
+}
+
+> {%
+  client.global.set("groupId_active", response.body.data.id);
+%}
+
+### 4. 회원가입 (MEMBER2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "c_member2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "CancelMember2",
+  "phoneNumber": "010-2222-3333"
+}
+
+> {%
+  client.global.set("c_memberId2", response.body.data.userId);
+%}
+
+### 5. 로그인 (MEMBER2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "c_member2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("c_member2AccessToken", response.body.data.accessToken);
+%}
+
+### 6. MEMBER2 -> ACTIVE 모임 참여
+POST http://localhost:8080/api/v2/groups/{{groupId_active}}/attend
+Content-Type: application/json
+Authorization: Bearer {{c_member2AccessToken}}
+
+{}
+
+### 7. 내 모임 조회 (MEMBER2) - current (기본)
+GET http://localhost:8080/api/v2/groups/me?size=5
+Authorization: Bearer {{c_member2AccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("my_cursor_current_page1", nextCursor);
+  }
+%}
+
+### 8. 내 모임 조회 (MEMBER2) - current (명시)
+GET http://localhost:8080/api/v2/groups/me?type=current&size=5
+Authorization: Bearer {{c_member2AccessToken}}
+
+### 9. 내 모임 조회 (MEMBER2) - past
+GET http://localhost:8080/api/v2/groups/me?type=past&size=5
+Authorization: Bearer {{c_member2AccessToken}}
+
+### 10. 내 모임 조회 (MEMBER2) - current 다음 페이지
+GET http://localhost:8080/api/v2/groups/me?type=current&size=5&cursor={{my_cursor_current_page1}}
+Authorization: Bearer {{c_member2AccessToken}}
+
+### 11. 내 모임 조회 (HOST2) - myPost
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10
+Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const items = response.body.data.items || [];
+  if (items.length > 0) {
+    client.global.set("my_post_groupId_0", items[0].id);
+  }
+%}
+
+### 12. (선택) myPost 첫 번째 모임 상세 확인 (HOST2)
+GET http://localhost:8080/api/v2/groups/{{my_post_groupId_0}}
+Authorization: Bearer {{host2AccessToken}}
