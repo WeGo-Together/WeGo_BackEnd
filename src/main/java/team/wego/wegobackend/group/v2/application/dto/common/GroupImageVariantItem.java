@@ -18,8 +18,8 @@ public record GroupImageVariantItem(
         return new GroupImageVariantItem(
                 variant.getId(),
                 type,
-                type.getWidth(),
-                type.getHeight(),
+                type.width(),
+                type.height(),
                 variant.getFormat(),
                 variant.getImageUrl()
         );

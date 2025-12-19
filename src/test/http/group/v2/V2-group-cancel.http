@@ -1,4 +1,4 @@
-### 회원가입(HOST)
+### 0. 회원가입(HOST2)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -13,7 +13,8 @@ Content-Type: application/json
   client.global.set("host2UserId", response.body.data.userId);
 %}
 
-### 로그인(HOST)
+
+### 0-1. 로그인(HOST2) - accessToken 발급
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -26,8 +27,9 @@ Content-Type: application/json
   client.global.set("host2AccessToken", response.body.data.accessToken);
 %}
 
-### 2-1. 모임 이미지 선 업로드 (png / jpg 2장)
-POST http://localhost:8080/api/v1/groups/images/upload
+
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{host2AccessToken}}
 
@@ -53,7 +55,8 @@ Content-Type: image/jpeg
   client.global.set("c_img1_thumb", images[1].imageUrl100x100);
 %}
 
-### 2-2. 모임 생성 (취소 테스트용 모임)
+
+### 1-2. 모임 V2 생성 (취소 테스트용 모임 / 정상 케이스: 기준일 2026-12-19 이후)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
@@ -62,8 +65,8 @@ Authorization: Bearer {{host2AccessToken}}
   "title": "참여 취소 테스트용 자바 스터디",
   "location": "서울 서초구",
   "locationDetail": "교대역 1번 출구 근처 카페",
-  "startTime": "2026-12-11T19:00:00",
-  "endTime": "2026-12-11T21:00:00",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
   "tags": [
     "참여취소테스트",
     "자바"
@@ -89,7 +92,7 @@ Authorization: Bearer {{host2AccessToken}}
 %}
 
 
-### 회원가입(MEMBER 1)
+### 2. 회원가입(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -104,7 +107,8 @@ Content-Type: application/json
   client.global.set("c_memberId1", response.body.data.userId);
 %}
 
-### 로그인(MEMBER 1)
+
+### 2-1. 로그인(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -117,7 +121,8 @@ Content-Type: application/json
   client.global.set("c_member1AccessToken", response.body.data.accessToken);
 %}
 
-### 회원가입(MEMBER 2)
+
+### 3. 회원가입(MEMBER 2)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -132,7 +137,8 @@ Content-Type: application/json
   client.global.set("c_memberId2", response.body.data.userId);
 %}
 
-### 로그인(MEMBER 2)
+
+### 3-1. 로그인(MEMBER 2)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -153,12 +159,14 @@ Authorization: Bearer {{c_member1AccessToken}}
 
 {}
 
+
 ### 4-2. V2 MEMBER 2 참여
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/attend
 Content-Type: application/json
 Authorization: Bearer {{c_member2AccessToken}}
 
 {}
+
 
 ### 5-1. V2 MEMBER 1 참여 취소 (성공 케이스)
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
@@ -167,24 +175,28 @@ Authorization: Bearer {{c_member1AccessToken}}
 
 {}
 
-### 5-2. 예외발생: MEMBER 1 다시 취소 시도 (예외: NOT_ATTEND_GROUP)
+
+### 5-2. 예외발생: MEMBER 1 다시 취소 시도 (예외 기대: NOT_ATTEND_GROUP)
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
 Content-Type: application/json
 Authorization: Bearer {{c_member1AccessToken}}
 
 {}
 
-### 5-3. 예외발생: HOST가 자신의 모임 취소 시도
+
+### 5-3. 예외발생: HOST가 자신의 모임 취소 시도 (HOST는 left 불가)
 POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
 
 {}
 
-### 5-4. (선택) 모임 참가자가 현재 모임 상세 조회 - 참여 인원 / 상태 확인
+
+### 5-4. (선택) 모임 참가자(MEMBER 2) 상세 조회 - 참여 인원 / 상태 확인
 GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
 Authorization: Bearer {{c_member2AccessToken}}
 
-### 5-5. (선택) 모임 HOST가 현재 모임 상세 조회 - 참여 인원 / 상태 확인
+
+### 5-5. (선택) 모임 HOST 상세 조회 - 참여 인원 / 상태 확인
 GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
 Authorization: Bearer {{host2AccessToken}}
