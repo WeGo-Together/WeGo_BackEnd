@@ -2,8 +2,10 @@ package team.wego.wegobackend.group.v2.domain.repository;
 
 import java.util.List;
 import java.util.Map;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.MyGroupListRow;
 
 public interface GroupV2QueryRepository {
 
@@ -14,6 +16,25 @@ public interface GroupV2QueryRepository {
             List<GroupV2Status> includeStatuses,
             List<GroupV2Status> excludeStatuses
     );
+
+    List<MyGroupListRow> fetchMyGroupRows(
+            Long userId,
+            Long cursor,
+            int limit,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses,
+            List<GroupUserV2Status> myStatuses
+    );
+
+    List<MyGroupListRow> fetchMyPostGroupRows(
+            Long userId,
+            Long cursor,
+            int limit,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses
+    );
+
+
 
     Map<Long, List<String>> fetchTagNamesByGroupIds(List<Long> groupIds);
 

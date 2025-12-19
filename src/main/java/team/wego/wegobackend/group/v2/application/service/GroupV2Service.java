@@ -58,7 +58,7 @@ public class GroupV2Service {
 
     private static final int MAX_PAGE_SIZE = 50;
     private static final int GROUP_LIST_IMAGE_LIMIT = 3;
-    private static final int COOL_DOWN_SECONDS = 30;
+    private static final int COOL_DOWN_SECONDS = 5;
 
     @Transactional(readOnly = true)
     public GetGroupListV2Response getGroupListV2(

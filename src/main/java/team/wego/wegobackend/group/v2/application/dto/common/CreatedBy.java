@@ -13,6 +13,11 @@ public record CreatedBy(
         return new CreatedBy(host.getId(), host.getNickName(), host.getProfileImage(),
                 host.getProfileMessage());
     }
+
+    public static CreatedBy of(Long userId, String nickName, String profileImage, String profileMessage) {
+        return new CreatedBy(userId, nickName, profileImage, profileMessage);
+    }
+
 }
 
 

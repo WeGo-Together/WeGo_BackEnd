@@ -21,6 +21,7 @@ import team.wego.wegobackend.group.v2.domain.entity.QGroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.QGroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2QueryRepository;
 import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.GroupListRow;
+import team.wego.wegobackend.group.v2.infrastructure.querydsl.projection.MyGroupListRow;
 import team.wego.wegobackend.tag.domain.entity.QTag;
 import team.wego.wegobackend.user.domain.QUser;
 
@@ -180,5 +181,177 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
         }
 
         return result;
+    }
+
+    @Override
+    public List<MyGroupListRow> fetchMyGroupRows(
+            Long userId,
+            Long cursor,
+            int limit,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses,
+            List<GroupUserV2Status> myStatuses
+    ) {
+        QGroupV2 group = QGroupV2.groupV2;
+        QUser host = QUser.user;
+
+        QGroupUserV2 myGu = new QGroupUserV2("myGu");
+        QGroupUserV2 guAttend = new QGroupUserV2("guAttend");
+
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(group.deletedAt.isNull());
+        where.and(myGu.user.id.eq(userId));
+
+        if (myStatuses != null && !myStatuses.isEmpty()) {
+            where.and(myGu.status.in(myStatuses));
+        } else {
+            where.and(myGu.status.eq(GroupUserV2Status.ATTEND));
+        }
+
+        if (includeStatuses != null && !includeStatuses.isEmpty()) {
+            where.and(group.status.in(includeStatuses));
+        }
+        if (excludeStatuses != null && !excludeStatuses.isEmpty()) {
+            where.and(group.status.notIn(excludeStatuses));
+        }
+        if (cursor != null) {
+            where.and(group.id.lt(cursor));
+        }
+
+        return queryFactory
+                .select(Projections.constructor(
+                        MyGroupListRow.class,
+                        group.id,
+                        group.title,
+                        group.status,
+                        group.address.location,
+                        group.address.locationDetail,
+                        group.startTime,
+                        group.endTime,
+                        group.description,
+                        group.maxParticipants,
+                        group.createdAt,
+                        group.updatedAt,
+
+                        host.id,
+                        host.nickName,
+                        host.profileImage,
+                        host.profileMessage, // ✅ 추가
+
+                        guAttend.id.count(), // ✅ ATTEND만 카운트
+
+                        myGu.id,
+                        myGu.groupRole,
+                        myGu.status,
+                        myGu.joinedAt,
+                        myGu.leftAt
+                ))
+                .from(group)
+                .join(group.host, host)
+
+                .join(group.users, myGu) // ✅ 내 membership 기반 (inner join)
+
+                .leftJoin(group.users, guAttend)
+                .on(guAttend.status.eq(GroupUserV2Status.ATTEND))
+
+                .where(where)
+                .groupBy(
+                        group.id,
+                        group.title,
+                        group.status,
+                        group.address.location,
+                        group.address.locationDetail,
+                        group.startTime,
+                        group.endTime,
+                        group.description,
+                        group.maxParticipants,
+                        group.createdAt,
+                        group.updatedAt,
+
+                        host.id,
+                        host.nickName,
+                        host.profileImage,
+                        host.profileMessage,
+
+                        myGu.id,
+                        myGu.groupRole,
+                        myGu.status,
+                        myGu.joinedAt,
+                        myGu.leftAt
+                )
+                .orderBy(group.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<MyGroupListRow> fetchMyPostGroupRows(
+            Long userId,
+            Long cursor,
+            int limit,
+            List<GroupV2Status> includeStatuses,
+            List<GroupV2Status> excludeStatuses
+    ) {
+        QGroupV2 group = QGroupV2.groupV2;
+        QUser host = QUser.user;
+
+        QGroupUserV2 myGu = new QGroupUserV2("myGu");
+        QGroupUserV2 guAttend = new QGroupUserV2("guAttend");
+
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(group.deletedAt.isNull());
+        where.and(group.host.id.eq(userId)); // ✅ 내가 만든 모임
+
+        if (includeStatuses != null && !includeStatuses.isEmpty()) {
+            where.and(group.status.in(includeStatuses));
+        }
+        if (excludeStatuses != null && !excludeStatuses.isEmpty()) {
+            where.and(group.status.notIn(excludeStatuses));
+        }
+        if (cursor != null) {
+            where.and(group.id.lt(cursor));
+        }
+
+        return queryFactory
+                .select(Projections.constructor(
+                        MyGroupListRow.class,
+                        group.id, group.title, group.status,
+                        group.address.location, group.address.locationDetail,
+                        group.startTime, group.endTime,
+                        group.description, group.maxParticipants,
+                        group.createdAt, group.updatedAt,
+
+                        host.id, host.nickName, host.profileImage, host.profileMessage,
+
+                        guAttend.id.count(),
+
+                        myGu.id, myGu.groupRole, myGu.status, myGu.joinedAt, myGu.leftAt
+                ))
+                .from(group)
+                .join(group.host, host)
+
+                // ✅ 내 membership은 있을 수도/없을 수도 → left join + on(userId)
+                .leftJoin(group.users, myGu)
+                .on(myGu.user.id.eq(userId))
+
+                // ✅ 참가자 수는 ATTEND만
+                .leftJoin(group.users, guAttend)
+                .on(guAttend.status.eq(GroupUserV2Status.ATTEND))
+
+                .where(where)
+                .groupBy(
+                        group.id, group.title, group.status,
+                        group.address.location, group.address.locationDetail,
+                        group.startTime, group.endTime,
+                        group.description, group.maxParticipants,
+                        group.createdAt, group.updatedAt,
+
+                        host.id, host.nickName, host.profileImage, host.profileMessage,
+
+                        myGu.id, myGu.groupRole, myGu.status, myGu.joinedAt, myGu.leftAt
+                )
+                .orderBy(group.id.desc())
+                .limit(limit)
+                .fetch();
     }
 }
