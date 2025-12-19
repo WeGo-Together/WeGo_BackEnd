@@ -21,7 +21,7 @@ public enum MyGroupType {
         if (value == null) {
             throw new GroupException(GroupErrorCode.MY_GROUP_TYPE_NOT_NULL);
         }
-        return switch (value) {
+        return switch (value.toLowerCase()) {
             case "current" -> CURRENT;
             case "myPost" -> MY_POST;
             case "past" -> PAST;
