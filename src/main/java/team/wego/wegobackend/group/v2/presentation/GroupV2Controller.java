@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Respons
 import team.wego.wegobackend.group.v2.application.dto.response.GetMyGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.service.GroupMyGetV2Service;
+import team.wego.wegobackend.group.v2.application.service.GroupV2DeleteService;
 import team.wego.wegobackend.group.v2.application.service.GroupV2Service;
 import team.wego.wegobackend.group.v2.application.service.GroupV2UpdateService;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
@@ -40,6 +42,7 @@ public class GroupV2Controller {
     private final GroupV2Service groupV2Service;
     private final GroupV2UpdateService groupV2UpdateService;
     private final GroupMyGetV2Service groupMyGetV2Service;
+    private final GroupV2DeleteService groupV2DeleteService;
 
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupV2Response>> create(
@@ -126,7 +129,7 @@ public class GroupV2Controller {
     public ResponseEntity<ApiResponse<GetMyGroupListV2Response>> getMyGroups(
             @AuthenticationPrincipal CustomUserDetails userDetails,
 
-            @RequestParam(required = false) String type, // current | myPost | past
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size,
 
@@ -134,7 +137,6 @@ public class GroupV2Controller {
             @RequestParam(required = false) List<GroupV2Status> includeStatuses,
             @RequestParam(required = false) List<GroupV2Status> excludeStatuses,
 
-            // ✅ 내 상태도 보고 싶으면: ATTEND,LEFT,KICKED,BANNED
             @RequestParam(required = false) List<GroupUserV2Status> myStatuses
     ) {
         MyGroupTypeV2 myType = (type == null) ? MyGroupTypeV2.CURRENT : MyGroupTypeV2.from(type);
@@ -153,4 +155,12 @@ public class GroupV2Controller {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long groupId) {
+        groupV2DeleteService.deleteHard(userDetails.getId(), groupId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

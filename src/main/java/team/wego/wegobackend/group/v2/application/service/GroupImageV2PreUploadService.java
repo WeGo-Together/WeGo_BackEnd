@@ -51,7 +51,7 @@ public class GroupImageV2PreUploadService {
             ImageFile thumb = imageUploadService.uploadAsWebpWithSizeUsingBaseName(file, baseName,
                     SIZE_THUMB);
 
-            // Redis 저장 (서버가 url 세트를 보증)
+            // Redis 저장: 서버가 url 세트를 보증
             redisRepository.save(new PreUploadedGroupImage(
                     imageKey,
                     uploaderId,

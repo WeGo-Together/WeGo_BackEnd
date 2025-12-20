@@ -3,6 +3,7 @@ package team.wego.wegobackend.group.v2.domain.repository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
@@ -22,4 +23,7 @@ public interface GroupUserV2Repository extends JpaRepository<GroupUserV2, Long> 
 
     long countByGroupIdAndStatus(Long groupId, GroupUserV2Status status);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from GroupUserV2 gu where gu.group.id = :groupId")
+    int deleteByGroupId(@Param("groupId") Long groupId);
 }

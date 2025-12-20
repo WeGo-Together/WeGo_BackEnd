@@ -360,4 +360,6 @@ public class GroupV2Service {
 
         return AttendGroupV2Response.of(group, attendCount, membership);
     }
+
+
 }

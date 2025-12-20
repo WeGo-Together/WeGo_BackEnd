@@ -43,7 +43,7 @@ public class GroupMyGetV2Service {
 
         type = (type == null) ? MyGroupTypeV2.CURRENT : type;
 
-        // type에 맞는 기본 filter (프론트 탭 의미 보장)
+        // type에 맞는 기본 filter(프론트 탭 의미 보장)
         if (filter == null) {
             filter = switch (type) {
                 case CURRENT, MY_POST -> GroupListFilter.ACTIVE;
@@ -165,7 +165,7 @@ public class GroupMyGetV2Service {
             excludes = excludeStatuses;
         }
 
-        // include/exclude/filter 아무것도 안 왔고 ACTIVE면 기본 노출 세트
+        // include, exclude, filter 아무것도 안 왔고 ACTIVE면 기본 노출 세트
         if (!hasInclude && !hasExclude && filter != GroupListFilter.ALL && includes.isEmpty()) {
             includes = List.of(GroupV2Status.RECRUITING, GroupV2Status.FULL);
         }

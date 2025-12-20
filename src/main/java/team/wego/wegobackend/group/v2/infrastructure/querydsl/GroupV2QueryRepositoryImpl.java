@@ -134,7 +134,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
         return tuples.stream()
                 .collect(Collectors.groupingBy(
                         tuple -> tuple.get(groupTagV2.group.id),
-                        Collectors.mapping(tp -> tp.get(tag.name),
+                        Collectors.mapping(tuple -> tuple.get(tag.name),
                                 Collectors.toList())
                 ));
     }
@@ -236,9 +236,9 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                         host.id,
                         host.nickName,
                         host.profileImage,
-                        host.profileMessage, // ✅ 추가
+                        host.profileMessage, // 추가
 
-                        guAttend.id.count(), // ✅ ATTEND만 카운트
+                        guAttend.id.count(), // ATTEND만 카운트
 
                         myGu.id,
                         myGu.groupRole,
@@ -249,7 +249,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                 .from(group)
                 .join(group.host, host)
 
-                .join(group.users, myGu) // ✅ 내 membership 기반 (inner join)
+                .join(group.users, myGu) // 내 membership 기반 (inner join)
 
                 .leftJoin(group.users, guAttend)
                 .on(guAttend.status.eq(GroupUserV2Status.ATTEND))
@@ -300,7 +300,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
 
         BooleanBuilder where = new BooleanBuilder();
         where.and(group.deletedAt.isNull());
-        where.and(group.host.id.eq(userId)); // ✅ 내가 만든 모임
+        where.and(group.host.id.eq(userId)); // 내가 만든 모임
 
         if (includeStatuses != null && !includeStatuses.isEmpty()) {
             where.and(group.status.in(includeStatuses));
@@ -330,11 +330,11 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                 .from(group)
                 .join(group.host, host)
 
-                // ✅ 내 membership은 있을 수도/없을 수도 → left join + on(userId)
+                // 내 membership은 있을 수도/없을 수도 → left join + on(userId)
                 .leftJoin(group.users, myGu)
                 .on(myGu.user.id.eq(userId))
 
-                // ✅ 참가자 수는 ATTEND만
+                // 참가자 수는 ATTEND만
                 .leftJoin(group.users, guAttend)
                 .on(guAttend.status.eq(GroupUserV2Status.ATTEND))
 
