@@ -310,7 +310,7 @@ public class GroupV2AttendanceService {
         }
 
         if (!canReject) {
-            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_APPROVE_JOIN, groupId,
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_REJECT_JOIN, groupId,
                     approverUserId);
         }
 

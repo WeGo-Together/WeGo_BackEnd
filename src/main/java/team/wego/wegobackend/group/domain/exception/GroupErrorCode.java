@@ -8,6 +8,9 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+    NO_PERMISSION_TO_REJECT_JOIN(HttpStatus.FORBIDDEN,
+            "모임: 참여 거절 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
     CANNOT_APPROVE_SELF(HttpStatus.BAD_REQUEST,
             "모임: 자기 자신을 승인할 수 없습니다. 모임 ID: %s 회원 ID: %s"
     ),
