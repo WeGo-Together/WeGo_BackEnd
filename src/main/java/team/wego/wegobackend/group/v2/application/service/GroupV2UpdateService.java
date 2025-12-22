@@ -46,10 +46,6 @@ public class GroupV2UpdateService {
     private final TagService tagService;
 
     private static final int TEMP_SORT_ORDER = Integer.MAX_VALUE;
-    private static final String DEFAULT_100 =
-            "https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_100x100.webp";
-    private static final String DEFAULT_440 =
-            "https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_440x240.webp";
 
     private final EntityManager em;
 
@@ -109,7 +105,7 @@ public class GroupV2UpdateService {
 
         // 이미지가 0개면 기본 이미지(variants 2개) 1장 내려주기
         if (imageItems.isEmpty()) {
-            imageItems = List.of(defaultLogoItem());
+            imageItems = new ArrayList<>();
         }
 
         return new UpdateGroupV2Response(
@@ -139,7 +135,7 @@ public class GroupV2UpdateService {
                                 GroupImageV2VariantType.CARD_440_240.width(),
                                 GroupImageV2VariantType.CARD_440_240.height(),
                                 ImageV2Format.WEBP,
-                                DEFAULT_440
+                                null
                         ),
                         new GroupImageVariantItem(
                                 null,
@@ -147,7 +143,7 @@ public class GroupV2UpdateService {
                                 GroupImageV2VariantType.THUMBNAIL_100_100.width(),
                                 GroupImageV2VariantType.THUMBNAIL_100_100.height(),
                                 ImageV2Format.WEBP,
-                                DEFAULT_100
+                                null
                         )
                 )
         );

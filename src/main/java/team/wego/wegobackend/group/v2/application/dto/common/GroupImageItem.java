@@ -12,11 +12,6 @@ public record GroupImageItem(
         List<GroupImageVariantItem> variants
 ) {
 
-    private static final String DEFAULT_100 =
-            "https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_100x100.webp";
-    private static final String DEFAULT_440 =
-            "https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_440x240.webp";
-
     public static GroupImageItem from(GroupImageV2 image) {
         return new GroupImageItem(
                 image.getId(),
@@ -29,27 +24,10 @@ public record GroupImageItem(
     // DB에 이미지가 0개일 때 내려주는 기본 이미지(440/100)
     public static GroupImageItem defaultLogo() {
         return new GroupImageItem(
-                null, // DB row가 아니다. 그래서 null
-                "DEFAULT", // 테스트 편하게 DEFAULT로 설정
-                0,    // 없으니까 어차피 대표
-                List.of(
-                        new GroupImageVariantItem(
-                                null,
-                                GroupImageV2VariantType.CARD_440_240,
-                                GroupImageV2VariantType.CARD_440_240.getWidth(),
-                                GroupImageV2VariantType.CARD_440_240.getHeight(),
-                                ImageV2Format.WEBP,
-                                DEFAULT_440
-                        ),
-                        new GroupImageVariantItem(
-                                null,
-                                GroupImageV2VariantType.THUMBNAIL_100_100,
-                                GroupImageV2VariantType.THUMBNAIL_100_100.getWidth(),
-                                GroupImageV2VariantType.THUMBNAIL_100_100.getHeight(),
-                                ImageV2Format.WEBP,
-                                DEFAULT_100
-                        )
-                )
+                null,
+                null,
+                0,
+                null
         );
     }
 }
