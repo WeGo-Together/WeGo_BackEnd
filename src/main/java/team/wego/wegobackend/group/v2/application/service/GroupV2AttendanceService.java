@@ -200,6 +200,10 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
 
+        if (approverUserId.equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.CANNOT_APPROVE_SELF, groupId, approverUserId);
+        }
+
         GroupV2 group = groupV2Repository.findById(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
@@ -268,6 +272,10 @@ public class GroupV2AttendanceService {
             Long targetUserId) {
         if (approverUserId == null || targetUserId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        if (approverUserId.equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.CANNOT_REJECT_SELF, groupId, approverUserId);
         }
 
         GroupV2 group = groupV2Repository.findById(groupId)

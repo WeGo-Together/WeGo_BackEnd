@@ -8,7 +8,12 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
-
+    CANNOT_APPROVE_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 승인할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    CANNOT_REJECT_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 거절할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
     GROUP_USER_STATUS_NOT_ALLOWED_TO_APPROVE(HttpStatus.BAD_REQUEST,
             "모임: 승인 처리는 PENDING 상태에서만 가능합니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
     ),
