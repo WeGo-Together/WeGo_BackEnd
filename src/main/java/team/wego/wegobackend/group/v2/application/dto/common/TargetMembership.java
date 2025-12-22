@@ -11,13 +11,13 @@ public record TargetMembership(
         LocalDateTime joinedAt,
         LocalDateTime leftAt
 ) {
-    public static TargetMembership from(GroupUserV2 gu) {
+    public static TargetMembership of(Long userId, GroupUserV2 groupUserV2) {
         return new TargetMembership(
-                gu.getUser().getId(),
-                gu.getId(),
-                gu.getStatus(),
-                gu.getJoinedAt(),
-                gu.getLeftAt()
+                userId,
+                groupUserV2.getId(),
+                groupUserV2.getStatus(),
+                groupUserV2.getJoinedAt(),
+                groupUserV2.getLeftAt()
         );
     }
 }

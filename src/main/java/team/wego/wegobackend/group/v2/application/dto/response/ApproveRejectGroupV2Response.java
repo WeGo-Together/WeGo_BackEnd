@@ -22,6 +22,7 @@ public record ApproveRejectGroupV2Response(
     public static ApproveRejectGroupV2Response of(
             GroupV2 group,
             long participantCount,
+            Long targetUserId,
             GroupUserV2 target
     ) {
         return new ApproveRejectGroupV2Response(
@@ -30,7 +31,7 @@ public record ApproveRejectGroupV2Response(
                 group.getJoinPolicy(),
                 participantCount,
                 group.getMaxParticipants(),
-                TargetMembership.from(target),
+                TargetMembership.of(targetUserId, target),
                 LocalDateTime.now()
         );
     }

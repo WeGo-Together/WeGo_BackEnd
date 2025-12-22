@@ -260,7 +260,7 @@ public class GroupV2AttendanceService {
             group.changeStatus(GroupV2Status.FULL);
         }
 
-        return ApproveRejectGroupV2Response.of(group, attendCount, target);
+        return ApproveRejectGroupV2Response.of(group, attendCount, targetUserId, target);
     }
 
     @Transactional
@@ -317,6 +317,6 @@ public class GroupV2AttendanceService {
 
         // reject는 ATTEND 수가 바뀌지 않는 게 일반적이지만(대상은 PENDING),
         // 혹시라도 상태 정책이 바뀌더라도 count는 최신으로 내려가도록 유지
-        return ApproveRejectGroupV2Response.of(group, attendCount, target);
+        return ApproveRejectGroupV2Response.of(group, attendCount, targetUserId, target);
     }
 }
