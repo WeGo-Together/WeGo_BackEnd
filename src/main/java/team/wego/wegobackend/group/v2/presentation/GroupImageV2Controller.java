@@ -19,12 +19,12 @@ import team.wego.wegobackend.group.v2.application.service.GroupImageV2PreUploadS
 @RequiredArgsConstructor
 @RequestMapping("/api/v2/groups/images")
 @RestController
-public class GroupImageV2Controller {
+public class GroupImageV2Controller implements GroupImageV2ControllerDocs {
 
     private final GroupImageV2PreUploadService preUploadService;
 
 
-    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PreUploadGroupImageV2Response>> uploadImages(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam("images") List<MultipartFile> images

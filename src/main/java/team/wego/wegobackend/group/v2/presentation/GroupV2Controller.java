@@ -37,12 +37,13 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 @RequiredArgsConstructor
 @RequestMapping("/api/v2/groups")
 @RestController
-public class GroupV2Controller {
+public class GroupV2Controller implements GroupV2ControllerDocs {
 
     private final GroupV2Service groupV2Service;
     private final GroupV2UpdateService groupV2UpdateService;
     private final GroupMyGetV2Service groupMyGetV2Service;
     private final GroupV2DeleteService groupV2DeleteService;
+
 
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<CreateGroupV2Response>> create(

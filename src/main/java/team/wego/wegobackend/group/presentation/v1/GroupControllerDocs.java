@@ -16,7 +16,7 @@ import team.wego.wegobackend.group.application.dto.v1.response.CreateGroupRespon
 import team.wego.wegobackend.group.application.dto.v1.response.GetGroupListResponse;
 import team.wego.wegobackend.group.application.dto.v1.response.GetGroupResponse;
 
-@Tag(name = "모임 API", description = "모임과 관련된 API 리스트 🐈")
+@Tag(name = "V1 모임 API", description = "V1 모임과 관련된 API 리스트 🐈")
 public interface GroupControllerDocs {
 
     @Operation(
