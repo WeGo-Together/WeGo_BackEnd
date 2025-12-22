@@ -102,7 +102,6 @@ public class GroupMyGetV2Service {
                     int maxParticipants = (r.maxParticipants() == null) ? 0 : r.maxParticipants();
 
                     MyMembership myMembership = new MyMembership(
-                            r.myStatus() == GroupUserV2Status.ATTEND,
                             r.myGroupUserId(),
                             r.myRole(),
                             r.myStatus(),
