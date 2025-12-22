@@ -16,7 +16,7 @@ import team.wego.wegobackend.group.application.dto.v1.request.UpdateGroupImageIt
 import team.wego.wegobackend.group.application.dto.v1.response.GroupImageItemResponse;
 import team.wego.wegobackend.group.application.dto.v1.response.PreUploadGroupImageResponse;
 
-@Tag(name = "모임 이미지 API", description = "모임 이미지 업로드/수정/삭제와 관련된 API 리스트 🐈")
+@Tag(name = "V1 모임 이미지 API", description = "V1 모임 이미지 업로드/수정/삭제와 관련된 API 리스트 🐈")
 public interface GroupImageControllerDocs {
 
     @Operation(
