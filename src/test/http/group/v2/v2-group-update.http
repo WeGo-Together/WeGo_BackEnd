@@ -60,6 +60,7 @@ Authorization: Bearer {{accessToken}}
 {
   "title": "UPDATE 이미지 테스트 모임",
   "location": "서울 강남구",
+  "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",
@@ -211,6 +212,7 @@ Authorization: Bearer {{accessToken}}
 {
   "title": "A,B 이미지 모임",
   "location": "서울 강남구",
+  "joinPolicy": "FREE",
   "locationDetail": "어딘가",
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",
@@ -295,6 +297,7 @@ Authorization: Bearer {{accessToken}}
 
 {
   "title": "주말 러닝 + 백엔드 토크 모임 (예제)",
+  "joinPolicy": "FREE",
   "location": "서울 강남구",
   "locationDetail": "역삼역 2번 출구 앞 (집결 후 이동)",
   "startTime": "2026-12-20T09:30:00",

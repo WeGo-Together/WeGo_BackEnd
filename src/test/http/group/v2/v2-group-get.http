@@ -61,7 +61,7 @@ Authorization: Bearer {{hostAccessToken}}
 {
   "title": "강남에서 하는 자바 스터디 - PNG/JPG 테스트",
   "location": "서울 강남구",
-  "joinPolicy": "INSTANT",
+  "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2026-12-20T19:00:00",
   "endTime": "2026-12-20T21:00:00",
@@ -102,7 +102,7 @@ Authorization: Bearer {{hostAccessToken}}
 {
   "title": "강남에서 하는 자바 스터디 - 지난 날짜 예외 테스트",
   "location": "서울 강남구",
-  "joinPolicy": "INSTANT",
+  "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",

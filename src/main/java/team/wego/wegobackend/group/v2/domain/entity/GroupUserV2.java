@@ -178,4 +178,33 @@ public class GroupUserV2 extends BaseTimeEntity {
             );
         }
     }
+
+    public void approveJoin() {
+        if (this.status != GroupUserV2Status.PENDING) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_APPROVE,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
+        this.status = GroupUserV2Status.ATTEND;
+        this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
+    }
+
+    public void rejectJoin() {
+        if (this.status != GroupUserV2Status.PENDING) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_REJECT,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
+        this.status = GroupUserV2Status.REJECTED;
+        this.leftAt = LocalDateTime.now();
+    }
+
 }
+

@@ -96,7 +96,7 @@ public class GroupV2 extends BaseTimeEntity {
         group.description = description;
         group.maxParticipants = maxParticipants;
         group.host = host;
-        group.joinPolicy = (joinPolicy == null) ? GroupV2JoinPolicy.INSTANT : joinPolicy;
+        group.joinPolicy = (joinPolicy == null) ? GroupV2JoinPolicy.FREE : joinPolicy;
         group.status = GroupV2Status.RECRUITING;
         return group;
     }

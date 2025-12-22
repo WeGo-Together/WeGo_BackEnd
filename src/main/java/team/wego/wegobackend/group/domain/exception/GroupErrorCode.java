@@ -8,7 +8,46 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+    NO_PERMISSION_TO_REJECT_JOIN(HttpStatus.FORBIDDEN,
+            "모임: 참여 거절 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    CANNOT_APPROVE_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 승인할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    CANNOT_REJECT_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 거절할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_APPROVE(HttpStatus.BAD_REQUEST,
+            "모임: 승인 처리는 PENDING 상태에서만 가능합니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
+    ),
 
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_REJECT(HttpStatus.BAD_REQUEST,
+            "모임: 거절 처리는 PENDING 상태에서만 가능합니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
+    ),
+    GROUP_JOIN_POLICY_NOT_APPROVAL_REQUIRED(HttpStatus.BAD_REQUEST,
+            "모임: 승인제 모임이 아니어서 승인/거절이 불가능합니다. 모임 ID: %s 참여 방식: %s"
+    ),
+
+    GROUP_CANNOT_APPROVE_IN_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 현재 모임 상태에서는 승인 처리가 불가능합니다. 모임 ID: %s 모임 상태: %s"
+    ),
+
+    GROUP_CANNOT_REJECT_IN_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 현재 모임 상태에서는 거절 처리가 불가능합니다. 모임 ID: %s 모임 상태: %s"
+    ),
+
+    NO_PERMISSION_TO_APPROVE_JOIN(HttpStatus.FORBIDDEN,
+            "모임: 참여 승인/거절 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_USER_NOT_PENDING_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 승인/거절은 PENDING 상태에서만 가능합니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
+    ),
+
+    // 필요하면(선택): 이미 처리된 요청을 더 명확히 구분하고 싶을 때
+    GROUP_JOIN_REQUEST_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST,
+            "모임: 이미 처리된 참여 요청입니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
+    ),
     GROUP_CANNOT_LEAVE_IN_STATUS(HttpStatus.BAD_REQUEST,
             "모임: 현재 모임 상태에서는 나가기/신청취소가 불가능합니다. 모임 ID: %s 모임 상태: %s"
     ),
