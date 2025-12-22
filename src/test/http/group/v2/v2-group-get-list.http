@@ -27,7 +27,7 @@ Content-Type: application/json
 %}
 
 
-### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장)
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장) - imageKey 저장
 POST http://localhost:8080/api/v2/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{host2AccessToken}}
@@ -47,11 +47,8 @@ Content-Type: image/jpeg
 > {%
   const images = response.body.data.images;
 
-  client.global.set("c_img0_main",  images[0].imageUrl440x240);
-  client.global.set("c_img0_thumb", images[0].imageUrl100x100);
-
-  client.global.set("c_img1_main",  images[1].imageUrl440x240);
-  client.global.set("c_img1_thumb", images[1].imageUrl100x100);
+  client.global.set("c_img0_key", images[0].imageKey);
+  client.global.set("c_img1_key", images[1].imageKey);
 %}
 
 
@@ -75,13 +72,11 @@ Authorization: Bearer {{host2AccessToken}}
   "images": [
     {
       "sortOrder": 0,
-      "imageUrl440x240": "{{c_img0_main}}",
-      "imageUrl100x100": "{{c_img0_thumb}}"
+      "imageKey": "{{c_img0_key}}"
     },
     {
       "sortOrder": 1,
-      "imageUrl440x240": "{{c_img1_main}}",
-      "imageUrl100x100": "{{c_img1_thumb}}"
+      "imageKey": "{{c_img1_key}}"
     }
   ]
 }
