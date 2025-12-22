@@ -56,7 +56,7 @@ Authorization: Bearer {{host2AccessToken}}
 
 {
   "title": "V2 즉시참여(INSTANT) - attend/left/reAttend 테스트",
-  "joinPolicy": "INSTANT",
+  "joinPolicy": "FREE",
   "location": "서울 서초구",
   "locationDetail": "교대역 1번 출구 근처 카페",
   "startTime": "2026-12-20T19:00:00",

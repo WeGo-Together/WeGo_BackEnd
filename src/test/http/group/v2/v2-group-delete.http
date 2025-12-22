@@ -57,7 +57,7 @@ Authorization: Bearer {{accessToken}}
 {
   "title": "모임 삭제 테스트 - 기본 생성",
   "location": "서울 강남구",
-  "joinPolicy": "INSTANT",
+  "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",
@@ -152,7 +152,7 @@ Authorization: Bearer {{accessToken}}
 {
   "title": "모임 삭제 테스트 - 권한 예외",
   "location": "서울 강남구",
-  "joinPolicy": "INSTANT",
+  "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",
