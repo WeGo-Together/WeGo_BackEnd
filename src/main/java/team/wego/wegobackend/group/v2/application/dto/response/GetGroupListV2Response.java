@@ -2,6 +2,7 @@ package team.wego.wegobackend.group.v2.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 public record GetGroupListV2Response(
@@ -16,6 +17,7 @@ public record GetGroupListV2Response(
     public record GroupListItemV2Response(
             Long id,
             String title,
+            GroupV2JoinPolicy joinPolicy,
 
             GroupV2Status status, //  뱃지/상태 표시용
 
@@ -45,6 +47,7 @@ public record GetGroupListV2Response(
         public static GroupListItemV2Response of(
                 Long id,
                 String title,
+                GroupV2JoinPolicy joinPolicy,
                 GroupV2Status status,
                 String location,
                 String locationDetail,
@@ -71,6 +74,7 @@ public record GetGroupListV2Response(
             return new GroupListItemV2Response(
                     id,
                     title,
+                    joinPolicy,
                     status,
                     location,
                     locationDetail,

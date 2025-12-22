@@ -1,4 +1,4 @@
-### 회원가입(HOST)
+### 0. 회원가입(HOST)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -10,11 +10,10 @@ Content-Type: application/json
 }
 
 > {%
-  // ApiResponse<{ userId, ... }>
   client.global.set("hostUserId", response.body.data.userId);
 %}
 
-### 로그인(HOST)
+### 0-1. 로그인(HOST) - accessToken 발급
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -27,7 +26,7 @@ Content-Type: application/json
   client.global.set("hostAccessToken", response.body.data.accessToken);
 %}
 
-### 2-1. 모임 이미지 선 업로드 (png / jpg 2장)
+### 1-1. 모임 이미지 선 업로드 (png / jpg 2장)
 POST http://localhost:8080/api/v1/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{hostAccessToken}}
@@ -47,6 +46,7 @@ Content-Type: image/jpeg
 > {%
   const images = response.body.data.images;
 
+  // ✅ 업로드 결과 URL을 전역 변수로 저장
   client.global.set("img0_main",  images[0].imageUrl440x240);
   client.global.set("img0_thumb", images[0].imageUrl100x100);
 
@@ -54,7 +54,7 @@ Content-Type: image/jpeg
   client.global.set("img1_thumb", images[1].imageUrl100x100);
 %}
 
-### 2-2. 모임 생성 (업로드된 URL로 생성)
+### 1-2. 모임 생성 (업로드된 URL로 생성)
 POST http://localhost:8080/api/v1/groups/create
 Content-Type: application/json
 Authorization: Bearer {{hostAccessToken}}
@@ -70,8 +70,9 @@ Authorization: Bearer {{hostAccessToken}}
     "자바",
     "백엔드"
   ],
-  "description": "MEMBER들이 참석/중복 참석 예외를 테스트하기 위한 모임입니다.",
+  "description": "MEMBER들이 참석/중복 참석/호스트 참석 예외를 테스트하기 위한 모임입니다.",
   "maxParticipants": 5,
+
   "images": [
     {
       "sortOrder": 0,
@@ -90,7 +91,7 @@ Authorization: Bearer {{hostAccessToken}}
   client.global.set("groupId_attendTest", response.body.data.id);
 %}
 
-### 회원가입(MEMBER 1)
+### 2. 회원가입(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
@@ -105,7 +106,7 @@ Content-Type: application/json
   client.global.set("memberId1", response.body.data.userId);
 %}
 
-### 로그인(MEMBER 1)
+### 2-1. 로그인(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -118,29 +119,27 @@ Content-Type: application/json
   client.global.set("member1AccessToken", response.body.data.accessToken);
 %}
 
-
-### 4-1. MEMBER1 모임 참여 (성공 케이스)
+### 3-1. MEMBER1 모임 참여 (성공)
 POST http://localhost:8080/api/v1/groups/{{groupId_attendTest}}/attend
 Content-Type: application/json
 Authorization: Bearer {{member1AccessToken}}
 
 {}
 
-### 4-2. 예외발생: MEMBER1 모임 재참여 시도 (예외: 이미 참여 중)
+### 3-2. 예외: MEMBER1 모임 재참여 시도 (이미 ATTEND)
 POST http://localhost:8080/api/v1/groups/{{groupId_attendTest}}/attend
 Content-Type: application/json
 Authorization: Bearer {{member1AccessToken}}
 
 {}
 
-### 4-3. 예외발생: HOST가 자신의 모임에 attend 호출 (예외 혹은 이미 참여 처리 확인)
+### 3-3. 예외: HOST가 자신의 모임에 attend 호출
 POST http://localhost:8080/api/v1/groups/{{groupId_attendTest}}/attend
 Content-Type: application/json
 Authorization: Bearer {{hostAccessToken}}
 
 {}
 
-### 4-4. (선택) 현재 모임 상세 조회 - 참가 상태/인원 수 확인
+### 3-4. (선택) 모임 상세 조회 - 참가 상태/인원 수 확인
 GET http://localhost:8080/api/v1/groups/{{groupId_attendTest}}
 Authorization: Bearer {{member1AccessToken}}
-

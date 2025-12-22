@@ -1,0 +1,149 @@
+### 0. 회원가입(HOST2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host2_approval@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostTwo",
+  "phoneNumber": "010-0000-0101"
+}
+
+> {%
+  client.global.set("host2UserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST2) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host2_approval@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("host2AccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장) - imageKey 저장
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{host2AccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("c_img0_key", images[0].imageKey);
+  client.global.set("c_img1_key", images[1].imageKey);
+%}
+
+### 1-2. 모임 V2 생성 (승인제 APPROVAL_REQUIRED)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
+
+{
+  "title": "V2 승인제 - PENDING/CANCELLED 재신청 테스트",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["v2", "attendance", "left", "approval"],
+  "description": "APPROVAL_REQUIRED: attend는 PENDING, left는 신청취소(CANCELLED), 재신청 가능",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{c_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{c_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_approvalTest", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Member1",
+  "phoneNumber": "010-1111-0101"
+}
+
+> {%
+  client.global.set("memberId1", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member1AccessToken", response.body.data.accessToken);
+%}
+
+### 3. 승인제 - MEMBER 1 참여 (성공: PENDING)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 3-1. 예외: 승인제 - MEMBER 1 중복 신청 (이미 PENDING)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 4. 승인제 - MEMBER 1 신청 취소 (성공: PENDING -> CANCELLED)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/left
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 4-1. 예외: 승인제 - MEMBER 1 다시 신청 취소 (이미 CANCELLED)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/left
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 5. 승인제 - MEMBER 1 재신청 (CANCELLED -> PENDING)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member1AccessToken}}
+
+{}
+
+### 6. 예외: HOST가 자신의 모임 left 시도 (HOST는 left 불가)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/left
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
+
+{}
+
+### 7. (선택) 모임 상세 조회 - MEMBER1 토큰으로 내 상태 확인
+GET http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}
+Authorization: Bearer {{member1AccessToken}}

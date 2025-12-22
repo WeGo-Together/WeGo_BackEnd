@@ -102,7 +102,11 @@ Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "imageKeys": ["{{imgC_key}}", "{{imgB_key}}", "{{imgD_key}}"]
+  "imageKeys": [
+  "{{imgC_key}}",
+  "{{imgB_key}}",
+  "{{imgD_key}}"
+  ]
 }
 
 > {%
@@ -257,4 +261,121 @@ Authorization: Bearer {{accessToken}}
   client.test("0번이 B(대표)", () => client.assert(imgs[0].imageKey === client.global.get("imgB_key")));
   client.test("1번이 C", () => client.assert(imgs[1].imageKey === client.global.get("imgC_key")));
   client.test("sortOrder 0,1", () => client.assert(imgs[0].sortOrder === 0 && imgs[1].sortOrder === 1));
+%}
+
+
+### [예제] 모임 V2 생성 - 필드 다양하게 포함 (이미지 2장 선업로드 → create)
+### 1) 이미지 선 업로드 (대표/보조로 쓸 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="cover.webp"
+Content-Type: image/webp
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="sub.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("ex_cover_key", images[0].imageKey);
+  client.global.set("ex_sub_key", images[1].imageKey);
+%}
+
+### 2) 모임 생성 (필드 다양화 + images는 (sortOrder, imageKey) 배열)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "주말 러닝 + 백엔드 토크 모임 (예제)",
+  "location": "서울 강남구",
+  "locationDetail": "역삼역 2번 출구 앞 (집결 후 이동)",
+  "startTime": "2026-12-20T09:30:00",
+  "endTime": "2026-12-20T12:00:00",
+  "tags": ["러닝", "주말", "백엔드", "네트워킹"],
+  "description": "가벼운 5km 러닝 후 카페로 이동해서 백엔드/커리어 토크합니다. 초보도 환영!",
+  "maxParticipants": 12,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{ex_cover_key}}" },
+    { "sortOrder": 1, "imageKey": "{{ex_sub_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_example", response.body.data.id);
+%}
+
+### [수정 예시] PATCH - 모임 필드 다양하게 수정 + 이미지 교체(재정렬)
+### 0) (선행) accessToken, 수정 대상 groupId가 이미 있다고 가정
+# client.global.set("accessToken", "...")  // 이미 세팅됨
+# client.global.set("groupId_patchExample", "...")  // 수정할 모임 ID
+
+### 1) 수정용 신규 이미지 2장 선 업로드
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{accessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="new1.jpeg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img3.jpeg
+--boundary
+Content-Disposition: form-data; name="images"; filename="new4.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img4.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("patch_img1_key", images[0].imageKey);
+  client.global.set("patch_img2_key", images[1].imageKey);
+%}
+
+### 2) PATCH - 필드 다양하게 수정 + imageKeys는 반드시 채워서 전달
+PATCH http://localhost:8080/api/v2/groups/{{groupId_example}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "모임 제목 수정",
+  "description": "설명 수정 - 일정/장소/참여 조건을 업데이트했습니다.",
+  "location": "서울 강남구",
+  "locationDetail": "역삼역 2번 출구",
+  "startTime": "2025-12-30T19:00:00",
+  "endTime": "2025-12-30T21:00:00",
+  "maxParticipants": 10,
+  "status": "CLOSED",
+  "tags": ["러닝", "주말"],
+  "imageKeys": [
+    "{{patch_img1_key}}",
+    "{{patch_img2_key}}"
+  ]
+}
+
+> {%
+  const body = response.body;
+  const imgs = (body.data && body.data.images) ? body.data.images : body.images;
+
+  client.test("images 배열 존재", () => client.assert(!!imgs));
+  client.test("images 2개인지", () => client.assert(imgs.length === 2));
+
+  client.test("0번이 patch_img1_key(대표)인지", () => client.assert(
+      imgs[0].imageKey === client.global.get("patch_img1_key")
+  ));
+  client.test("1번이 patch_img2_key인지", () => client.assert(
+      imgs[1].imageKey === client.global.get("patch_img2_key")
+  ));
+
+  client.test("sortOrder 0,1인지", () => client.assert(
+      imgs[0].sortOrder === 0 && imgs[1].sortOrder === 1
+  ));
 %}

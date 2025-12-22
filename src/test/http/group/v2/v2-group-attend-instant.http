@@ -1,0 +1,195 @@
+### 0. 회원가입(HOST2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostTwo",
+  "phoneNumber": "010-0000-0001"
+}
+
+> {%
+  client.global.set("host2UserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST2) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("host2AccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장) - imageKey 저장
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{host2AccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("c_img0_key", images[0].imageKey);
+  client.global.set("c_img1_key", images[1].imageKey);
+%}
+
+### 1-2. 모임 V2 생성 (즉시 참여 INSTANT)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
+
+{
+  "title": "V2 즉시참여(INSTANT) - attend/left/reAttend 테스트",
+  "joinPolicy": "INSTANT",
+  "location": "서울 서초구",
+  "locationDetail": "교대역 1번 출구 근처 카페",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["v2", "attendance", "left", "instant"],
+  "description": "INSTANT: attend 즉시 ATTEND, left는 ATTEND->LEFT, 재참여 가능",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{c_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{c_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_attendV2Test", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "v2_member1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "V2Member1",
+  "phoneNumber": "010-1111-2222"
+}
+
+> {%
+  client.global.set("v2_memberId1", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER 1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "v2_member1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("v2_member1AccessToken", response.body.data.accessToken);
+%}
+
+### 3. 회원가입(MEMBER 2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "v2_member2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "V2Member2",
+  "phoneNumber": "010-2222-3333"
+}
+
+> {%
+  client.global.set("v2_memberId2", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER 2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "v2_member2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("v2_member2AccessToken", response.body.data.accessToken);
+%}
+
+### 4-1. V2 MEMBER 1 참여 (성공: ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 4-2. 예외: V2 MEMBER 1 중복 참여 (이미 ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 4-3. V2 MEMBER 2 참여 (성공: ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{v2_member2AccessToken}}
+
+{}
+
+### 4-4. 예외: HOST가 자신의 모임 attend 호출 (HOST는 참석 불가)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
+
+{}
+
+### 5-1. V2 MEMBER 1 나가기(LEFT) (성공: ATTEND -> LEFT)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/left
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 5-2. 예외: V2 MEMBER 1 다시 left 시도 (이미 LEFT -> 예외 기대: ALREADY_LEFT_GROUP 등)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/left
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 6-1. V2 MEMBER 1 재참여 (LEFT -> ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 6-2. 예외: V2 MEMBER 1 또 중복 참여 (이미 ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
+Content-Type: application/json
+Authorization: Bearer {{v2_member1AccessToken}}
+
+{}
+
+### 7-1. (선택) 모임 상세 조회 - MEMBER2 토큰
+GET http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}
+Authorization: Bearer {{v2_member2AccessToken}}
+
+### 7-2. (선택) 모임 상세 조회 - HOST 토큰
+GET http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}
+Authorization: Bearer {{host2AccessToken}}

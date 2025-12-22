@@ -57,6 +57,7 @@ Authorization: Bearer {{host2AccessToken}}
 {
   "title": "내 모임(current) 테스트용 - ACTIVE",
   "location": "서울 서초구",
+  "joinPolicy": "INSTANT",
   "locationDetail": "교대역 1번 출구 근처 카페",
   "startTime": "2026-12-20T19:00:00",
   "endTime": "2026-12-20T21:00:00",

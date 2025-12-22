@@ -13,6 +13,7 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
@@ -20,6 +21,7 @@ import team.wego.wegobackend.user.domain.User;
 public record GetGroupV2Response(
         Long id,
         String title,
+        GroupV2JoinPolicy joinPolicy,
         GroupV2Status status,
         Address address,
         LocalDateTime startTime,
@@ -84,6 +86,7 @@ public record GetGroupV2Response(
         return new GetGroupV2Response(
                 group.getId(),
                 group.getTitle(),
+                group.getJoinPolicy(),
                 group.getStatus(),
                 Address.from(group.getAddress()),
                 group.getStartTime(),

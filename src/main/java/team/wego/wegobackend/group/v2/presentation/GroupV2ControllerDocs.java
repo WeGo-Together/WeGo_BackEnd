@@ -14,7 +14,7 @@ import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
-import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
@@ -51,7 +51,7 @@ public interface GroupV2ControllerDocs {
             summary = "모임 참가 API",
             description = "특정 모임에 참가합니다. 이미 참가 중인 경우 예외가 발생할 수 있습니다."
     )
-    ResponseEntity<ApiResponse<AttendGroupV2Response>> attend(
+    ResponseEntity<ApiResponse<AttendanceGroupV2Response>> attend(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     );
@@ -61,7 +61,7 @@ public interface GroupV2ControllerDocs {
             summary = "모임 참가 취소 API",
             description = "참가 중인 모임의 참가를 취소합니다."
     )
-    ResponseEntity<ApiResponse<AttendGroupV2Response>> left(
+    ResponseEntity<ApiResponse<AttendanceGroupV2Response>> left(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     );

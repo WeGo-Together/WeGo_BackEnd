@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 import team.wego.wegobackend.group.application.dto.v1.request.CreateGroupImageRequest;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 
 public record CreateGroupV2Request(
         @NotBlank(message = "모임: 제목은 필수 입니다.")
@@ -35,6 +36,9 @@ public record CreateGroupV2Request(
         @Min(value = 2, message = "모임: 최대 인원은 최소 2명 이상이어야 합니다.")
         @Max(value = 12, message = "모임: 최대 인원은 최대 12명 이하이어야 합니다.")
         Integer maxParticipants,
+
+        @NotNull(message = "모임: 참여 방식(joinPolicy)은 필수 입니다.")
+        GroupV2JoinPolicy joinPolicy,
 
         List<CreateGroupImageV2Request> images
 ) {

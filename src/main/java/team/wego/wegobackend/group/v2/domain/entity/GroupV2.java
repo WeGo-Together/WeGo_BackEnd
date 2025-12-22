@@ -65,6 +65,10 @@ public class GroupV2 extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "join_policy", nullable = false, length = 30)
+    private GroupV2JoinPolicy joinPolicy;
+
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupImageV2> images = new ArrayList<>();
 
@@ -81,7 +85,8 @@ public class GroupV2 extends BaseTimeEntity {
             LocalDateTime endTime,
             String description,
             Integer maxParticipants,
-            User host
+            User host,
+            GroupV2JoinPolicy joinPolicy
     ) {
         GroupV2 group = new GroupV2();
         group.title = title;
@@ -91,6 +96,7 @@ public class GroupV2 extends BaseTimeEntity {
         group.description = description;
         group.maxParticipants = maxParticipants;
         group.host = host;
+        group.joinPolicy = (joinPolicy == null) ? GroupV2JoinPolicy.INSTANT : joinPolicy;
         group.status = GroupV2Status.RECRUITING;
         return group;
     }

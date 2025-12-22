@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import team.wego.wegobackend.group.v2.application.dto.common.CreatedBy;
 import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 public record GetMyGroupListV2Response(
@@ -18,6 +19,7 @@ public record GetMyGroupListV2Response(
     public record Item(
             Long id,
             String title,
+            GroupV2JoinPolicy joinPolicy,
             GroupV2Status status,
             String location,
             String locationDetail,
@@ -39,6 +41,7 @@ public record GetMyGroupListV2Response(
         public static Item of(
                 Long id,
                 String title,
+                GroupV2JoinPolicy joinPolicy,
                 GroupV2Status status,
                 String location,
                 String locationDetail,
@@ -60,7 +63,7 @@ public record GetMyGroupListV2Response(
                 case FULL, CLOSED, CANCELLED, FINISHED -> false;
             };
             return new Item(
-                    id, title, status, location, locationDetail,
+                    id, title, joinPolicy, status, location, locationDetail,
                     startTime, endTime, images, tags, description,
                     participantCount, maxParticipants, remainingSeats, joinable,
                     createdBy, createdAt, updatedAt, myMembership
