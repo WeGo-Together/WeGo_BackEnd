@@ -37,10 +37,10 @@ Content-Type: image/png
 
 < ../../image/resources/img1.png
 --boundary
-Content-Disposition: form-data; name="images"; filename="img4.jpeg"
+Content-Disposition: form-data; name="images"; filename="img4.jpg"
 Content-Type: image/jpeg
 
-< ../../image/resources/img4.jpeg
+< ../../image/resources/img4.jpg
 --boundary--
 
 > {%
@@ -70,14 +70,7 @@ Authorization: Bearer {{accessToken}}
   "description": "PNG/JPG 업로드 후 imageKey를 이용해서 모임을 생성하는 테스트입니다.",
   "maxParticipants": 12,
   "images": [
-    {
-      "sortOrder": 0,
-      "imageKey": "{{img0_key}}"
-    },
-    {
-      "sortOrder": 1,
-      "imageKey": "{{img1_key}}"
-    }
+
   ]
 }
 
