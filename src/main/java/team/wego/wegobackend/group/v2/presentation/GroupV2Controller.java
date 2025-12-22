@@ -21,6 +21,7 @@ import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Reque
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.MyGroupTypeV2;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
+import team.wego.wegobackend.group.v2.application.dto.response.ApproveRejectGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
@@ -165,5 +166,30 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
         groupV2DeleteService.deleteHard(userDetails.getId(), groupId);
 
         return ResponseEntity.noContent().build();
+    }
+
+
+    @PostMapping("/{groupId}/attendance/{targetUserId}/approve")
+    public ResponseEntity<ApiResponse<ApproveRejectGroupV2Response>> approve(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    ) {
+        ApproveRejectGroupV2Response response =
+                groupV2AttendanceService.approve(userDetails.getId(), groupId, targetUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @PostMapping("/{groupId}/attendance/{targetUserId}/reject")
+    public ResponseEntity<ApiResponse<ApproveRejectGroupV2Response>> reject(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    ) {
+        ApproveRejectGroupV2Response response =
+                groupV2AttendanceService.reject(userDetails.getId(), groupId, targetUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 }

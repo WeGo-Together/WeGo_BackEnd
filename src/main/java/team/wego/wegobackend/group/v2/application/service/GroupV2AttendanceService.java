@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
+import team.wego.wegobackend.group.v2.application.dto.response.ApproveRejectGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
@@ -82,7 +83,7 @@ public class GroupV2AttendanceService {
         }
 
         // 즉시 참여인 경우
-        if (group.getJoinPolicy() == GroupV2JoinPolicy.INSTANT) {
+        if (group.getJoinPolicy() == GroupV2JoinPolicy.FREE) {
             if (groupUserV2 != null) {
                 // LEFT, KICKED, REJECTED, CANCELLED -> 재참여
                 groupUserV2.reAttend(); // 내부에서 BANNED만 막고, ATTEND로 변경
@@ -192,4 +193,130 @@ public class GroupV2AttendanceService {
         return AttendanceGroupV2Response.of(group, attendCount, membership);
     }
 
+    @Transactional
+    public ApproveRejectGroupV2Response approve(Long approverUserId, Long groupId,
+            Long targetUserId) {
+        if (approverUserId == null || targetUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // 승인제 모임만 가능
+        if (group.getJoinPolicy() != GroupV2JoinPolicy.APPROVAL_REQUIRED) {
+            throw new GroupException(GroupErrorCode.GROUP_JOIN_POLICY_NOT_APPROVAL_REQUIRED,
+                    groupId);
+        }
+
+        // 모임 상태 정책
+        if (group.getStatus() != GroupV2Status.RECRUITING
+                && group.getStatus() != GroupV2Status.FULL) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_CANNOT_APPROVE_IN_STATUS,
+                    groupId,
+                    group.getStatus().name()
+            );
+        }
+
+        // 권한 체크: HOST 또는 (그룹 내 MANAGER/… 정책)만 승인 가능
+        // host는 group.getHost()로 체크
+        boolean isHost = group.getHost().getId().equals(approverUserId);
+        boolean canApprove = isHost;
+
+        if (!isHost) {
+            GroupUserV2 approverMembership = groupUserV2Repository.findByGroupIdAndUserId(groupId,
+                            approverUserId)
+                    .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                            approverUserId));
+
+            canApprove = approverMembership.getGroupRole() != null
+                    && approverMembership.getGroupRole() != GroupUserV2Role.MEMBER;
+        }
+
+        if (!canApprove) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_APPROVE_JOIN, groupId,
+                    approverUserId);
+        }
+
+        GroupUserV2 target = groupUserV2Repository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                        targetUserId));
+
+        // PENDING만 승인 가능 (도메인에서 검증)
+        target.approveJoin();
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        if (attendCount > group.getMaxParticipants()) {
+            throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
+        }
+
+        // FULL 자동 전환
+        if (attendCount == group.getMaxParticipants()
+                && group.getStatus() == GroupV2Status.RECRUITING) {
+            group.changeStatus(GroupV2Status.FULL);
+        }
+
+        return ApproveRejectGroupV2Response.of(group, attendCount, target);
+    }
+
+    @Transactional
+    public ApproveRejectGroupV2Response reject(Long approverUserId, Long groupId,
+            Long targetUserId) {
+        if (approverUserId == null || targetUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        if (group.getJoinPolicy() != GroupV2JoinPolicy.APPROVAL_REQUIRED) {
+            throw new GroupException(GroupErrorCode.GROUP_JOIN_POLICY_NOT_APPROVAL_REQUIRED,
+                    groupId);
+        }
+
+        if (group.getStatus() != GroupV2Status.RECRUITING
+                && group.getStatus() != GroupV2Status.FULL) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_CANNOT_REJECT_IN_STATUS,
+                    groupId,
+                    group.getStatus().name()
+            );
+        }
+
+        boolean isHost = group.getHost().getId().equals(approverUserId);
+        boolean canReject = isHost;
+
+        if (!isHost) {
+            GroupUserV2 approverMembership = groupUserV2Repository.findByGroupIdAndUserId(groupId,
+                            approverUserId)
+                    .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                            approverUserId));
+
+            canReject = approverMembership.getGroupRole() != null
+                    && approverMembership.getGroupRole() != GroupUserV2Role.MEMBER; // 예시
+        }
+
+        if (!canReject) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_APPROVE_JOIN, groupId,
+                    approverUserId);
+        }
+
+        GroupUserV2 target = groupUserV2Repository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                        targetUserId));
+
+        target.rejectJoin();
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        // reject는 ATTEND 수가 바뀌지 않는 게 일반적이지만(대상은 PENDING),
+        // 혹시라도 상태 정책이 바뀌더라도 count는 최신으로 내려가도록 유지
+        return ApproveRejectGroupV2Response.of(group, attendCount, target);
+    }
 }
