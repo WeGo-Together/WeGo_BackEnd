@@ -6,7 +6,7 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
-public record AttendGroupV2Response(
+public record AttendanceGroupV2Response(
         Long groupId,
         GroupV2Status groupStatus,
         GroupV2JoinPolicy joinPolicy,
@@ -16,12 +16,12 @@ public record AttendGroupV2Response(
         LocalDateTime serverTime
 ) {
 
-    public static AttendGroupV2Response of(
+    public static AttendanceGroupV2Response of(
             GroupV2 group,
             long participantCount,
             MyMembership myMembership
     ) {
-        return new AttendGroupV2Response(
+        return new AttendanceGroupV2Response(
                 group.getId(),
                 group.getStatus(),
                 group.getJoinPolicy(),

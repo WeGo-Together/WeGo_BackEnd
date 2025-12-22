@@ -23,4 +23,9 @@ public enum GroupV2Status {
             case CANCELLED, FINISHED -> EnumSet.noneOf(GroupV2Status.class);
         };
     }
+
+    // 유저가 나가기/신청취소 가능한 모임 상태인지 확인
+    public boolean canLeaveOrCancel() {
+        return this == RECRUITING || this == FULL || this == CLOSED;
+    }
 }

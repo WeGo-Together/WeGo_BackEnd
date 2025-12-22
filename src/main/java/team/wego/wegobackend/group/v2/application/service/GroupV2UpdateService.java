@@ -111,6 +111,7 @@ public class GroupV2UpdateService {
         return new UpdateGroupV2Response(
                 group.getId(),
                 group.getTitle(),
+                group.getJoinPolicy(),
                 group.getStatus(),
                 Address.from(group.getAddress()),
                 group.getStartTime(),

@@ -75,6 +75,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                         GroupListRow.class,
                         group.id,
                         group.title,
+                        group.joinPolicy,
                         group.status,
                         group.address.location,
                         group.address.locationDetail,
@@ -97,6 +98,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                 .groupBy(
                         group.id,
                         group.title,
+                        group.joinPolicy,
                         group.status,
                         group.address.location,
                         group.address.locationDetail,
@@ -223,6 +225,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                         MyGroupListRow.class,
                         group.id,
                         group.title,
+                        group.joinPolicy,
                         group.status,
                         group.address.location,
                         group.address.locationDetail,
@@ -258,6 +261,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
                 .groupBy(
                         group.id,
                         group.title,
+                        group.joinPolicy,
                         group.status,
                         group.address.location,
                         group.address.locationDetail,
@@ -315,7 +319,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
         return queryFactory
                 .select(Projections.constructor(
                         MyGroupListRow.class,
-                        group.id, group.title, group.status,
+                        group.id, group.title, group.joinPolicy, group.status,
                         group.address.location, group.address.locationDetail,
                         group.startTime, group.endTime,
                         group.description, group.maxParticipants,
@@ -340,7 +344,7 @@ public class GroupV2QueryRepositoryImpl implements GroupV2QueryRepository {
 
                 .where(where)
                 .groupBy(
-                        group.id, group.title, group.status,
+                        group.id, group.title, group.joinPolicy, group.status,
                         group.address.location, group.address.locationDetail,
                         group.startTime, group.endTime,
                         group.description, group.maxParticipants,

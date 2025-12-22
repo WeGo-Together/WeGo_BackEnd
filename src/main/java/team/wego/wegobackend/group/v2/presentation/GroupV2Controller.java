@@ -21,13 +21,14 @@ import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Reque
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.MyGroupTypeV2;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
-import team.wego.wegobackend.group.v2.application.dto.response.AttendGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetMyGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.service.GroupMyGetV2Service;
+import team.wego.wegobackend.group.v2.application.service.GroupV2AttendanceService;
 import team.wego.wegobackend.group.v2.application.service.GroupV2DeleteService;
 import team.wego.wegobackend.group.v2.application.service.GroupV2Service;
 import team.wego.wegobackend.group.v2.application.service.GroupV2UpdateService;
@@ -43,6 +44,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
     private final GroupV2UpdateService groupV2UpdateService;
     private final GroupMyGetV2Service groupMyGetV2Service;
     private final GroupV2DeleteService groupV2DeleteService;
+    private final GroupV2AttendanceService groupV2AttendanceService;
 
 
     @PostMapping("/create")
@@ -71,12 +73,12 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
     }
 
     @PostMapping("/{groupId}/attend")
-    public ResponseEntity<ApiResponse<AttendGroupV2Response>> attend(
+    public ResponseEntity<ApiResponse<AttendanceGroupV2Response>> attend(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
 
-        AttendGroupV2Response response = groupV2Service.attend(userDetails.getId(), groupId);
+        AttendanceGroupV2Response response = groupV2AttendanceService.attend(userDetails.getId(), groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -86,11 +88,11 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
 
 
     @PostMapping("/{groupId}/left")
-    public ResponseEntity<ApiResponse<AttendGroupV2Response>> left(
+    public ResponseEntity<ApiResponse<AttendanceGroupV2Response>> left(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
-        AttendGroupV2Response response = groupV2Service.left(userDetails.getId(), groupId);
+        AttendanceGroupV2Response response = groupV2AttendanceService.left(userDetails.getId(), groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

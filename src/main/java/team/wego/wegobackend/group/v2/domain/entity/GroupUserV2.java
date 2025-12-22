@@ -84,16 +84,30 @@ public class GroupUserV2 extends BaseTimeEntity {
 
     public void leave() {
         if (this.status != GroupUserV2Status.ATTEND) {
-            return;
+            throw new GroupException(GroupErrorCode.GROUP_NOT_ATTEND_STATUS);
         }
 
         this.status = GroupUserV2Status.LEFT;
         this.leftAt = LocalDateTime.now();
     }
 
+    public void cancelRequest() {
+        if (this.status != GroupUserV2Status.PENDING) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_NOT_PENDING_STATUS,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
+
+        this.status = GroupUserV2Status.CANCELLED;
+        this.leftAt = LocalDateTime.now();
+    }
+
     public void kick() {
         if (this.status != GroupUserV2Status.ATTEND) {
-            return;
+            throw new GroupException(GroupErrorCode.GROUP_NOT_ATTEND_STATUS);
         }
         this.status = GroupUserV2Status.KICKED;
         this.leftAt = LocalDateTime.now();
@@ -111,5 +125,57 @@ public class GroupUserV2 extends BaseTimeEntity {
     void unassign() {
         this.group = null;
     }
-}
 
+    public static GroupUserV2 createPending(GroupV2 group, User user) {
+        GroupUserV2 groupUserV2 = new GroupUserV2(user, GroupUserV2Role.MEMBER);
+        groupUserV2.status = GroupUserV2Status.PENDING;   // 신청 상태로 시작
+        groupUserV2.joinedAt = LocalDateTime.now();
+        groupUserV2.leftAt = null;
+        group.addUser(groupUserV2);
+        return groupUserV2;
+    }
+
+    public void requestJoin() {
+        if (this.status == GroupUserV2Status.BANNED) {
+            throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
+        }
+        // 이미 ATTEND, PENDING이면 상위에서 걸러도 되고 여기서 방어해도 가능하다고 판단
+        this.status = GroupUserV2Status.PENDING;
+        this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
+    }
+
+    public void leaveOrCancel() {
+        switch (this.status) {
+            case ATTEND -> this.leave();
+            case PENDING -> this.cancelRequest();
+            case BANNED -> throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
+            case KICKED -> throw new GroupException(
+                    GroupErrorCode.GROUP_KICKED_USER,
+                    this.group.getId(),
+                    this.user.getId()
+            );
+            case REJECTED -> throw new GroupException(
+                    GroupErrorCode.GROUP_REJECTED_USER,
+                    this.group.getId(),
+                    this.user.getId()
+            );
+            case LEFT -> throw new GroupException(
+                    GroupErrorCode.ALREADY_LEFT_GROUP,
+                    this.group.getId(),
+                    this.user.getId()
+            );
+            case CANCELLED -> throw new GroupException(
+                    GroupErrorCode.ALREADY_CANCELLED_JOIN_REQUEST,
+                    this.group.getId(),
+                    this.user.getId()
+            );
+            default -> throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_LEAVE,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
+    }
+}

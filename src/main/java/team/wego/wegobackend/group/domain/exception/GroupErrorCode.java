@@ -8,6 +8,35 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+
+    GROUP_CANNOT_LEAVE_IN_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 현재 모임 상태에서는 나가기/신청취소가 불가능합니다. 모임 ID: %s 모임 상태: %s"
+    ),
+
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_LEAVE(HttpStatus.BAD_REQUEST,
+            "모임: 현재 멤버십 상태에서는 나가기/신청취소가 불가능합니다. 모임 ID: %s 회원 ID: %s 상태: %s"
+    ),
+
+    GROUP_NOT_PENDING_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 승인 대기(PENDING) 상태가 아닙니다. 모임 ID: %s 회원 ID: %s 현재 상태: %s"
+    ),
+
+    ALREADY_LEFT_GROUP(HttpStatus.CONFLICT,
+            "모임: 이미 나간 상태입니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    ALREADY_CANCELLED_JOIN_REQUEST(HttpStatus.CONFLICT,
+            "모임: 이미 신청 취소한 상태입니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_KICKED_USER(HttpStatus.FORBIDDEN,
+            "모임: 추방된 회원은 나가기/신청취소를 할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    GROUP_REJECTED_USER(HttpStatus.FORBIDDEN,
+            "모임: 가입 신청이 거절된 회원은 나가기/신청취소를 할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    INVALID_JOIN_POLICY(HttpStatus.BAD_REQUEST, "모임: 유효하지 않은 모임 가입 정책입니다. 모임 정책: %s"),
+    JOIN_POLICY_NULL(HttpStatus.NOT_FOUND, "모임: 모임 가입 정책이 null 입니다."),
     GROUP_IMAGE_SORT_ORDER_CONFLICT(
             HttpStatus.CONFLICT,
             "모임: 이미지 정렬 처리 중 충돌이 발생했습니다. 다시 시도해주세요."
@@ -54,6 +83,7 @@ public enum GroupErrorCode implements ErrorCode {
     GROUP_NOT_FOUND_BY_ID(HttpStatus.NOT_FOUND, "모임: 모임을 찾을 수 없습니다. 모임 ID: %s"),
     IMAGE_UPLOAD_EXCEED(HttpStatus.BAD_REQUEST, "모임: 모임 이미지는 최대 3개 입니다. 현재 이미지 수: %s"),
 
+    ALREADY_REQUESTED_TO_JOIN(HttpStatus.BAD_REQUEST, "모임: 이미 가입 요청한 상태입니다. 모임 ID: %s 회원 ID: %s"),
     GROUP_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "모임: 회원을 찾을 수 없습니다. 회원 ID: %s"),
     ALREADY_ATTEND_GROUP(HttpStatus.BAD_REQUEST, "모임: 이미 참여 중인 모임입니다. 모임 ID: %s 회원 ID: %s"),
     GROUP_IS_FULL(HttpStatus.BAD_REQUEST, "모임: 모임 최대 참가자 수를 초과했습니다. 모임 ID: %s"),

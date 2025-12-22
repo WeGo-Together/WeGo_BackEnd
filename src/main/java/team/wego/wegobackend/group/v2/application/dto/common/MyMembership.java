@@ -27,4 +27,19 @@ public record MyMembership(
                 ))
                 .orElse(new MyMembership(null, null, null, null, null));
     }
+
+    public static MyMembership from(GroupUserV2 groupUserV2) {
+
+        if (groupUserV2 == null) {
+            return new MyMembership(null, null, null, null, null);
+        }
+
+        return new MyMembership(
+                groupUserV2.getId(),
+                groupUserV2.getGroupRole(),
+                groupUserV2.getStatus(),
+                groupUserV2.getJoinedAt(),
+                groupUserV2.getLeftAt()
+        );
+    }
 }

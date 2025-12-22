@@ -3,11 +3,13 @@ package team.wego.wegobackend.group.v2.infrastructure.querydsl.projection;
 import java.time.LocalDateTime;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 public record MyGroupListRow(
         Long groupId,
         String title,
+        GroupV2JoinPolicy joinPolicy,
         GroupV2Status status,
         String location,
         String locationDetail,

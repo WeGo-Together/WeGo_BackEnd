@@ -96,40 +96,41 @@ public class GroupMyGetV2Service {
                 groupV2QueryRepository.fetchTagNamesByGroupIds(groupIds);
 
         List<GetMyGroupListV2Response.Item> items = content.stream()
-                .map(r -> {
+                .map(myGroupListRow -> {
                     int participantCount =
-                            (r.participantCount() == null) ? 0 : r.participantCount().intValue();
-                    int maxParticipants = (r.maxParticipants() == null) ? 0 : r.maxParticipants();
+                            (myGroupListRow.participantCount() == null) ? 0 : myGroupListRow.participantCount().intValue();
+                    int maxParticipants = (myGroupListRow.maxParticipants() == null) ? 0 : myGroupListRow.maxParticipants();
 
                     MyMembership myMembership = new MyMembership(
-                            r.myGroupUserId(),
-                            r.myRole(),
-                            r.myStatus(),
-                            r.myJoinedAt(),
-                            r.myLeftAt()
+                            myGroupListRow.myGroupUserId(),
+                            myGroupListRow.myRole(),
+                            myGroupListRow.myStatus(),
+                            myGroupListRow.myJoinedAt(),
+                            myGroupListRow.myLeftAt()
                     );
 
                     return GetMyGroupListV2Response.Item.of(
-                            r.groupId(),
-                            r.title(),
-                            r.status(),
-                            r.location(),
-                            r.locationDetail(),
-                            r.startTime(),
-                            r.endTime(),
-                            imageMap.getOrDefault(r.groupId(), List.of()),
-                            tagMap.getOrDefault(r.groupId(), List.of()),
-                            r.description(),
+                            myGroupListRow.groupId(),
+                            myGroupListRow.title(),
+                            myGroupListRow.joinPolicy(),
+                            myGroupListRow.status(),
+                            myGroupListRow.location(),
+                            myGroupListRow.locationDetail(),
+                            myGroupListRow.startTime(),
+                            myGroupListRow.endTime(),
+                            imageMap.getOrDefault(myGroupListRow.groupId(), List.of()),
+                            tagMap.getOrDefault(myGroupListRow.groupId(), List.of()),
+                            myGroupListRow.description(),
                             participantCount,
                             maxParticipants,
                             CreatedBy.of(
-                                    r.hostId(),
-                                    r.hostNickName(),
-                                    r.hostProfileImage(),
-                                    r.hostProfileMessage()
+                                    myGroupListRow.hostId(),
+                                    myGroupListRow.hostNickName(),
+                                    myGroupListRow.hostProfileImage(),
+                                    myGroupListRow.hostProfileMessage()
                             ),
-                            r.createdAt(),
-                            r.updatedAt(),
+                            myGroupListRow.createdAt(),
+                            myGroupListRow.updatedAt(),
                             myMembership
                     );
                 })
