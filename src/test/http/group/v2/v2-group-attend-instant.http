@@ -45,39 +45,28 @@ Content-Type: image/jpeg
 
 > {%
   const images = response.body.data.images;
-
   client.global.set("c_img0_key", images[0].imageKey);
   client.global.set("c_img1_key", images[1].imageKey);
 %}
 
-### 1-2. 모임 V2 생성 (참여/취소 테스트용)
+### 1-2. 모임 V2 생성 (즉시 참여 INSTANT)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
 
 {
-  "title": "참여/취소/재참여 테스트용 자바 스터디 (V2)",
-  "joinPolicy": "",
+  "title": "V2 즉시참여(INSTANT) - attend/left/reAttend 테스트",
+  "joinPolicy": "INSTANT",
   "location": "서울 서초구",
   "locationDetail": "교대역 1번 출구 근처 카페",
   "startTime": "2026-12-20T19:00:00",
   "endTime": "2026-12-20T21:00:00",
-  "tags": [
-    "v2",
-    "attendance",
-    "left"
-  ],
-  "description": "ATTEND/중복 ATTEND/HOST ATTEND 불가/LEFT 후 재참여까지 테스트합니다.",
+  "tags": ["v2", "attendance", "left", "instant"],
+  "description": "INSTANT: attend 즉시 ATTEND, left는 ATTEND->LEFT, 재참여 가능",
   "maxParticipants": 5,
   "images": [
-    {
-      "sortOrder": 0,
-      "imageKey": "{{c_img0_key}}"
-    },
-    {
-      "sortOrder": 1,
-      "imageKey": "{{c_img1_key}}"
-    }
+    { "sortOrder": 0, "imageKey": "{{c_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{c_img1_key}}" }
   ]
 }
 
@@ -141,21 +130,21 @@ Content-Type: application/json
   client.global.set("v2_member2AccessToken", response.body.data.accessToken);
 %}
 
-### 4-1. V2 MEMBER 1 참여 (성공)
+### 4-1. V2 MEMBER 1 참여 (성공: ATTEND)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
 Content-Type: application/json
 Authorization: Bearer {{v2_member1AccessToken}}
 
 {}
 
-### 4-2. 예외: V2 MEMBER 1 중복 참여 시도 (이미 ATTEND)
+### 4-2. 예외: V2 MEMBER 1 중복 참여 (이미 ATTEND)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
 Content-Type: application/json
 Authorization: Bearer {{v2_member1AccessToken}}
 
 {}
 
-### 4-3. V2 MEMBER 2 참여 (성공)
+### 4-3. V2 MEMBER 2 참여 (성공: ATTEND)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
 Content-Type: application/json
 Authorization: Bearer {{v2_member2AccessToken}}
@@ -169,21 +158,21 @@ Authorization: Bearer {{host2AccessToken}}
 
 {}
 
-### 5-1. V2 MEMBER 1 나가기(LEFT) (성공)
+### 5-1. V2 MEMBER 1 나가기(LEFT) (성공: ATTEND -> LEFT)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/left
 Content-Type: application/json
 Authorization: Bearer {{v2_member1AccessToken}}
 
 {}
 
-### 5-2. 예외: V2 MEMBER 1 다시 left 시도 (이미 LEFT or CANCELLED 상태 -> 예외 기대)
+### 5-2. 예외: V2 MEMBER 1 다시 left 시도 (이미 LEFT -> 예외 기대: ALREADY_LEFT_GROUP 등)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/left
 Content-Type: application/json
 Authorization: Bearer {{v2_member1AccessToken}}
 
 {}
 
-### 6-1. V2 MEMBER 1 재참여 (LEFT/CANCELLED -> INSTANT라면 ATTEND로 재참여 기대)
+### 6-1. V2 MEMBER 1 재참여 (LEFT -> ATTEND)
 POST http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}/attend
 Content-Type: application/json
 Authorization: Bearer {{v2_member1AccessToken}}
@@ -197,10 +186,10 @@ Authorization: Bearer {{v2_member1AccessToken}}
 
 {}
 
-### 7-1. (선택) 모임 상세 조회 - MEMBER2 토큰으로 참가 인원/내 상태 확인
+### 7-1. (선택) 모임 상세 조회 - MEMBER2 토큰
 GET http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}
 Authorization: Bearer {{v2_member2AccessToken}}
 
-### 7-2. (선택) 모임 상세 조회 - HOST 토큰으로 참가 인원/상태 확인
+### 7-2. (선택) 모임 상세 조회 - HOST 토큰
 GET http://localhost:8080/api/v2/groups/{{groupId_attendV2Test}}
 Authorization: Bearer {{host2AccessToken}}

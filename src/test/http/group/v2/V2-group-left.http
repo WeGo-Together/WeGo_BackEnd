@@ -13,7 +13,6 @@ Content-Type: application/json
   client.global.set("host2UserId", response.body.data.userId);
 %}
 
-
 ### 0-1. 로그인(HOST2) - accessToken 발급
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
@@ -26,7 +25,6 @@ Content-Type: application/json
 > {%
   client.global.set("host2AccessToken", response.body.data.accessToken);
 %}
-
 
 ### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장) - imageKey 저장
 POST http://localhost:8080/api/v2/groups/images/upload
@@ -52,23 +50,23 @@ Content-Type: image/jpeg
   client.global.set("c_img1_key", images[1].imageKey);
 %}
 
-
-### 1-2. 모임 V2 생성 (취소 테스트용 모임 / 정상 케이스: 기준일 2026-12-19 이후)
+### 1-2. 모임 V2 생성 (left 테스트용 모임)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
 
 {
-  "title": "참여 취소 테스트용 자바 스터디",
+  "title": "V2 left() 테스트용 모임",
   "location": "서울 서초구",
   "locationDetail": "교대역 1번 출구 근처 카페",
   "startTime": "2026-12-20T19:00:00",
   "endTime": "2026-12-20T21:00:00",
   "tags": [
-    "참여취소테스트",
-    "자바"
+    "v2",
+    "left",
+    "attendance"
   ],
-  "description": "참여 취소/중복 취소/HOST 취소 예외를 테스트하는 모임입니다.",
+  "description": "left() 성공/중복 left/HOST left 불가를 테스트합니다.",
   "maxParticipants": 5,
   "images": [
     {
@@ -83,115 +81,105 @@ Authorization: Bearer {{host2AccessToken}}
 }
 
 > {%
-  client.global.set("groupId_cancelTest", response.body.data.id);
+  client.global.set("groupId_leftTest", response.body.data.id);
 %}
-
 
 ### 2. 회원가입(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
 {
-  "email": "c_member1@example.com",
+  "email": "left_member1@example.com",
   "password": "Test1234!@#",
-  "nickName": "CancelMember1",
+  "nickName": "LeftMember1",
   "phoneNumber": "010-1111-2222"
 }
 
 > {%
-  client.global.set("c_memberId1", response.body.data.userId);
+  client.global.set("left_memberId1", response.body.data.userId);
 %}
-
 
 ### 2-1. 로그인(MEMBER 1)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "c_member1@example.com",
+  "email": "left_member1@example.com",
   "password": "Test1234!@#"
 }
 
 > {%
-  client.global.set("c_member1AccessToken", response.body.data.accessToken);
+  client.global.set("left_member1AccessToken", response.body.data.accessToken);
 %}
-
 
 ### 3. 회원가입(MEMBER 2)
 POST http://localhost:8080/api/v1/auth/signup
 Content-Type: application/json
 
 {
-  "email": "c_member2@example.com",
+  "email": "left_member2@example.com",
   "password": "Test1234!@#",
-  "nickName": "CancelMember2",
+  "nickName": "LeftMember2",
   "phoneNumber": "010-2222-3333"
 }
 
 > {%
-  client.global.set("c_memberId2", response.body.data.userId);
+  client.global.set("left_memberId2", response.body.data.userId);
 %}
-
 
 ### 3-1. 로그인(MEMBER 2)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "c_member2@example.com",
+  "email": "left_member2@example.com",
   "password": "Test1234!@#"
 }
 
 > {%
-  client.global.set("c_member2AccessToken", response.body.data.accessToken);
+  client.global.set("left_member2AccessToken", response.body.data.accessToken);
 %}
 
-
-### 4-1. V2 MEMBER 1 참여
-POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/attend
+### 4-1. V2 MEMBER 1 참여 (ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_leftTest}}/attend
 Content-Type: application/json
-Authorization: Bearer {{c_member1AccessToken}}
+Authorization: Bearer {{left_member1AccessToken}}
 
 {}
 
-
-### 4-2. V2 MEMBER 2 참여
-POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/attend
+### 4-2. V2 MEMBER 2 참여 (ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_leftTest}}/attend
 Content-Type: application/json
-Authorization: Bearer {{c_member2AccessToken}}
+Authorization: Bearer {{left_member2AccessToken}}
 
 {}
 
-
-### 5-1. V2 MEMBER 1 참여 취소 (성공 케이스)
-POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
+### 5-1. V2 MEMBER 1 left() (성공: ATTEND -> LEFT)
+POST http://localhost:8080/api/v2/groups/{{groupId_leftTest}}/left
 Content-Type: application/json
-Authorization: Bearer {{c_member1AccessToken}}
+Authorization: Bearer {{left_member1AccessToken}}
 
 {}
 
-
-### 5-2. 예외발생: MEMBER 1 다시 취소 시도 (예외 기대: NOT_ATTEND_GROUP)
-POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
+### 5-2. 예외: MEMBER 1 다시 left() 시도
+# ✅ 현재 도메인 로직 기준: LEFT 상태면 ALREADY_LEFT_GROUP (또는 유사 에러코드)로 떨어지는 게 자연스러움
+POST http://localhost:8080/api/v2/groups/{{groupId_leftTest}}/left
 Content-Type: application/json
-Authorization: Bearer {{c_member1AccessToken}}
+Authorization: Bearer {{left_member1AccessToken}}
 
 {}
 
-
-### 5-3. 예외발생: HOST가 자신의 모임 취소 시도 (HOST는 left 불가)
-POST http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}/left
+### 5-3. 예외: HOST가 자신의 모임 left() 시도 (HOST는 left 불가)
+POST http://localhost:8080/api/v2/groups/{{groupId_leftTest}}/left
 Content-Type: application/json
 Authorization: Bearer {{host2AccessToken}}
 
 {}
 
+### 5-4. (선택) 모임 상세 조회 - MEMBER 2 토큰 (참여 인원/내 상태 확인)
+GET http://localhost:8080/api/v2/groups/{{groupId_leftTest}}
+Authorization: Bearer {{left_member2AccessToken}}
 
-### 5-4. (선택) 모임 참가자(MEMBER 2) 상세 조회 - 참여 인원 / 상태 확인
-GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
-Authorization: Bearer {{c_member2AccessToken}}
-
-
-### 5-5. (선택) 모임 HOST 상세 조회 - 참여 인원 / 상태 확인
-GET http://localhost:8080/api/v2/groups/{{groupId_cancelTest}}
+### 5-5. (선택) 모임 상세 조회 - HOST 토큰 (참여 인원/상태 확인)
+GET http://localhost:8080/api/v2/groups/{{groupId_leftTest}}
 Authorization: Bearer {{host2AccessToken}}
