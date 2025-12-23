@@ -8,6 +8,18 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+    INVALID_GROUP_IMAGE_ITEM(HttpStatus.BAD_REQUEST,
+            "모임: images 항목이 올바르지 않습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    INVALID_GROUP_IMAGE_KEY(HttpStatus.BAD_REQUEST,
+            "모임: imageKey는 필수이며 공백일 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    DUPLICATED_IMAGE_SORT_ORDER_IN_REQUEST(HttpStatus.BAD_REQUEST,
+            "모임: images 내 sortOrder가 중복되었습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    INVALID_GROUP_IMAGE_SORT_ORDER_RANGE(HttpStatus.BAD_REQUEST,
+            "모임: images 내 sortOrder 범위가 올바르지 않습니다. (허용: 0~2) 모임 ID: %s 회원 ID: %s"
+    ),
     NO_PERMISSION_TO_VIEW_BANNED_TARGETS(HttpStatus.FORBIDDEN,
             "모임: BANNED(차단) 대상 목록 조회 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
     ),

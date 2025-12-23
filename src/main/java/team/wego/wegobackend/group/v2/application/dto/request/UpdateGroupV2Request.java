@@ -1,5 +1,8 @@
 package team.wego.wegobackend.group.v2.application.dto.request;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,8 +32,8 @@ public record UpdateGroupV2Request(
         @Size(max = 10)
         List<String> tags,
 
-        @Size(max = 3)
-        List<String> images
+        @Valid
+        List<CreateGroupImageV2Request> images
 ) {
 
 }
