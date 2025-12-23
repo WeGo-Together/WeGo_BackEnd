@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import team.wego.wegobackend.notification.application.dto.NotificationType;
 import team.wego.wegobackend.user.domain.User;
 
 @Entity
-@Table(name = "notification")
+@Table(name = "notifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseTimeEntity {
@@ -46,8 +47,8 @@ public class Notification extends BaseTimeEntity {
     @Column(name = "type", nullable = false, length = 20)
     private NotificationType type;
 
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead = false;
+    @Column(name = "read_at")
+    private LocalDateTime readAt;
 
     // 관련 리소스 ID (게시글 ID, 댓글 ID 등)
     @Column(name = "related_id")
@@ -69,7 +70,6 @@ public class Notification extends BaseTimeEntity {
         this.actor = actor;
         this.type = type;
         this.message = message;
-        this.isRead = false;
         this.relatedId = relatedId;
         this.relatedType = relatedType;
         this.redirectUrl = redirectUrl;
@@ -77,7 +77,7 @@ public class Notification extends BaseTimeEntity {
 
     // 읽음 처리
     public void markAsRead() {
-        this.isRead = true;
+        this.readAt = LocalDateTime.now();
     }
 
     // 알림 생성 정적 팩토리
