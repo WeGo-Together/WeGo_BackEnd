@@ -149,35 +149,35 @@ GET http://localhost:8080/api/v2/groups/{{ap_groupId}}
 Authorization: Bearer {{ap_hostAccessToken}}
 
 ### 6-1. HOST가 MEMBER1 승인 (PENDING -> ATTEND)
-PATCH http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member1UserId}}/approve
+POST http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member1UserId}}/approve
 Content-Type: application/json
 Authorization: Bearer {{ap_hostAccessToken}}
 
 {}
 
 ### 6-2. HOST가 MEMBER2 거절 (PENDING -> REJECTED)
-PATCH http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/reject
+POST http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/reject
 Content-Type: application/json
 Authorization: Bearer {{ap_hostAccessToken}}
 
 {}
 
 ### 7-1. 예외: MEMBER1을 다시 approve 시도 (이미 ATTEND -> PENDING 아님)
-PATCH http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member1UserId}}/approve
+POST http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member1UserId}}/approve
 Content-Type: application/json
 Authorization: Bearer {{ap_hostAccessToken}}
 
 {}
 
 ### 7-2. 예외: MEMBER2를 다시 reject 시도 (이미 REJECTED -> PENDING 아님)
-PATCH http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/reject
+POST http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/reject
 Content-Type: application/json
 Authorization: Bearer {{ap_hostAccessToken}}
 
 {}
 
 ### 8-1. 예외: MEMBER가 approve 호출 (권한 없음)
-PATCH http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/approve
+POST http://localhost:8080/api/v2/groups/{{ap_groupId}}/attendance/{{ap_member2UserId}}/approve
 Content-Type: application/json
 Authorization: Bearer {{ap_member1AccessToken}}
 

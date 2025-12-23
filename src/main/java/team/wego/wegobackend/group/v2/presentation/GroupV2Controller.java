@@ -174,7 +174,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
     }
 
 
-    @PatchMapping("/{groupId}/attendance/{targetUserId}/approve")
+    @PostMapping("/{groupId}/attendance/{targetUserId}/approve")
     public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> approve(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
@@ -186,7 +186,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    @PatchMapping("/{groupId}/attendance/{targetUserId}/reject")
+    @PostMapping("/{groupId}/attendance/{targetUserId}/reject")
     public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> reject(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
@@ -198,7 +198,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    @PatchMapping("/{groupId}/attendance/{targetUserId}/kick")
+    @PostMapping("/{groupId}/attendance/{targetUserId}/kick")
     public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> kick(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
@@ -210,7 +210,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    @PatchMapping("/{groupId}/attendance/{targetUserId}/ban")
+    @PostMapping("/{groupId}/attendance/{targetUserId}/ban")
     public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> ban(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
@@ -222,7 +222,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
-    @PatchMapping("/{groupId}/attendance/{targetUserId}/unban")
+    @PostMapping("/{groupId}/attendance/{targetUserId}/unban")
     public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> unban(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
