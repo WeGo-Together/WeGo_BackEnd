@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import team.wego.wegobackend.common.response.ApiResponse;
@@ -16,9 +18,13 @@ import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBanTargetsResponse;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBannedTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetKickTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetMyGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GroupUserV2StatusResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
@@ -144,4 +150,117 @@ public interface GroupV2ControllerDocs {
             @PathVariable Long groupId);
 
 
+    @Operation(
+            summary = "승인 API (HOST/권한자)",
+            description = """
+                    승인제(APPROVAL_REQUIRED) 모임에서 PENDING 상태의 참여 신청자를 승인합니다.
+                    - PENDING -> ATTEND
+                    - 권한: HOST 또는 정책상 승인 가능한 권한자
+                    """
+    )
+    @PostMapping("/{groupId}/attendance/{targetUserId}/approve")
+    ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> approve(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    );
+
+    @Operation(
+            summary = "거절 API (HOST/권한자)",
+            description = """
+                    승인제(APPROVAL_REQUIRED) 모임에서 PENDING 상태의 참여 신청자를 거절합니다.
+                    - PENDING -> REJECTED
+                    - 권한: HOST 또는 정책상 거절 가능한 권한자
+                    """
+    )
+    @PostMapping("/{groupId}/attendance/{targetUserId}/reject")
+    ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> reject(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    );
+
+    @Operation(
+            summary = "강퇴 API (HOST)",
+            description = """
+                    모임 참여자(ATTEND)를 강퇴합니다.
+                    - ATTEND -> KICKED
+                    - 권한: HOST
+                    """
+    )
+    @PostMapping("/{groupId}/attendance/{targetUserId}/kick")
+    ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> kick(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    );
+
+    @Operation(
+            summary = "차단(BAN) API (HOST)",
+            description = """
+                    모임 참여자(ATTEND)를 차단합니다.
+                    - ATTEND -> BANNED
+                    - 권한: HOST
+                    """
+    )
+    @PostMapping("/{groupId}/attendance/{targetUserId}/ban")
+    ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> ban(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    );
+
+    @Operation(
+            summary = "차단 해제(UNBAN) API (HOST)",
+            description = """
+                    차단(BANNED) 상태의 유저를 차단 해제합니다.
+                    - BANNED -> KICKED (재참여는 유저가 attend로 진행)
+                    - 권한: HOST
+                    """
+    )
+    @PostMapping("/{groupId}/attendance/{targetUserId}/unban")
+    ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> unban(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    );
+
+    @Operation(
+            summary = "강퇴 대상 조회 (HOST)",
+            description = """
+                    강퇴 가능한 대상(현재 ATTEND 상태, HOST 제외)을 조회합니다.
+                    - 권한: HOST
+                    """
+    )
+    @GetMapping("/{groupId}/attendance/kick-targets")
+    ResponseEntity<ApiResponse<GetKickTargetsResponse>> getKickTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    );
+
+    @Operation(
+            summary = "차단 대상 조회 (HOST)",
+            description = """
+                    차단 가능한 대상(현재 ATTEND 상태, HOST 제외)을 조회합니다.
+                    - 권한: HOST
+                    """
+    )
+    @GetMapping("/{groupId}/attendance/ban-targets")
+    ResponseEntity<ApiResponse<GetBanTargetsResponse>> getBanTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    );
+
+    @Operation(
+            summary = "차단된 대상 조회 (HOST)",
+            description = """
+                    차단(BANNED)된 대상 목록(HOST 제외)을 조회합니다.
+                    - 권한: HOST
+                    """
+    )
+    @GetMapping("/{groupId}/attendance/banned-targets")
+    ResponseEntity<ApiResponse<GetBannedTargetsResponse>> getBannedTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    );
 }
