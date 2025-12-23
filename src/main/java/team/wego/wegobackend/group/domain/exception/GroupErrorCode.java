@@ -8,6 +8,65 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
+    NO_PERMISSION_TO_VIEW_BANNED_TARGETS(HttpStatus.FORBIDDEN,
+            "모임: BANNED(차단) 대상 목록 조회 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    NO_PERMISSION_TO_VIEW_KICK_TARGETS(HttpStatus.FORBIDDEN,
+            "모임: 강퇴 대상 목록 조회 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    NO_PERMISSION_TO_VIEW_BAN_TARGETS(HttpStatus.FORBIDDEN,
+            "모임: 차단 대상 목록 조회 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    NO_PERMISSION_TO_UNBAN(HttpStatus.FORBIDDEN,
+            "모임: 차단 해제 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_UNBAN(HttpStatus.BAD_REQUEST,
+            "모임: 현재 멤버십 상태에서는 차단 해제가 불가능합니다. 모임 ID: %s 회원 ID: %s 상태: %s"
+    ),
+    GROUP_CANNOT_UNBAN_HOST(HttpStatus.BAD_REQUEST,
+            "모임: HOST는 차단 해제 대상이 될 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+    GROUP_CANNOT_BAN_IN_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 현재 모임 상태에서는 차단이 불가능합니다. 모임 ID: %s 모임 상태: %s"
+    ),
+
+    NO_PERMISSION_TO_BAN(HttpStatus.FORBIDDEN,
+            "모임: 차단 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_BAN(HttpStatus.BAD_REQUEST,
+            "모임: 현재 멤버십 상태에서는 차단이 불가능합니다. 모임 ID: %s 회원 ID: %s 상태: %s"
+    ),
+
+    GROUP_CANNOT_BAN_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 차단할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_CANNOT_BAN_HOST(HttpStatus.BAD_REQUEST,
+            "모임: HOST는 차단할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+
+    GROUP_CANNOT_KICK_IN_STATUS(HttpStatus.BAD_REQUEST,
+            "모임: 현재 모임 상태에서는 강퇴가 불가능합니다. 모임 ID: %s 모임 상태: %s"
+    ),
+
+    NO_PERMISSION_TO_KICK(HttpStatus.FORBIDDEN,
+            "모임: 강퇴 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_USER_STATUS_NOT_ALLOWED_TO_KICK(HttpStatus.BAD_REQUEST,
+            "모임: 현재 멤버십 상태에서는 강퇴가 불가능합니다. 모임 ID: %s 회원 ID: %s 상태: %s"
+    ),
+
+    GROUP_CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST,
+            "모임: 자기 자신을 강퇴할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
+
+    GROUP_CANNOT_KICK_HOST(HttpStatus.BAD_REQUEST,
+            "모임: HOST는 강퇴할 수 없습니다. 모임 ID: %s 회원 ID: %s"
+    ),
     NO_PERMISSION_TO_REJECT_JOIN(HttpStatus.FORBIDDEN,
             "모임: 참여 거절 권한이 없습니다. 모임 ID: %s 회원 ID: %s"
     ),
