@@ -153,28 +153,28 @@ GET http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/kick-targets
 Authorization: Bearer {{kick_member1AccessToken}}
 
 ### 6-1. HOST가 MEMBER1 kick (ATTEND -> KICKED)
-POST http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
+PATCH http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
 Content-Type: application/json
 Authorization: Bearer {{kick_hostAccessToken}}
 
 {}
 
 ### 6-2. 예외: MEMBER2가 MEMBER1 kick 시도 (권한 없음)
-POST http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
+PATCH http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
 Content-Type: application/json
 Authorization: Bearer {{kick_member2AccessToken}}
 
 {}
 
 ### 6-3. 예외: HOST가 HOST 자신 kick 시도
-POST http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_hostUserId}}/kick
+PATCH http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_hostUserId}}/kick
 Content-Type: application/json
 Authorization: Bearer {{kick_hostAccessToken}}
 
 {}
 
 ### 7-1. 예외: 이미 KICKED인 MEMBER1 다시 kick 시도 (status not allowed)
-POST http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
+PATCH http://localhost:8080/api/v2/groups/{{kick_groupId}}/attendance/{{kick_member1UserId}}/kick
 Content-Type: application/json
 Authorization: Bearer {{kick_hostAccessToken}}
 
