@@ -153,21 +153,21 @@ GET http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/ban-targets
 Authorization: Bearer {{ban_member1AccessToken}}
 
 ### 6-1. HOST가 MEMBER1 ban (ATTEND -> BANNED)
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
 Content-Type: application/json
 Authorization: Bearer {{ban_hostAccessToken}}
 
 {}
 
 ### 6-2. 예외: MEMBER2가 MEMBER1 ban 시도 (권한 없음)
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
 Content-Type: application/json
 Authorization: Bearer {{ban_member2AccessToken}}
 
 {}
 
 ### 6-3. 예외: HOST가 HOST 자신 ban 시도
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/ban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/ban
 Content-Type: application/json
 Authorization: Bearer {{ban_hostAccessToken}}
 
@@ -189,21 +189,21 @@ Authorization: Bearer {{ban_member1AccessToken}}
 {}
 
 ### 9-1. HOST가 MEMBER1 unban (BANNED -> KICKED 기대)
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
 Content-Type: application/json
 Authorization: Bearer {{ban_hostAccessToken}}
 
 {}
 
 ### 9-2. 예외: MEMBER2가 unban 시도 (권한 없음)
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
 Content-Type: application/json
 Authorization: Bearer {{ban_member2AccessToken}}
 
 {}
 
 ### 9-3. 예외: HOST가 HOST unban 시도 (대상 host 불가)
-POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/unban
+PATCH http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/unban
 Content-Type: application/json
 Authorization: Bearer {{ban_hostAccessToken}}
 
