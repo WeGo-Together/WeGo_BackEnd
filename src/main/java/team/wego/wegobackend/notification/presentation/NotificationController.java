@@ -27,12 +27,11 @@ import team.wego.wegobackend.notification.application.dto.response.NotificationR
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
-@Tag(name = "SSE 엔드포인트", description = "SSE 연결을 위한 엔드포인트")
 @Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
-public class NotificationController {
+public class NotificationController implements NotificationControllerDocs{
 
     private final SseEmitterService sseEmitterService;
     private final NotificationService notificationService;
@@ -44,22 +43,6 @@ public class NotificationController {
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetails user) {
         return sseEmitterService.createEmitter(user.getId());
-    }
-
-    @GetMapping(value = "/test")
-    public ResponseEntity<ApiResponse<String>> test(
-        @AuthenticationPrincipal CustomUserDetails user
-    ) {
-
-        User testUser = userRepository.findById(user.getId())
-            .orElseThrow(UserNotFoundException::new);
-
-        NotificationResponse dto = NotificationResponse.from(testUser);
-        sseEmitterService.sendNotification(user.getId(), dto);
-
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(ApiResponse.success(200, "TEST SUCCESS"));
     }
 
     /**
