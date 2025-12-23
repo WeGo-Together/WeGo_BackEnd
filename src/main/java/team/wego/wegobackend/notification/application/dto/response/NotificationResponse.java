@@ -1,5 +1,6 @@
 package team.wego.wegobackend.notification.application.dto.response;
 
+import com.querydsl.core.annotations.QueryProjection;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,7 @@ public class NotificationResponse {
     private String actorProfileImage;
     private NotificationType type;
     private String message;
-    private Boolean isRead;
+    private LocalDateTime readAt;
     private Long relatedId;
     private String relatedType;
     private String redirectUrl;
@@ -35,7 +36,7 @@ public class NotificationResponse {
                 notification.getActor() != null ? notification.getActor().getProfileImage() : null)
             .type(notification.getType())
             .message(notification.getMessage())
-            .isRead(notification.getIsRead())
+            .readAt(notification.getReadAt())
             .relatedId(notification.getRelatedId())
             .relatedType(notification.getRelatedType())
             .redirectUrl(notification.getRedirectUrl())
@@ -52,11 +53,39 @@ public class NotificationResponse {
             .actorProfileImage(user.getProfileImage())
             .type(NotificationType.TEST)
             .message("테스트 알림 응답")
-            .isRead(false)
             .relatedId(null)
             .relatedType("TEST")
             .redirectUrl("https://api.wego.monster/swagger-ui/index.html")
             .createdAt(LocalDateTime.now())
             .build();
+    }
+
+    @QueryProjection
+    public NotificationResponse(
+        Long id,
+        Long receiverId,
+        Long actorId,
+        String actorNickname,
+        String actorProfileImage,
+        NotificationType type,
+        String message,
+        LocalDateTime readAt,
+        Long relatedId,
+        String relatedType,
+        String redirectUrl,
+        LocalDateTime createdAt
+    ) {
+        this.id = id;
+        this.receiverId = receiverId;
+        this.actorId = actorId;
+        this.actorNickname = actorNickname;
+        this.actorProfileImage = actorProfileImage;
+        this.type = type;
+        this.message = message;
+        this.readAt = readAt;
+        this.relatedId = relatedId;
+        this.relatedType = relatedType;
+        this.redirectUrl = redirectUrl;
+        this.createdAt = createdAt;
     }
 }
