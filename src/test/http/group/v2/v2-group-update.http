@@ -98,15 +98,16 @@ Content-Type: image/png
 
 
 ### 4. PATCH - A 삭제 + C 대표 + D 추가 (최종 순서: C,B,D)
-PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
+PATCH http://localhost:8080/api/v2/groups
+    /{{groupId_updateTest}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "imageKeys": [
-  "{{imgC_key}}",
-  "{{imgB_key}}",
-  "{{imgD_key}}"
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{imgC_key}}" },
+    { "sortOrder": 1, "imageKey": "{{imgB_key}}" },
+    { "sortOrder": 2, "imageKey": "{{imgD_key}}" }
   ]
 }
 
@@ -126,7 +127,7 @@ Authorization: Bearer {{accessToken}}
       imgs[0].sortOrder === 0 && imgs[1].sortOrder === 1 && imgs[2].sortOrder === 2
   ));
 
-      client.test("최종 순서가 C,B,D인지", () => client.assert(
+  client.test("최종 순서가 C,B,D인지", () => client.assert(
       imgs[0].imageKey === client.global.get("imgC_key") &&
       imgs[1].imageKey === client.global.get("imgB_key") &&
       imgs[2].imageKey === client.global.get("imgD_key")
@@ -157,13 +158,14 @@ Authorization: Bearer {{accessToken}}
   "tags": ["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11"]
 }
 
+
 ### 7. PATCH - 이미지 전체 삭제 => 기본 이미지(variants 2개) 내려와야 함
 PATCH http://localhost:8080/api/v2/groups/{{groupId_updateTest}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "imageKeys": []
+  "images": []
 }
 
 > {%
@@ -179,6 +181,7 @@ Authorization: Bearer {{accessToken}}
   client.test("기본 440 포함", () => client.assert(urls.includes("https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_440x240.webp")));
   client.test("기본 100 포함", () => client.assert(urls.includes("https://we-go-bucket.s3.ap-northeast-2.amazonaws.com/default/group_logo_100x100.webp")));
 %}
+
 
 ### 이미지 2장 선 업로드 (A, B)
 POST http://localhost:8080/api/v2/groups/images/upload
@@ -229,6 +232,7 @@ Authorization: Bearer {{accessToken}}
   client.global.set("groupId_ab", response.body.data.id);
 %}
 
+
 ### 신규 이미지 1장 선 업로드 (C)
 POST http://localhost:8080/api/v2/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
@@ -246,13 +250,17 @@ Content-Type: image/png
   client.global.set("imgC_key", images[0].imageKey);
 %}
 
+
 ### PATCH (A 삭제 + B 대표 + C 추가 => 최종 [B, C])
 PATCH http://localhost:8080/api/v2/groups/{{groupId_ab}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "imageKeys": ["{{imgB_key}}", "{{imgC_key}}"]
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{imgB_key}}" },
+    { "sortOrder": 1, "imageKey": "{{imgC_key}}" }
+  ]
 }
 
 > {%
@@ -290,6 +298,7 @@ Content-Type: image/jpeg
   client.global.set("ex_sub_key", images[1].imageKey);
 %}
 
+
 ### 2) 모임 생성 (필드 다양화 + images는 (sortOrder, imageKey) 배열)
 POST http://localhost:8080/api/v2/groups/create
 Content-Type: application/json
@@ -315,11 +324,8 @@ Authorization: Bearer {{accessToken}}
   client.global.set("groupId_example", response.body.data.id);
 %}
 
-### [수정 예시] PATCH - 모임 필드 다양하게 수정 + 이미지 교체(재정렬)
-### 0) (선행) accessToken, 수정 대상 groupId가 이미 있다고 가정
-# client.global.set("accessToken", "...")  // 이미 세팅됨
-# client.global.set("groupId_patchExample", "...")  // 수정할 모임 ID
 
+### [수정 예시] PATCH - 모임 필드 다양하게 수정 + 이미지 교체(재정렬)
 ### 1) 수정용 신규 이미지 2장 선 업로드
 POST http://localhost:8080/api/v2/groups/images/upload
 Content-Type: multipart/form-data; boundary=boundary
@@ -343,7 +349,8 @@ Content-Type: image/jpeg
   client.global.set("patch_img2_key", images[1].imageKey);
 %}
 
-### 2) PATCH - 필드 다양하게 수정 + imageKeys는 반드시 채워서 전달
+
+### 2) PATCH - 필드 다양하게 수정 + images는 반드시 채워서 전달(빈 배열은 전체 삭제)
 PATCH http://localhost:8080/api/v2/groups/{{groupId_example}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
@@ -358,9 +365,9 @@ Authorization: Bearer {{accessToken}}
   "maxParticipants": 10,
   "status": "CLOSED",
   "tags": ["러닝", "주말"],
-  "imageKeys": [
-    "{{patch_img1_key}}",
-    "{{patch_img2_key}}"
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{patch_img1_key}}" },
+    { "sortOrder": 1, "imageKey": "{{patch_img2_key}}" }
   ]
 }
 

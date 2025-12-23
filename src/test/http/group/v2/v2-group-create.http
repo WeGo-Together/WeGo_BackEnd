@@ -96,17 +96,17 @@ Authorization: Bearer {{accessToken}}
 Content-Disposition: form-data; name="images"; filename="test-webp1.webp"
 Content-Type: image/webp
 
-< ../image/resources/test-webp1.webp
+< ../../image/resources/test-webp1.webp
 --boundary
 Content-Disposition: form-data; name="images"; filename="test-webp2.webp"
 Content-Type: image/webp
 
-< ../image/resources/test-webp2.webp
+< ../../image/resources/test-webp2.webp
 --boundary
 Content-Disposition: form-data; name="images"; filename="img1.png"
 Content-Type: image/png
 
-< ../image/resources/img1.png
+< ../../image/resources/img1.png
 --boundary--
 
 > {%
