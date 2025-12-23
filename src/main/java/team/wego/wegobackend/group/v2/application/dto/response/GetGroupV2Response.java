@@ -69,7 +69,8 @@ public record GetGroupV2Response(
         } else { // 비HOST: ATTEND만 노출
             joinedMembers = users.stream()
                     .filter(groupUserV2 -> groupUserV2.getStatus() == GroupUserV2Status.ATTEND)
-                    .map(groupUserV2 -> JoinedMember.from(groupUserV2, true)) // 여기서는 ATTEND만 들어오니 status 노출해도 OK
+                    .map(groupUserV2 -> JoinedMember.from(groupUserV2,
+                            true)) // 여기서는 ATTEND만 들어오니 status 노출해도 OK
                     .toList();
         }
 

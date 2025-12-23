@@ -21,5 +21,7 @@ public record GroupListRow(
         String hostNickName,
         String hostProfileImage,
         Long participantCount
-) {}
+) {
+
+}
 

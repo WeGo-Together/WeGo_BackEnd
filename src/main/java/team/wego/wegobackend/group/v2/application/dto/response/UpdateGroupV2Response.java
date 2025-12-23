@@ -21,6 +21,8 @@ public record UpdateGroupV2Response(
         String description,
         int maxParticipants,
         LocalDateTime updatedAt
-) { }
+) {
+
+}
 
 

@@ -299,7 +299,8 @@ public class GlobalExceptionHandler {
         // 예: H2 메시지에 constraint 이름이 들어옴
         // "PUBLIC.UK_GROUP_ID_SORT_ORDER_INDEX_D"
         if (msg != null && msg.contains("UK_GROUP_ID_SORT_ORDER_INDEX_D")) {
-            return handleApp(new AppException(GroupErrorCode.GROUP_IMAGE_SORT_ORDER_CONFLICT), request);
+            return handleApp(new AppException(GroupErrorCode.GROUP_IMAGE_SORT_ORDER_CONFLICT),
+                    request);
         }
 
         // 나머지는 공통 무결성 위반 코드로 (AppErrorCode 하나 만드는 걸 추천)
