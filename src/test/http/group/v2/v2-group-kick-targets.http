@@ -1,0 +1,180 @@
+### 0. 회원가입(HOST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "kicktargets_host@example.com",
+  "password": "Test1234!@#",
+  "nickName": "KickHost",
+  "phoneNumber": "010-0000-9300"
+}
+
+> {%
+  client.global.set("kt_hostUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kicktargets_host@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("kt_hostAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png/jpg 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{kt_hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("kt_img0_key", images[0].imageKey);
+  client.global.set("kt_img1_key", images[1].imageKey);
+%}
+
+### 1-2. FREE 모임 생성 (kick targets 조회용)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{kt_hostAccessToken}}
+
+{
+  "title": "getKickTargets 테스트 모임 (V2)",
+  "joinPolicy": "FREE",
+  "location": "서울 성동구",
+  "locationDetail": "성수역 근처",
+  "startTime": "2026-12-23T19:00:00",
+  "endTime": "2026-12-23T21:00:00",
+  "tags": ["v2", "kick-targets", "query"],
+  "description": "HOST only getKickTargets 조회 테스트",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{kt_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{kt_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("kt_groupId", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "kicktargets_member1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "KickMember1",
+  "phoneNumber": "010-1111-9301"
+}
+
+> {%
+  client.global.set("kt_member1UserId", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kicktargets_member1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("kt_member1AccessToken", response.body.data.accessToken);
+%}
+
+### 3. 회원가입(MEMBER2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "kicktargets_member2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "KickMember2",
+  "phoneNumber": "010-2222-9302"
+}
+
+> {%
+  client.global.set("kt_member2UserId", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "kicktargets_member2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("kt_member2AccessToken", response.body.data.accessToken);
+%}
+
+### 4-1. MEMBER1 모임 참여 (ATTEND)
+POST http://localhost:8080/api/v2/groups/{{kt_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{kt_member1AccessToken}}
+
+{}
+
+### 4-2. MEMBER2 모임 참여 (ATTEND)
+POST http://localhost:8080/api/v2/groups/{{kt_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{kt_member2AccessToken}}
+
+{}
+
+### 5-1. HOST가 kick 대상 조회 (kick-targets) - 성공 기대 (HOST 제외 ATTEND 멤버들)
+GET http://localhost:8080/api/v2/groups/{{kt_groupId}}/attendance/kick-targets
+Authorization: Bearer {{kt_hostAccessToken}}
+
+### 5-2. 예외: MEMBER가 kick-targets 조회 (HOST only)
+GET http://localhost:8080/api/v2/groups/{{kt_groupId}}/attendance/kick-targets
+Authorization: Bearer {{kt_member1AccessToken}}
+
+### 6-1. (선택) 참여자 없는 새 모임 생성 -> kick-targets 빈 배열 확인
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{kt_hostAccessToken}}
+
+{
+  "title": "getKickTargets 빈 targets 테스트 (V2)",
+  "joinPolicy": "FREE",
+  "location": "서울 중구",
+  "locationDetail": "시청역",
+  "startTime": "2026-12-24T19:00:00",
+  "endTime": "2026-12-24T21:00:00",
+  "tags": ["v2", "kick-targets", "empty"],
+  "description": "아무도 참석 안 했을 때 targets=[] 확인",
+  "maxParticipants": 5,
+  "images": [
+  ]
+}
+
+> {%
+  client.global.set("kt_emptyGroupId", response.body.data.id);
+%}
+
+### 6-2. (선택) HOST가 kick-targets 조회 (targets 빈 배열 기대)
+GET http://localhost:8080/api/v2/groups/{{kt_emptyGroupId}}/attendance/kick-targets
+Authorization: Bearer {{kt_hostAccessToken}}

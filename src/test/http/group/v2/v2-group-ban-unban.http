@@ -1,0 +1,221 @@
+### 0. 회원가입(HOST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "ban_host@example.com",
+  "password": "Test1234!@#",
+  "nickName": "BanHost",
+  "phoneNumber": "010-0000-9200"
+}
+
+> {%
+  client.global.set("ban_hostUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ban_host@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("ban_hostAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png/jpg 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{ban_hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("ban_img0_key", images[0].imageKey);
+  client.global.set("ban_img1_key", images[1].imageKey);
+%}
+
+### 1-2. FREE 모임 생성 (joinPolicy = FREE)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{ban_hostAccessToken}}
+
+{
+  "title": "BAN/UNBAN 테스트 모임 (V2)",
+  "joinPolicy": "FREE",
+  "location": "서울 마포구",
+  "locationDetail": "홍대 근처",
+  "startTime": "2026-12-22T19:00:00",
+  "endTime": "2026-12-22T21:00:00",
+  "tags": ["v2", "ban", "unban"],
+  "description": "HOST only ban/unban + banned-targets 조회 + 예외 케이스 점검",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{ban_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{ban_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("ban_groupId", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER1) - ban 대상
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "ban_member1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "BanMembers1",
+  "phoneNumber": "010-1111-9201"
+}
+
+> {%
+  client.global.set("ban_member1UserId", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ban_member1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("ban_member1AccessToken", response.body.data.accessToken);
+%}
+
+### 3. 회원가입(MEMBER2) - 권한 예외 테스트용
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "ban_member2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "BanMembers2",
+  "phoneNumber": "010-2222-9202"
+}
+
+> {%
+  client.global.set("ban_member2UserId", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ban_member2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("ban_member2AccessToken", response.body.data.accessToken);
+%}
+
+### 4-1. MEMBER1 모임 참여 (FREE -> ATTEND 기대)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{ban_member1AccessToken}}
+
+{}
+
+### 4-2. MEMBER2 모임 참여 (FREE -> ATTEND 기대)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{ban_member2AccessToken}}
+
+{}
+
+### 5-1. HOST가 ban 대상 조회 (ban-targets) - HOST only
+GET http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/ban-targets
+Authorization: Bearer {{ban_hostAccessToken}}
+
+### 5-2. 예외: MEMBER가 ban-targets 조회 (HOST only)
+GET http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/ban-targets
+Authorization: Bearer {{ban_member1AccessToken}}
+
+### 6-1. HOST가 MEMBER1 ban (ATTEND -> BANNED)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
+Content-Type: application/json
+Authorization: Bearer {{ban_hostAccessToken}}
+
+{}
+
+### 6-2. 예외: MEMBER2가 MEMBER1 ban 시도 (권한 없음)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/ban
+Content-Type: application/json
+Authorization: Bearer {{ban_member2AccessToken}}
+
+{}
+
+### 6-3. 예외: HOST가 HOST 자신 ban 시도
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/ban
+Content-Type: application/json
+Authorization: Bearer {{ban_hostAccessToken}}
+
+{}
+
+### 7-1. HOST가 banned 대상 조회 (banned-targets) - HOST only
+GET http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/banned-targets
+Authorization: Bearer {{ban_hostAccessToken}}
+
+### 7-2. 예외: MEMBER가 banned-targets 조회 (HOST only)
+GET http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/banned-targets
+Authorization: Bearer {{ban_member2AccessToken}}
+
+### 8-1. 예외: BANNED 상태의 MEMBER1이 재참여 시도 (attend 시 GROUP_BANNED_USER 기대)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{ban_member1AccessToken}}
+
+{}
+
+### 9-1. HOST가 MEMBER1 unban (BANNED -> KICKED 기대)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
+Content-Type: application/json
+Authorization: Bearer {{ban_hostAccessToken}}
+
+{}
+
+### 9-2. 예외: MEMBER2가 unban 시도 (권한 없음)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_member1UserId}}/unban
+Content-Type: application/json
+Authorization: Bearer {{ban_member2AccessToken}}
+
+{}
+
+### 9-3. 예외: HOST가 HOST unban 시도 (대상 host 불가)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attendance/{{ban_hostUserId}}/unban
+Content-Type: application/json
+Authorization: Bearer {{ban_hostAccessToken}}
+
+{}
+
+### 10-1. MEMBER1 재참여 시도 (KICKED -> FREE면 reAttend로 ATTEND 가능 기대)
+POST http://localhost:8080/api/v2/groups/{{ban_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{ban_member1AccessToken}}
+
+{}
+
+### 10-2. (선택) 최종 모임 상세 조회 - 상태/인원 확인
+GET http://localhost:8080/api/v2/groups/{{ban_groupId}}
+Authorization: Bearer {{ban_hostAccessToken}}
