@@ -2,8 +2,6 @@ package team.wego.wegobackend.group.v2.application.dto.common;
 
 import java.util.List;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
-import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2VariantType;
-import team.wego.wegobackend.group.v2.domain.entity.ImageV2Format;
 
 public record GroupImageItem(
         Long groupImageId,

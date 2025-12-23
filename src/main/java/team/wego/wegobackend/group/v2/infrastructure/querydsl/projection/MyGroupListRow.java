@@ -32,4 +32,6 @@ public record MyGroupListRow(
         GroupUserV2Status myStatus,
         LocalDateTime myJoinedAt,
         LocalDateTime myLeftAt
-) {}
+) {
+
+}

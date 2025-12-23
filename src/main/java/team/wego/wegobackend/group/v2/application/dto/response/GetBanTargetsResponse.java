@@ -14,3 +14,4 @@ public record GetBanTargetsResponse(
         return new GetBanTargetsResponse(groupId, targets, LocalDateTime.now());
     }
 }
+

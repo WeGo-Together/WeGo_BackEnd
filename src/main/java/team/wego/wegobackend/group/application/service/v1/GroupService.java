@@ -509,7 +509,7 @@ public class GroupService {
                 .filter(url -> url != null && !url.isBlank())
                 .toList();
     }
-    
+
     private void updateGroupTags(Group group, List<String> tagNames) {
         if (tagNames == null) { // null이면 "태그는 건드리지 않는다"
             return;
