@@ -1,19 +1,25 @@
 package team.wego.wegobackend.group.v2.application.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.dto.common.AttendanceTargetItem;
 import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
-import team.wego.wegobackend.group.v2.application.dto.response.ApproveRejectGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBanTargetsResponse;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBannedTargetsResponse;
+import team.wego.wegobackend.group.v2.application.dto.response.GetKickTargetsResponse;
+import team.wego.wegobackend.group.v2.application.dto.response.GroupUserV2StatusResponse;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
+import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2QueryRepository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.user.repository.UserRepository;
@@ -24,6 +30,7 @@ public class GroupV2AttendanceService {
 
     private final GroupUserV2Repository groupUserV2Repository;
     private final GroupV2Repository groupV2Repository;
+    private final GroupUserV2QueryRepository groupUserV2QueryRepository;
 
     // 회원 호출
     private final UserRepository userRepository;
@@ -123,7 +130,8 @@ public class GroupV2AttendanceService {
                 groupUserV2Repository.save(groupUserV2);
             }
 
-            // 정원 체크 수행. 재참여 포함해서 체크하는 게 안전
+            // 승인을 할 때만 정원 체크(이미 approve에서 하고 있으니 충분)
+            // approval_required에서 attend는 정원 체크 생략 가능
             long attendCount = groupUserV2Repository.countByGroupIdAndStatus(
                     groupId,
                     GroupUserV2Status.ATTEND);
@@ -194,7 +202,7 @@ public class GroupV2AttendanceService {
     }
 
     @Transactional
-    public ApproveRejectGroupV2Response approve(Long approverUserId, Long groupId,
+    public GroupUserV2StatusResponse approve(Long approverUserId, Long groupId,
             Long targetUserId) {
         if (approverUserId == null || targetUserId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
@@ -264,11 +272,11 @@ public class GroupV2AttendanceService {
             group.changeStatus(GroupV2Status.FULL);
         }
 
-        return ApproveRejectGroupV2Response.of(group, attendCount, targetUserId, target);
+        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
     }
 
     @Transactional
-    public ApproveRejectGroupV2Response reject(Long approverUserId, Long groupId,
+    public GroupUserV2StatusResponse reject(Long approverUserId, Long groupId,
             Long targetUserId) {
         if (approverUserId == null || targetUserId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
@@ -325,6 +333,240 @@ public class GroupV2AttendanceService {
 
         // reject는 ATTEND 수가 바뀌지 않는 게 일반적이지만(대상은 PENDING),
         // 혹시라도 상태 정책이 바뀌더라도 count는 최신으로 내려가도록 유지
-        return ApproveRejectGroupV2Response.of(group, attendCount, targetUserId, target);
+        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
+    }
+
+    @Transactional
+    public GroupUserV2StatusResponse kick(Long kickerUserId, Long groupId, Long targetUserId) {
+        if (kickerUserId == null || targetUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        if (kickerUserId.equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_KICK_SELF, groupId, kickerUserId);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // ✅ HOST only
+        if (!group.getHost().getId().equals(kickerUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_KICK, groupId, kickerUserId);
+        }
+
+        if (group.getHost().getId().equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_KICK_HOST, groupId, targetUserId);
+        }
+
+        if (group.getStatus() != GroupV2Status.RECRUITING
+                && group.getStatus() != GroupV2Status.FULL) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_KICK_IN_STATUS, groupId,
+                    group.getStatus().name());
+        }
+
+        GroupUserV2 target = groupUserV2Repository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                        targetUserId));
+
+        if (target.getStatus() != GroupUserV2Status.ATTEND) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_KICK,
+                    groupId, targetUserId, target.getStatus().name()
+            );
+        }
+
+        target.kick();
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        if (group.getStatus() == GroupV2Status.FULL && attendCount < group.getMaxParticipants()) {
+            group.changeStatus(GroupV2Status.RECRUITING);
+        }
+
+        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
+    }
+
+    @Transactional
+    public GroupUserV2StatusResponse ban(Long bannerUserId, Long groupId, Long targetUserId) {
+        if (bannerUserId == null || targetUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        if (bannerUserId.equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_BAN_SELF, groupId, bannerUserId);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // HOST only
+        if (!group.getHost().getId().equals(bannerUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_BAN, groupId, bannerUserId);
+        }
+
+        if (group.getHost().getId().equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_BAN_HOST, groupId, targetUserId);
+        }
+
+        if (group.getStatus() != GroupV2Status.RECRUITING
+                && group.getStatus() != GroupV2Status.FULL) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_BAN_IN_STATUS, groupId,
+                    group.getStatus().name());
+        }
+
+        GroupUserV2 target = groupUserV2Repository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                        targetUserId));
+
+        if (target.getStatus() != GroupUserV2Status.ATTEND) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_BAN,
+                    groupId, targetUserId, target.getStatus().name()
+            );
+        }
+
+        target.ban();
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        if (group.getStatus() == GroupV2Status.FULL && attendCount < group.getMaxParticipants()) {
+            group.changeStatus(GroupV2Status.RECRUITING);
+        }
+
+        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
+    }
+
+    @Transactional(readOnly = true)
+    public GetKickTargetsResponse getKickTargets(Long requesterUserId, Long groupId) {
+        if (requesterUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // HOST만 조회 가능
+        if (!group.getHost().getId().equals(requesterUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_VIEW_KICK_TARGETS, groupId,
+                    requesterUserId);
+        }
+
+        List<AttendanceTargetItem> targets = groupUserV2QueryRepository
+                .fetchAttendMembersExceptHost(groupId)
+                .stream()
+                .map(r -> new AttendanceTargetItem(
+                        r.userId(),
+                        r.nickName(),
+                        r.profileImage(),
+                        r.groupUserId(),
+                        r.status(),
+                        r.joinedAt()
+                ))
+                .toList();
+
+        return GetKickTargetsResponse.of(groupId, targets);
+    }
+
+    @Transactional(readOnly = true)
+    public GetBanTargetsResponse getBanTargets(Long requesterUserId, Long groupId) {
+        if (requesterUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        if (!group.getHost().getId().equals(requesterUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_VIEW_BAN_TARGETS, groupId,
+                    requesterUserId);
+        }
+
+        List<AttendanceTargetItem> targets = groupUserV2QueryRepository
+                .fetchAttendMembersExceptHost(groupId)
+                .stream()
+                .map(r -> new AttendanceTargetItem(
+                        r.userId(),
+                        r.nickName(),
+                        r.profileImage(),
+                        r.groupUserId(),
+                        r.status(),
+                        r.joinedAt()
+                ))
+                .toList();
+
+        return GetBanTargetsResponse.of(groupId, targets);
+    }
+
+    @Transactional
+    public GroupUserV2StatusResponse unban(Long requesterUserId, Long groupId, Long targetUserId) {
+        if (requesterUserId == null || targetUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // HOST만 가능
+        if (!group.getHost().getId().equals(requesterUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_UNBAN, groupId,
+                    requesterUserId);
+        }
+
+        // HOST는 unban 대상이 될 수 없음(애초에 ban도 불가지만 방어)
+        if (group.getHost().getId().equals(targetUserId)) {
+            throw new GroupException(GroupErrorCode.GROUP_CANNOT_UNBAN_HOST, groupId, targetUserId);
+        }
+
+        GroupUserV2 target = groupUserV2Repository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
+                        targetUserId));
+
+        target.unban(); // BANNED만 허용, KICKED로 전환
+
+        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+
+        // 상태 복귀는 unban에서 인원수가 바뀌지 않지만(어차피 BANNED는 ATTEND가 아님),
+        // 안전하게 FULL 복귀 로직은 건드릴 필요 없음.
+        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
+    }
+
+    @Transactional(readOnly = true)
+    public GetBannedTargetsResponse getBannedTargets(Long requesterUserId, Long groupId) {
+        if (requesterUserId == null) {
+            throw new GroupException(GroupErrorCode.USER_ID_NULL);
+        }
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
+        // HOST만 조회 가능
+        if (!group.getHost().getId().equals(requesterUserId)) {
+            throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_VIEW_BANNED_TARGETS, groupId,
+                    requesterUserId);
+        }
+
+        List<AttendanceTargetItem> targets = groupUserV2QueryRepository
+                .fetchBannedMembersExceptHost(groupId)
+                .stream()
+                .map(r -> new AttendanceTargetItem(
+                        r.userId(),
+                        r.nickName(),
+                        r.profileImage(),
+                        r.groupUserId(),
+                        r.status(),
+                        r.joinedAt()
+                ))
+                .toList();
+
+        return GetBannedTargetsResponse.of(groupId, targets);
     }
 }

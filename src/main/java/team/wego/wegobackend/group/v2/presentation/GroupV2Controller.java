@@ -21,12 +21,15 @@ import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Reque
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.MyGroupTypeV2;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
-import team.wego.wegobackend.group.v2.application.dto.response.ApproveRejectGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.AttendanceGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.CreateGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBanTargetsResponse;
+import team.wego.wegobackend.group.v2.application.dto.response.GetBannedTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GetKickTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetMyGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GroupUserV2StatusResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.application.service.GroupMyGetV2Service;
 import team.wego.wegobackend.group.v2.application.service.GroupV2AttendanceService;
@@ -79,7 +82,8 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
             @PathVariable Long groupId
     ) {
 
-        AttendanceGroupV2Response response = groupV2AttendanceService.attend(userDetails.getId(), groupId);
+        AttendanceGroupV2Response response = groupV2AttendanceService.attend(userDetails.getId(),
+                groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -93,7 +97,8 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
     ) {
-        AttendanceGroupV2Response response = groupV2AttendanceService.left(userDetails.getId(), groupId);
+        AttendanceGroupV2Response response = groupV2AttendanceService.left(userDetails.getId(),
+                groupId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -170,26 +175,96 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
 
 
     @PostMapping("/{groupId}/attendance/{targetUserId}/approve")
-    public ResponseEntity<ApiResponse<ApproveRejectGroupV2Response>> approve(
+    public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> approve(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
             @PathVariable Long targetUserId
     ) {
-        ApproveRejectGroupV2Response response =
+        GroupUserV2StatusResponse response =
                 groupV2AttendanceService.approve(userDetails.getId(), groupId, targetUserId);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
 
     @PostMapping("/{groupId}/attendance/{targetUserId}/reject")
-    public ResponseEntity<ApiResponse<ApproveRejectGroupV2Response>> reject(
+    public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> reject(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
             @PathVariable Long targetUserId
     ) {
-        ApproveRejectGroupV2Response response =
+        GroupUserV2StatusResponse response =
                 groupV2AttendanceService.reject(userDetails.getId(), groupId, targetUserId);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
+
+    @PostMapping("/{groupId}/attendance/{targetUserId}/kick")
+    public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> kick(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    ) {
+        GroupUserV2StatusResponse response =
+                groupV2AttendanceService.kick(userDetails.getId(), groupId, targetUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @PostMapping("/{groupId}/attendance/{targetUserId}/ban")
+    public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> ban(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    ) {
+        GroupUserV2StatusResponse response =
+                groupV2AttendanceService.ban(userDetails.getId(), groupId, targetUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @GetMapping("/{groupId}/attendance/kick-targets")
+    public ResponseEntity<ApiResponse<GetKickTargetsResponse>> getKickTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+        GetKickTargetsResponse response =
+                groupV2AttendanceService.getKickTargets(userDetails.getId(), groupId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @GetMapping("/{groupId}/attendance/ban-targets")
+    public ResponseEntity<ApiResponse<GetBanTargetsResponse>> getBanTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+        GetBanTargetsResponse response =
+                groupV2AttendanceService.getBanTargets(userDetails.getId(), groupId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @PostMapping("/{groupId}/attendance/{targetUserId}/unban")
+    public ResponseEntity<ApiResponse<GroupUserV2StatusResponse>> unban(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @PathVariable Long targetUserId
+    ) {
+        GroupUserV2StatusResponse response =
+                groupV2AttendanceService.unban(userDetails.getId(), groupId, targetUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @GetMapping("/{groupId}/attendance/banned-targets")
+    public ResponseEntity<ApiResponse<GetBannedTargetsResponse>> getBannedTargets(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId
+    ) {
+        GetBannedTargetsResponse response =
+                groupV2AttendanceService.getBannedTargets(userDetails.getId(), groupId);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
+    }
 }
+

@@ -58,16 +58,16 @@ public class GroupUserV2 extends BaseTimeEntity {
     @Column(name = "group_user_status", nullable = false, length = 20)
     private GroupUserV2Status status;
 
-    private GroupUserV2(User user, GroupUserV2Role groupRole) {
+    private GroupUserV2(User user, GroupUserV2Role groupRole, GroupUserV2Status status) {
         this.user = user;
         this.groupRole = groupRole;
+        this.status = status;
         this.joinedAt = LocalDateTime.now();
-        this.status = GroupUserV2Status.ATTEND;
         this.leftAt = null;
     }
 
     public static GroupUserV2 create(GroupV2 group, User user, GroupUserV2Role role) {
-        GroupUserV2 groupUser = new GroupUserV2(user, role);
+        GroupUserV2 groupUser = new GroupUserV2(user, role, GroupUserV2Status.ATTEND);
         group.addUser(groupUser);
         return groupUser;
     }
@@ -107,13 +107,24 @@ public class GroupUserV2 extends BaseTimeEntity {
 
     public void kick() {
         if (this.status != GroupUserV2Status.ATTEND) {
-            throw new GroupException(GroupErrorCode.GROUP_NOT_ATTEND_STATUS);
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_KICK,
+                    this.group.getId(), this.user.getId(), this.status.name()
+            );
         }
         this.status = GroupUserV2Status.KICKED;
         this.leftAt = LocalDateTime.now();
     }
 
     public void ban() {
+        if (this.status != GroupUserV2Status.ATTEND) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_BAN,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
         this.status = GroupUserV2Status.BANNED;
         this.leftAt = LocalDateTime.now();
     }
@@ -127,12 +138,10 @@ public class GroupUserV2 extends BaseTimeEntity {
     }
 
     public static GroupUserV2 createPending(GroupV2 group, User user) {
-        GroupUserV2 groupUserV2 = new GroupUserV2(user, GroupUserV2Role.MEMBER);
-        groupUserV2.status = GroupUserV2Status.PENDING;   // 신청 상태로 시작
-        groupUserV2.joinedAt = LocalDateTime.now();
-        groupUserV2.leftAt = null;
-        group.addUser(groupUserV2);
-        return groupUserV2;
+        GroupUserV2 groupUser = new GroupUserV2(user, GroupUserV2Role.MEMBER,
+                GroupUserV2Status.PENDING);
+        group.addUser(groupUser);
+        return groupUser;
     }
 
     public void requestJoin() {
@@ -206,5 +215,17 @@ public class GroupUserV2 extends BaseTimeEntity {
         this.leftAt = LocalDateTime.now();
     }
 
+    public void unban() {
+        if (this.status != GroupUserV2Status.BANNED) {
+            throw new GroupException(
+                    GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_UNBAN,
+                    this.group.getId(),
+                    this.user.getId(),
+                    this.status.name()
+            );
+        }
+        this.status = GroupUserV2Status.KICKED; //  재참여는 스스로 가능
+        this.leftAt = LocalDateTime.now();
+    }
 }
 
