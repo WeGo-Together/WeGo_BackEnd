@@ -132,6 +132,7 @@ public class AuthController implements AuthControllerDocs {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
+        cookie.setDomain(".wego.monster");
         cookie.setMaxAge((int) jwtTokenProvider.getRefreshTokenExpiration());
         cookie.setAttribute("SameSite", "Strict");
         return cookie;
@@ -146,6 +147,7 @@ public class AuthController implements AuthControllerDocs {
         deleteCookie.setMaxAge(0);
         deleteCookie.setHttpOnly(true);
         deleteCookie.setSecure(true);
+        deleteCookie.setDomain(".wego.monster");
         deleteCookie.setAttribute("SameSite", "Strict");
         response.addCookie(deleteCookie);
     }
