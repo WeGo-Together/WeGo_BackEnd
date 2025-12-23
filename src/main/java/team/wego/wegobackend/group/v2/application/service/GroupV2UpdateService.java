@@ -82,8 +82,8 @@ public class GroupV2UpdateService {
         }
 
         // 4 이미지 변경(null이면 변경 없음)
-        if (request.imageKeys() != null) {
-            applyImagesWithSafeReorder(group, userId, request.imageKeys());
+        if (request.images() != null) {
+            applyImagesWithSafeReorder(group, userId, request.images());
         }
 
         // dirty checking으로 충분. 그래도 명시적으로 save 해도 무방.

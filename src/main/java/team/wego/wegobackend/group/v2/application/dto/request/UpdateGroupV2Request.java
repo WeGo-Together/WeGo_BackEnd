@@ -30,7 +30,7 @@ public record UpdateGroupV2Request(
         List<String> tags,
 
         @Size(max = 3)
-        List<String> imageKeys
+        List<String> images
 ) {
 
 }
