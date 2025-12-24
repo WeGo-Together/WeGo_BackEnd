@@ -1,7 +1,6 @@
 package team.wego.wegobackend.notification.presentation;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -17,14 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
 import team.wego.wegobackend.notification.application.NotificationService;
 import team.wego.wegobackend.notification.application.SseEmitterService;
 import team.wego.wegobackend.notification.application.dto.response.NotificationListResponse;
-import team.wego.wegobackend.notification.application.dto.response.NotificationResponse;
-import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
 @Slf4j

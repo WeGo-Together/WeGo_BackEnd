@@ -46,7 +46,7 @@ Content-Type: image/jpeg
 > {%
   const images = response.body.data.images;
 
-  // ✅ 업로드 결과 URL을 전역 변수로 저장
+  // 업로드 결과 URL을 전역 변수로 저장
   client.global.set("img0_main",  images[0].imageUrl440x240);
   client.global.set("img0_thumb", images[0].imageUrl100x100);
 

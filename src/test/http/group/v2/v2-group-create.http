@@ -12,6 +12,7 @@ Content-Type: application/json
   client.global.set("userId", response.body.data.userId);
 %}
 
+
 ### 0-1. 로그인(HOST) - accessToken 발급
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
@@ -24,6 +25,40 @@ Content-Type: application/json
 > {%
   client.global.set("accessToken", response.body.data.accessToken);
 %}
+
+### Follower 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "follower@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Jake"
+}
+
+### Follower 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "follower@example.com",
+  "password": "Test1234!@#"
+}
+> {%
+  client.global.set("followerAccessToken", response.body.data.accessToken);
+%}
+
+### Follower 알림 허용
+PATCH http://localhost:8080/api/v1/users/notification?isNotificationEnabled=true
+Authorization: Bearer {{followerAccessToken}}
+
+### Follower → HOST 팔로우
+POST http://localhost:8080/api/v1/users/follow?followNickname=Beemo
+Authorization: Bearer {{followerAccessToken}}
+
+### 모임 생성 전 FOLLOWER 알림 카운트 조회
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{followerAccessToken}}
 
 
 ### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장)
@@ -86,6 +121,13 @@ Authorization: Bearer {{accessToken}}
   client.global.set("groupId_png_jpg", response.body.data.id);
 %}
 
+### 모임 생성 후 FOLLOWER 알림 카운트 조회
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{followerAccessToken}}
+
+### FOLLOWER 알림 목록 조회
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{followerAccessToken}}
 
 ### 2-1. 모임 V2 이미지 선 업로드 (webp 2장 + png 1장)
 POST http://localhost:8080/api/v2/groups/images/upload

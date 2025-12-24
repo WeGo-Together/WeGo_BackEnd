@@ -2,12 +2,15 @@ package team.wego.wegobackend.group.v2.application.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.event.GroupDeletedEvent;
+import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupTagV2Repository;
@@ -25,6 +28,9 @@ public class GroupV2DeleteService {
     private final GroupImageV2Repository groupImageV2Repository;
 
     private final ImageUploadService imageUploadService;
+
+    // SSE 이벤트 호출
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void deleteHard(Long userId, Long groupId) {
@@ -61,6 +67,12 @@ public class GroupV2DeleteService {
 
         // 3) 커밋 이후 S3 삭제 (DB가 실제로 삭제 확정된 다음 파일 삭제)
         registerAfterCommitS3Deletion(variantUrls);
+
+        List<Long> attendeeIds = groupUserV2Repository.findUserIdsByGroupIdAndStatus(
+                groupId, GroupUserV2Status.ATTEND
+        );
+
+        registerAfterCommitGroupDeletedEvent(groupId, userId, attendeeIds);
     }
 
     private void registerAfterCommitS3Deletion(List<String> variantUrls) {
@@ -79,6 +91,24 @@ public class GroupV2DeleteService {
                 // 여기서 S3 삭제 실패가 나면 DB는 이미 지워짐.
                 // 추후 "삭제 재시도(outbox)" 확장 포인트가 필요하면 여기서 기록/로그 남기기.
                 imageUploadService.deleteAllByUrls(variantUrls);
+            }
+        });
+    }
+
+    private void registerAfterCommitGroupDeletedEvent(Long groupId, Long hostId,
+            List<Long> attendeeIds) {
+        if (attendeeIds == null || attendeeIds.isEmpty()) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            eventPublisher.publishEvent(new GroupDeletedEvent(groupId, hostId, attendeeIds));
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventPublisher.publishEvent(new GroupDeletedEvent(groupId, hostId, attendeeIds));
             }
         });
     }
