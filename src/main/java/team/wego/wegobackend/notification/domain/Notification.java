@@ -172,15 +172,17 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification createGroupDeleteNotification(User receiver, User actor, GroupV2 group) {
+    public static Notification createGroupDeleteNotification(
+            User receiver, User actor, Long groupId, String groupTitle
+    ) {
         return Notification.builder()
-                .receiver(receiver) // attendee
-                .actor(actor) // host
+                .receiver(receiver)
+                .actor(actor)
                 .type(NotificationType.GROUP_DELETE)
-                .message(actor.getNickName() + "님이 \"" + group.getTitle() + "\" 모임을 삭제했어요.")
-                .relatedId(group.getId())
+                .message(actor.getNickName() + "님이 \"" + groupTitle + "\" 모임을 삭제했어요.")
+                .relatedId(groupId)
                 .relatedType("GROUP")
-                .redirectUrl("/groups") // 삭제됐으니 리스트로 보내기
+                .redirectUrl("/groups")
                 .build();
     }
 

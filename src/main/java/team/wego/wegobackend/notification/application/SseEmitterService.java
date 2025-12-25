@@ -53,16 +53,25 @@ public class SseEmitterService {
     }
 
     public void sendNotification(Long userId, NotificationEvent notification) {
+        sendNotificationIfConnected(userId, notification);
+    }
+
+    public boolean sendNotificationIfConnected(Long userId, NotificationEvent notification) {
         SseEmitter emitter = emitters.get(userId);
-        log.debug("NotificationEvent Connected emitter Info -> {} ", emitter);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("notification")
-                        .data(notification));
-            } catch (IOException e) {
-                emitters.remove(userId);
-            }
+
+        if (emitter == null) {
+            log.debug("[SSE] no emitter. userId={}", userId);
+            return false;
+        }
+
+        try {
+            emitter.send(SseEmitter.event().name("notification").data(notification));
+            log.debug("[SSE] sent. userId={} notificationId={}", userId, notification.getId());
+            return true;
+        } catch (IOException e) {
+            log.warn("[SSE] send failed. userId={} reason={}", userId, e.toString());
+            emitters.remove(userId);
+            return false;
         }
     }
 }

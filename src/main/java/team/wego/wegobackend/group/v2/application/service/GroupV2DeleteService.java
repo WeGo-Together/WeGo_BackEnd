@@ -2,6 +2,7 @@ package team.wego.wegobackend.group.v2.application.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.image.application.service.ImageUploadService;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class GroupV2DeleteService {
@@ -28,8 +30,6 @@ public class GroupV2DeleteService {
     private final GroupImageV2Repository groupImageV2Repository;
 
     private final ImageUploadService imageUploadService;
-
-    // SSE 이벤트 호출
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -42,45 +42,50 @@ public class GroupV2DeleteService {
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
-        // 호스트만 삭제 가능
         if (!group.getHost().getId().equals(userId)) {
             throw new GroupException(GroupErrorCode.GROUP_ONLY_HOST_CAN_UPDATE, groupId, userId);
-            // (에러코드가 update용이라면 delete 전용 에러코드 추가를 추천)
         }
 
-        // 1) S3 삭제 대상 URL 확보 (variants의 url 2개씩)
-        List<String> variantUrls = groupImageV2Repository.findAllVariantUrlsByGroupId(groupId);
-
-        // 2) DB 삭제 (연관관계가 복잡하므로 "명시적 순서"로 지움)
-        // - users 먼저
-        groupUserV2Repository.deleteByGroupId(groupId);
-
-        // - group_tags (Tag 자체는 삭제하면 안됨)
-        groupTagV2Repository.deleteByGroupId(groupId);
-
-        // - image variants -> images
-        groupImageV2Repository.deleteVariantsByGroupId(groupId);
-        groupImageV2Repository.deleteImagesByGroupId(groupId);
-
-        // - 마지막으로 group
-        groupV2Repository.delete(group);
-
-        // 3) 커밋 이후 S3 삭제 (DB가 실제로 삭제 확정된 다음 파일 삭제)
-        registerAfterCommitS3Deletion(variantUrls);
+        // 삭제 알림에 필요한 정보는 삭제 전에 확보
+        final String hostNickName = group.getHost().getNickName();
+        final String groupTitle = group.getTitle();
 
         List<Long> attendeeIds = groupUserV2Repository.findUserIdsByGroupIdAndStatus(
                 groupId, GroupUserV2Status.ATTEND
-        );
+        ).stream().filter(id -> !id.equals(userId)).toList();
 
-        registerAfterCommitGroupDeletedEvent(groupId, userId, attendeeIds);
+        log.info("[GROUP_DELETE] start groupId={} hostId={} title='{}' attendeeCount={}",
+                groupId, userId, groupTitle, attendeeIds.size());
+
+        // S3 삭제 대상 URL도 삭제 전에 확보
+        List<String> variantUrls = groupImageV2Repository.findAllVariantUrlsByGroupId(groupId);
+
+        // DB 삭제
+        groupUserV2Repository.deleteByGroupId(groupId);
+        groupTagV2Repository.deleteByGroupId(groupId);
+        groupImageV2Repository.deleteVariantsByGroupId(groupId);
+        groupImageV2Repository.deleteImagesByGroupId(groupId);
+        groupV2Repository.delete(group);
+
+        // AFTER_COMMIT 작업 등록
+        registerAfterCommitS3Deletion(groupId, variantUrls);
+        registerAfterCommitGroupDeletedEvent(groupId, userId, hostNickName, groupTitle,
+                attendeeIds);
+
+        log.info(
+                "[GROUP_DELETE] registered afterCommit hooks groupId={} s3Urls={} attendeeCount={}",
+                groupId, (variantUrls == null ? 0 : variantUrls.size()), attendeeIds.size());
     }
 
-    private void registerAfterCommitS3Deletion(List<String> variantUrls) {
+    private void registerAfterCommitS3Deletion(Long groupId, List<String> variantUrls) {
         if (variantUrls == null || variantUrls.isEmpty()) {
+            log.info("[GROUP_DELETE][S3] no variant urls. groupId={}", groupId);
             return;
         }
+
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            // 트랜잭션 밖에서 호출되는 이상 케이스 방어: 즉시 삭제
+            log.warn("[GROUP_DELETE][S3] no tx sync. delete immediately. groupId={} urls={}",
+                    groupId, variantUrls.size());
             imageUploadService.deleteAllByUrls(variantUrls);
             return;
         }
@@ -88,27 +93,57 @@ public class GroupV2DeleteService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                // 여기서 S3 삭제 실패가 나면 DB는 이미 지워짐.
-                // 추후 "삭제 재시도(outbox)" 확장 포인트가 필요하면 여기서 기록/로그 남기기.
-                imageUploadService.deleteAllByUrls(variantUrls);
+                try {
+                    log.info(
+                            "[GROUP_DELETE][S3][AFTER_COMMIT] deleting s3 objects groupId={} urls={}",
+                            groupId, variantUrls.size());
+                    imageUploadService.deleteAllByUrls(variantUrls);
+                    log.info("[GROUP_DELETE][S3][AFTER_COMMIT] deleted s3 objects groupId={}",
+                            groupId);
+                } catch (Exception e) {
+                    // DB는 이미 커밋됨 → 실패 로그는 반드시 남겨서 추후 재처리(outbox) 근거로
+                    log.error("[GROUP_DELETE][S3][AFTER_COMMIT] delete failed groupId={} reason={}",
+                            groupId, e.toString(), e);
+                }
             }
         });
     }
 
-    private void registerAfterCommitGroupDeletedEvent(Long groupId, Long hostId,
-            List<Long> attendeeIds) {
+    private void registerAfterCommitGroupDeletedEvent(
+            Long groupId,
+            Long hostId,
+            String hostNickName,
+            String groupTitle,
+            List<Long> attendeeIds
+    ) {
         if (attendeeIds == null || attendeeIds.isEmpty()) {
+            log.info("[GROUP_DELETE][EVENT] no attendees. skip publish. groupId={}", groupId);
             return;
         }
+
+        GroupDeletedEvent event = new GroupDeletedEvent(
+                groupId,
+                hostId,
+                hostNickName,
+                groupTitle,
+                attendeeIds
+        );
+
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            eventPublisher.publishEvent(new GroupDeletedEvent(groupId, hostId, attendeeIds));
+            log.warn(
+                    "[GROUP_DELETE][EVENT] no tx sync. publish immediately. groupId={} attendeeCount={}",
+                    groupId, attendeeIds.size());
+            eventPublisher.publishEvent(event);
             return;
         }
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                eventPublisher.publishEvent(new GroupDeletedEvent(groupId, hostId, attendeeIds));
+                log.info(
+                        "[GROUP_DELETE][EVENT][AFTER_COMMIT] publish groupDeleted groupId={} hostId={} attendeeCount={}",
+                        groupId, hostId, attendeeIds.size());
+                eventPublisher.publishEvent(event);
             }
         });
     }

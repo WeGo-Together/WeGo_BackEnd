@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.event.NotificationEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
@@ -25,9 +27,15 @@ public class GroupJoinNotificationHandler {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(Long groupId, Long hostUserId, Long joinerUserId) {
-        User actor = userRepository.findById(joinerUserId).orElseThrow(UserNotFoundException::new);
-        User receiver = userRepository.findById(hostUserId).orElseThrow(UserNotFoundException::new);
-        GroupV2 group = groupV2Repository.findById(groupId).orElseThrow(UserNotFoundException::new);
+        User actor = userRepository.findById(joinerUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, joinerUserId));
+
+        User receiver = userRepository.findById(hostUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, hostUserId));
+
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+
 
         Notification saved = notificationRepository.save(
                 Notification.createGroupJoinNotification(receiver, actor, group)
