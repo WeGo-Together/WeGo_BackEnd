@@ -13,6 +13,7 @@ import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.notification.repository.NotificationRepository;
 import team.wego.wegobackend.user.domain.User;
 
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,31 +22,38 @@ public class NotificationDispatcher {
     private final NotificationRepository notificationRepository;
     private final SseEmitterService sseEmitterService;
 
-    // 공통 알림 전송 파이프라인
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatch(
             List<Notification> notifications,
             User actor,
             GroupV2 group
     ) {
+
         if (notifications == null || notifications.isEmpty()) {
             return;
         }
 
 
-        notificationRepository.saveAll(notifications); // 저장
-        notificationRepository.flush(); // ID 보장
-        log.info("[NOTI] saved notifications size={}", notifications.size());
+
+        // 저장 결과를 받아서 "ID 확정된 엔티티"로 SSE 전송
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+        notificationRepository.flush();
+        log.info("[NOTI][DISPATCH] saved={} actorId={} groupId={}",
+                saved.size(), (actor == null ? null : actor.getId()),
+                (group == null ? null : group.getId()));
+
+        int sent = 0;
+        int noEmitter = 0;
 
 
-        // SSE 전송
-        for (Notification notification : notifications) {
-            NotificationEvent event =
-                    NotificationEvent.of(notification, actor, group);
-
-            Long receiverId = notification.getReceiver().getId();
-            sseEmitterService.sendNotification(receiverId, event);
+        for (Notification n : saved) {
+            Long receiverId = n.getReceiver().getId();
+            boolean ok = sseEmitterService.sendNotificationIfConnected(
+                    receiverId, NotificationEvent.of(n, actor, group)
+            );
+            if (ok) sent++; else noEmitter++;
         }
+        log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
     }
 }
 

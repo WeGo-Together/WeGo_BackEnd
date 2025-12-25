@@ -7,8 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
-import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.event.GroupDeletedEvent;
 import team.wego.wegobackend.notification.application.dispatcher.NotificationDispatcher;
 import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.user.domain.User;
@@ -20,26 +21,40 @@ import team.wego.wegobackend.user.repository.UserRepository;
 public class GroupDeleteNotificationHandler {
 
     private final UserRepository userRepository;
-    private final GroupV2Repository groupV2Repository;
     private final NotificationDispatcher notificationDispatcher;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handle(Long groupId, Long hostUserId, List<Long> attendeeUserIds) {
-        if (attendeeUserIds == null || attendeeUserIds.isEmpty()) return;
+    public void handle(GroupDeletedEvent event) {
+        List<Long> ids = event.attendeeUserIds();
+        int size = (ids == null ? 0 : ids.size());
 
-        User host = userRepository.findById(hostUserId).orElseThrow();
-        GroupV2 group = groupV2Repository.findById(groupId).orElseThrow();
+        log.info("[GROUP_DELETE][HANDLER] start groupId={} hostId={} attendeeCount={}",
+                event.groupId(), event.hostId(), size);
 
-        List<Notification> notifications = new ArrayList<>(attendeeUserIds.size());
-
-        for (Long receiverId : attendeeUserIds) {
-            if (receiverId.equals(hostUserId)) continue; // 호스트 자신 제외(원하면 제거)
-            User receiver = userRepository.getReferenceById(receiverId);
-
-            notifications.add(Notification.createGroupDeleteNotification(receiver, host, group));
+        if (ids == null || ids.isEmpty()) {
+            return;
         }
 
-        notificationDispatcher.dispatch(notifications, host, group);
+        User host = userRepository.findById(event.hostId())
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND,
+                        event.hostId()));
+
+        List<Notification> notifications = new ArrayList<>(ids.size());
+        for (Long receiverId : ids) {
+            if (receiverId.equals(event.hostId())) {
+                continue;
+            }
+            User receiver = userRepository.getReferenceById(receiverId);
+            notifications.add(
+                    Notification.createGroupDeleteNotification(receiver, host, event.groupId(),
+                            event.groupTitle()));
+        }
+
+        log.info("[GROUP_DELETE][HANDLER] built notifications size={}", notifications.size());
+        notificationDispatcher.dispatch(notifications, host, null);
+
+        log.info("[GROUP_DELETE][HANDLER] done groupId={}", event.groupId());
     }
 }
+
 

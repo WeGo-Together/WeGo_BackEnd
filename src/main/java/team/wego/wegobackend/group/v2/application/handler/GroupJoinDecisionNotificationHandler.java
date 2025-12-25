@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.event.NotificationEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
@@ -36,11 +38,13 @@ public class GroupJoinDecisionNotificationHandler {
 
     private void handle(Long groupId, Long approverUserId, Long targetUserId, boolean approved) {
         User actor = userRepository.findById(approverUserId)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, approverUserId));
+
         User receiver = userRepository.findById(targetUserId)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, targetUserId));
+
         GroupV2 group = groupV2Repository.findById(groupId)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         Notification notification = approved
                 ? Notification.createGroupJoinApprovedNotification(receiver, actor, group)

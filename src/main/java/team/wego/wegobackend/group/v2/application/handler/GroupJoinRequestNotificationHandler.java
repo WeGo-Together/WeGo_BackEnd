@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
+import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.event.NotificationEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
@@ -26,16 +28,18 @@ public class GroupJoinRequestNotificationHandler {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(Long groupId, Long hostUserId, Long requesterUserId) {
+        User host = userRepository.findById(hostUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, hostUserId));
 
-        User host = userRepository.findById(hostUserId).orElseThrow(UserNotFoundException::new);
         User requester = userRepository.findById(requesterUserId)
-                .orElseThrow(UserNotFoundException::new);
-        GroupV2 group = groupV2Repository.findById(groupId).orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND, requesterUserId));
 
-        Notification notification =
-                Notification.createGroupJoinRequestNotification(host, requester, group);
+        GroupV2 group = groupV2Repository.findById(groupId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
-        Notification saved = notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(
+                Notification.createGroupJoinRequestNotification(host, requester, group)
+        );
 
         NotificationEvent dto = NotificationEvent.of(saved, requester, group);
         sseEmitterService.sendNotification(host.getId(), dto);
