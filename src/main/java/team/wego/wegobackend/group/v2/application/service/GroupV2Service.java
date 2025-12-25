@@ -3,6 +3,8 @@ package team.wego.wegobackend.group.v2.application.service;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
@@ -16,6 +18,7 @@ import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Res
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Response.GroupListItemV2Response.CreatedByV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
+import team.wego.wegobackend.group.v2.application.event.GroupCreatedEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupTagV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
@@ -34,6 +37,7 @@ import team.wego.wegobackend.tag.domain.entity.Tag;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class GroupV2Service {
@@ -51,6 +55,9 @@ public class GroupV2Service {
 
     // 회원 호출
     private final UserRepository userRepository;
+
+    // SSE 이벤트 호출
+    private final ApplicationEventPublisher eventPublisher;
 
 
     private static final int MAX_PAGE_SIZE = 50;
@@ -239,6 +246,12 @@ public class GroupV2Service {
 
         // 모임 저장
         GroupV2 saved = groupV2Repository.save(group);
+
+        // 이벤트 발행
+        log.info("[GROUP] created. groupId={}, hostId={}", saved.getId(), host.getId());
+        eventPublisher.publishEvent(new GroupCreatedEvent(saved.getId(), host.getId()));
+        log.info("[GROUP] published GroupCreatedEvent. groupId={}, hostId={}", saved.getId(), host.getId());
+
 
         return CreateGroupV2Response.from(saved, host);
     }

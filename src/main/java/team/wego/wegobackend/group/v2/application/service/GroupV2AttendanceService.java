@@ -2,6 +2,8 @@ package team.wego.wegobackend.group.v2.application.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
@@ -13,6 +15,12 @@ import team.wego.wegobackend.group.v2.application.dto.response.GetBanTargetsResp
 import team.wego.wegobackend.group.v2.application.dto.response.GetBannedTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetKickTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GroupUserV2StatusResponse;
+import team.wego.wegobackend.group.v2.application.event.GroupJoinApprovedEvent;
+import team.wego.wegobackend.group.v2.application.event.GroupJoinKickedEvent;
+import team.wego.wegobackend.group.v2.application.event.GroupJoinRejectedEvent;
+import team.wego.wegobackend.group.v2.application.event.GroupJoinRequestedEvent;
+import team.wego.wegobackend.group.v2.application.event.GroupJoinedEvent;
+import team.wego.wegobackend.group.v2.application.event.GroupLeftEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Role;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
@@ -24,6 +32,7 @@ import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.user.repository.UserRepository;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class GroupV2AttendanceService {
@@ -35,6 +44,8 @@ public class GroupV2AttendanceService {
     // 회원 호출
     private final UserRepository userRepository;
 
+    // SSE 이벤트 호출
+    private final ApplicationEventPublisher eventPublisher;
 
     // TODO: 참석, 취소 동시성 해결 필요.
     @Transactional
@@ -114,6 +125,11 @@ public class GroupV2AttendanceService {
             }
 
             MyMembership membership = MyMembership.from(groupUserV2);
+
+            log.info("[EVENT][PUBLISH] {}", GroupJoinedEvent.class.getName());
+            eventPublisher.publishEvent(
+                    new GroupJoinedEvent(groupId, group.getHost().getId(), userId));
+
             return AttendanceGroupV2Response.of(group, attendCount, membership);
         }
 
@@ -148,6 +164,9 @@ public class GroupV2AttendanceService {
 
             // 내 멤버십 + 최신 카운트 + 모임 상태 응답
             MyMembership membership = MyMembership.from(groupUserV2);
+
+            eventPublisher.publishEvent(
+                    new GroupJoinRequestedEvent(groupId, group.getHost().getId(), userId));
 
             return AttendanceGroupV2Response.of(group, attendCount, membership);
         }
@@ -184,6 +203,15 @@ public class GroupV2AttendanceService {
 
         // 멤버십 상태 기반 정책, 행동은 도메인으로 위임
         groupUserV2.leaveOrCancel();
+
+        GroupUserV2Status after = groupUserV2.getStatus();
+
+        // LEFT일 때만 "탈퇴" 알림: CANCELLED 등은 별도 명세 없으면 알림 X
+        if (after == GroupUserV2Status.LEFT) {
+            GroupLeftEvent ev = new GroupLeftEvent(groupId, group.getHost().getId(), userId);
+            log.info("[EVENT][PUBLISH] {}", ev.getClass().getName());
+            eventPublisher.publishEvent(ev);
+        }
 
         // 참석 인원은 ATTEND만 카운트
         long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
@@ -259,6 +287,9 @@ public class GroupV2AttendanceService {
         // PENDING만 승인 가능 (도메인에서 검증)
         target.approveJoin();
 
+        eventPublisher.publishEvent(
+                new GroupJoinApprovedEvent(groupId, approverUserId, targetUserId));
+
         long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
                 GroupUserV2Status.ATTEND);
 
@@ -328,6 +359,9 @@ public class GroupV2AttendanceService {
 
         target.rejectJoin();
 
+        eventPublisher.publishEvent(
+                new GroupJoinRejectedEvent(groupId, approverUserId, targetUserId));
+
         long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
                 GroupUserV2Status.ATTEND);
 
@@ -350,7 +384,7 @@ public class GroupV2AttendanceService {
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
-        // ✅ HOST only
+        // HOST only
         if (!group.getHost().getId().equals(kickerUserId)) {
             throw new GroupException(GroupErrorCode.NO_PERMISSION_TO_KICK, groupId, kickerUserId);
         }
@@ -377,6 +411,9 @@ public class GroupV2AttendanceService {
         }
 
         target.kick();
+
+        eventPublisher.publishEvent(
+                new GroupJoinKickedEvent(groupId, group.getHost().getId(), targetUserId));
 
         long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
                 GroupUserV2Status.ATTEND);

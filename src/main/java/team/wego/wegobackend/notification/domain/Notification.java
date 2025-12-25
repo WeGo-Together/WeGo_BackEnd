@@ -17,6 +17,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import team.wego.wegobackend.common.entity.BaseTimeEntity;
+import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.notification.application.dto.NotificationType;
 import team.wego.wegobackend.user.domain.User;
 
@@ -64,8 +65,8 @@ public class Notification extends BaseTimeEntity {
 
     @Builder
     public Notification(User receiver, User actor, NotificationType type,
-        String message, Long relatedId, String relatedType,
-        String redirectUrl) {
+            String message, Long relatedId, String relatedType,
+            String redirectUrl) {
         this.receiver = receiver;
         this.actor = actor;
         this.type = type;
@@ -83,67 +84,117 @@ public class Notification extends BaseTimeEntity {
     // 알림 생성 정적 팩토리
     public static Notification createFollowNotification(User receiver, User follower) {
         return Notification.builder()
-            .receiver(receiver)
-            .actor(follower)
-            .type(NotificationType.FOLLOW)
-            .message(follower.getNickName() + "님이 회원님을 팔로우하기 시작했습니다.")
-            .relatedType("FOLLOW")
-            .redirectUrl("/profile/" + follower.getId())
-            .build();
+                .receiver(receiver)
+                .actor(follower)
+                .type(NotificationType.FOLLOW)
+                .message(follower.getNickName() + "님이 회원님을 팔로우하기 시작했습니다.")
+                .relatedType("FOLLOW")
+                .redirectUrl("/profile/" + follower.getId())
+                .build();
     }
 
-    //TODO : receiver -> 모임장, related 데이터 작성 필요
-    public static Notification createEnterNotification(User receiver, User participant, Long postId) {
+    public static Notification createGroupCreateNotification(User receiver, User creator,
+            GroupV2 group) {
         return Notification.builder()
-            .receiver(receiver)
-            .actor(participant)
-            .type(NotificationType.ENTER)
-            .message(participant.getNickName() + "님이 모임에 참여하셨습니다.")
-            .relatedId(postId)
-            .relatedType("POST")
-            .redirectUrl("/post/" + postId)
-            .build();
+                .receiver(receiver)
+                .actor(creator)
+                .type(NotificationType.GROUP_CREATE)
+                .message(creator.getNickName() + "님이 새 모임을 생성하셨습니다.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId())
+                .build();
     }
 
-    //TODO : receiver -> 모임장, related 데이터 작성 필요
-    public static Notification createExitNotification(User receiver, User leaver,
-        Long postId, Long commentId) {
+    public static Notification createGroupJoinRequestNotification(
+            User receiver,
+            User actor,
+            GroupV2 group
+    ) {
         return Notification.builder()
-            .receiver(receiver)
-            .actor(leaver)
-            .type(NotificationType.EXIT)
-            .message(leaver.getNickName() + "님이 모임에서 퇴장하셨습니다.")
-            .relatedId(commentId)
-            .relatedType("POST")
-            .redirectUrl("/post/" + postId)
-            .build();
+                .receiver(receiver) // host
+                .actor(actor) // follower
+                .type(NotificationType.GROUP_JOIN_REQUEST)
+                .message(actor.getNickName() + "님이 \"" + group.getTitle() + "\" 모임에 참여를 신청했어요.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId() + "/attend")
+                .build();
     }
 
-
-    public static Notification createGroupNotification(User receiver, User creator,
-        Long postId) {
+    public static Notification createGroupJoinApprovedNotification(User receiver, User actor,
+            GroupV2 group) {
         return Notification.builder()
-            .receiver(receiver)
-            .actor(creator)
-            .type(NotificationType.CREATE)
-            .message(creator.getNickName() + "님이 모임을 생성하셨습니다.")
-            .relatedId(postId)
-            .relatedType("POST")
-            .redirectUrl("/post/" + postId)
-            .build();
+                .receiver(receiver) // host
+                .actor(actor) // joiner approve
+                .type(NotificationType.GROUP_JOIN_APPROVED)
+                .message(actor.getNickName() + "님이 모임 참여 신청을 수락하셨습니다.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId())
+                .build();
     }
 
-    public static Notification createGroupCancleNotification(User receiver, User canceler,
-        Long postId) {
+    public static Notification createGroupJoinRejectedNotification(User receiver, User actor,
+            GroupV2 group) {
         return Notification.builder()
-            .receiver(receiver)
-            .actor(canceler)
-            .type(NotificationType.CANCEL)
-            .message(canceler.getNickName() + "님이 모임을 취소하셨습니다.")
-            .relatedId(postId)
-            .relatedType("POST")
-            .redirectUrl("/post/" + postId)
-            .build();
+                .receiver(receiver) // host
+                .actor(actor) // joiner reject
+                .type(NotificationType.GROUP_JOIN_REJECTED)
+                .message(actor.getNickName() + "님이 모임 참여 신청을 거절하셨습니다.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId())
+                .build();
     }
 
+    public static Notification createGroupJoinNotification(User receiver, User actor, GroupV2 group) {
+        return Notification.builder()
+                .receiver(receiver) // host
+                .actor(actor) // joiner
+                .type(NotificationType.GROUP_JOIN)
+                .message(actor.getNickName() + "님이 \"" + group.getTitle() + "\" 모임에 참여했어요.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId())
+                .build();
+    }
+
+    public static Notification createGroupLeaveNotification(User receiver, User actor, GroupV2 group) {
+        return Notification.builder()
+                .receiver(receiver) // host
+                .actor(actor) // leaver
+                .type(NotificationType.GROUP_LEAVE)
+                .message(actor.getNickName() + "님이 \"" + group.getTitle() + "\" 모임을 탈퇴했어요.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups/" + group.getId())
+                .build();
+    }
+
+    public static Notification createGroupDeleteNotification(
+            User receiver, User actor, Long groupId, String groupTitle
+    ) {
+        return Notification.builder()
+                .receiver(receiver)
+                .actor(actor)
+                .type(NotificationType.GROUP_DELETE)
+                .message(actor.getNickName() + "님이 \"" + groupTitle + "\" 모임을 삭제했어요.")
+                .relatedId(groupId)
+                .relatedType("GROUP")
+                .redirectUrl("/groups")
+                .build();
+    }
+
+    public static Notification createGroupJoinKickedNotification(User receiver, User actor, GroupV2 group) {
+        return Notification.builder()
+                .receiver(receiver) // kicked user
+                .actor(actor) // host
+                .type(NotificationType.GROUP_JOIN_KICKED)
+                .message(actor.getNickName() + "님이 \"" + group.getTitle() + "\" 모임에서 회원님을 강퇴했어요.")
+                .relatedId(group.getId())
+                .relatedType("GROUP")
+                .redirectUrl("/groups") // 더 이상 접근 불가면 리스트가 안전
+                .build();
+    }
 }
