@@ -12,9 +12,9 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
  * “이미지 변경 없음” 으로 가자 빈 리스트([])면 “이미지 전체 삭제”(정책 허용 시) 하자
  */
 public record UpdateGroupV2Request(
-        @Size(max = 50)
+        @Size(max = 50, message = "모임: 모임 제목은 50자 이하 입니다.")
         String title,
-        @Size(max = 300)
+        @Size(max = 300, message = "모임: 모임 설명은 300자 이하 입니다.")
         String description,
 
         String location,

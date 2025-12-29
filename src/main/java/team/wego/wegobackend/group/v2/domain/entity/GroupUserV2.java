@@ -58,6 +58,9 @@ public class GroupUserV2 extends BaseTimeEntity {
     @Column(name = "group_user_status", nullable = false, length = 20)
     private GroupUserV2Status status;
 
+    @Column(name = "join_request_message", length = 300)
+    private String joinRequestMessage;
+
     private GroupUserV2(User user, GroupUserV2Role groupRole, GroupUserV2Status status) {
         this.user = user;
         this.groupRole = groupRole;
@@ -144,6 +147,13 @@ public class GroupUserV2 extends BaseTimeEntity {
         return groupUser;
     }
 
+    public static GroupUserV2 createPending(GroupV2 group, User user, String message) {
+        GroupUserV2 groupUser = new GroupUserV2(user, GroupUserV2Role.MEMBER, GroupUserV2Status.PENDING);
+        groupUser.applyJoinRequestMessage(message);
+        group.addUser(groupUser);
+        return groupUser;
+    }
+
     public void requestJoin() {
         if (this.status == GroupUserV2Status.BANNED) {
             throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
@@ -152,6 +162,16 @@ public class GroupUserV2 extends BaseTimeEntity {
         this.status = GroupUserV2Status.PENDING;
         this.joinedAt = LocalDateTime.now();
         this.leftAt = null;
+    }
+
+    public void requestJoin(String message) {
+        if (this.status == GroupUserV2Status.BANNED) {
+            throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
+        }
+        this.status = GroupUserV2Status.PENDING;
+        this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
+        applyJoinRequestMessage(message); // 여기서 갱신
     }
 
     public void leaveOrCancel() {
@@ -226,6 +246,20 @@ public class GroupUserV2 extends BaseTimeEntity {
         }
         this.status = GroupUserV2Status.KICKED; //  재참여는 스스로 가능
         this.leftAt = LocalDateTime.now();
+    }
+
+    public void applyJoinRequestMessage(String message) {
+        // 정책: null/blank 허용 여부 결정
+        if (message == null || message.isBlank()) {
+            this.joinRequestMessage = null;
+            return;
+        }
+
+        String trimmed = message.trim();
+        if (trimmed.length() > 300) {
+            throw new GroupException(GroupErrorCode.JOIN_REQUEST_MESSAGE_TOO_LONG); // 신규 에러코드 추천
+        }
+        this.joinRequestMessage = trimmed;
     }
 }
 
