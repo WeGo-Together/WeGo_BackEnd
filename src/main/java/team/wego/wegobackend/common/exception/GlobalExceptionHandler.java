@@ -4,7 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import team.wego.wegobackend.common.response.ErrorResponse;
 import team.wego.wegobackend.common.response.ErrorResponse.FieldError;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
@@ -322,6 +327,86 @@ public class GlobalExceptionHandler {
         AppException mapped = new AppException(GroupErrorCode.REDIS_READ_FAILED);
         return handleApp(mapped, request);
     }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
+        String paramName = ex.getName();          // myStatuses
+        Object rejectedValue = ex.getValue();     // CANCEL
+
+        // List<Enum> 같은 제네릭까지 포함해서 enum 타입을 최대한 정확히 뽑아냄
+        Class<? extends Enum<?>> enumType = resolveEnumType(ex);
+
+        String allowed = null;
+        if (enumType != null) {
+            allowed = Arrays.stream(enumType.getEnumConstants())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+        }
+
+        AppErrorCode code = AppErrorCode.INVALID_INPUT_VALUE;
+        String title = code.name();
+        String type = toProblemType(title);
+        String instance = request.getRequestURI();
+
+        // 사람용 detail
+        String detail = (allowed == null)
+                ? String.format("요청 파라미터 '%s' 값이 올바르지 않습니다. 입력값=%s", paramName, rejectedValue)
+                : String.format("요청 파라미터 '%s' 값이 올바르지 않습니다. 입력값=%s, 허용값=[%s]",
+                        paramName, rejectedValue, allowed);
+
+        // 프론트/QA용 errors (field 단위)
+        List<ErrorResponse.FieldError> errors = List.of(
+                ErrorResponse.FieldError.of(
+                        paramName,
+                        (allowed == null)
+                                ? String.format("허용되지 않는 값입니다. 입력값=%s", rejectedValue)
+                                : String.format("허용되지 않는 값입니다. 입력값=%s, 허용값=[%s]", rejectedValue,
+                                        allowed)
+                )
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(
+                        type,
+                        title,
+                        HttpStatus.BAD_REQUEST,
+                        detail,
+                        instance,
+                        title,
+                        errors
+                ));
+    }
+
+    /**
+     * MethodArgumentTypeMismatchException에서 - requiredType이 enum이면 그대로 사용 - List<Enum> 같은 경우 제네릭
+     * 타입을 파서 실제 enum 타입을 추출
+     */
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Enum<?>> resolveEnumType(
+            MethodArgumentTypeMismatchException ex) {
+        // 1) requiredType 자체가 enum인 경우
+        Class<?> requiredType = ex.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            return (Class<? extends Enum<?>>) requiredType;
+        }
+
+        // 2) Controller 파라미터가 List<Enum>인 경우 (myStatuses, includeStatuses, excludeStatuses)
+        if (ex.getParameter() != null) {
+            Type generic = ex.getParameter().getGenericParameterType();
+            if (generic instanceof ParameterizedType pt) {
+                Type[] args = pt.getActualTypeArguments();
+                if (args.length == 1 && args[0] instanceof Class<?> argClass && argClass.isEnum()) {
+                    return (Class<? extends Enum<?>>) argClass;
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     private static String rootCauseMessage(Throwable ex) {
         Throwable throwable = ex;
