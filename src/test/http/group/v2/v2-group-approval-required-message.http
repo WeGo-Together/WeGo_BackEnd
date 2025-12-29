@@ -1,0 +1,175 @@
+### 0. 회원가입(HOST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "approve_host_msg@example.com",
+  "password": "Test1234!@#",
+  "nickName": "ApproveHostMsg",
+  "phoneNumber": "010-0000-9100"
+}
+
+> {%
+  client.global.set("apm_hostUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "approve_host_msg@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("apm_hostAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png/jpg 2장)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{apm_hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("apm_img0_key", images[0].imageKey);
+  client.global.set("apm_img1_key", images[1].imageKey);
+%}
+
+### 1-2. 승인제 모임 생성 (joinPolicy = APPROVAL_REQUIRED)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{apm_hostAccessToken}}
+
+{
+  "title": "승인제 신청 메시지 테스트 모임 (V2)",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 근처 카페",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["v2", "approval", "joinRequestMessage"],
+  "description": "attend 시 message 저장되고 join-requests 응답에 포함되는지 테스트",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{apm_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{apm_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("apm_groupId", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "approve_member1_msg@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Member1",
+  "phoneNumber": "010-1111-9101"
+}
+
+> {%
+  client.global.set("apm_member1UserId", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "approve_member1_msg@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("apm_member1AccessToken", response.body.data.accessToken);
+%}
+
+### 3. 회원가입(MEMBER2) - 메시지 없이 신청 테스트용
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "approve_member2_msg@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Member2",
+  "phoneNumber": "010-2222-9102"
+}
+
+> {%
+  client.global.set("apm_member2UserId", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "approve_member2_msg@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("apm_member2AccessToken", response.body.data.accessToken);
+%}
+
+### 4-1. MEMBER1 모임 참여 신청 (승인제 -> PENDING + message 저장 기대)
+POST http://localhost:8080/api/v2/groups/{{apm_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{apm_member1AccessToken}}
+
+{
+  "message": "안녕하세요! 승인제 모임 참가 신청합니다. 메시지 저장 테스트입니다."
+}
+
+### 4-2. MEMBER2 모임 참여 신청 (message 없이 신청: null 처리 확인)
+POST http://localhost:8080/api/v2/groups/{{apm_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{apm_member2AccessToken}}
+
+{}
+
+
+### 5. HOST가 attendance 조회 (PENDING) -> joinRequestMessage 확인
+GET http://localhost:8080/api/v2/groups/{{apm_groupId}}/attendance?status=PENDING
+Authorization: Bearer {{apm_hostAccessToken}}
+
+
+### 6-1. HOST가 MEMBER1 승인 (PENDING -> ATTEND)
+POST http://localhost:8080/api/v2/groups/{{apm_groupId}}/attendance/{{apm_member1UserId}}/approve
+Content-Type: application/json
+Authorization: Bearer {{apm_hostAccessToken}}
+
+{}
+
+### 6-2. HOST가 MEMBER2 거절 (PENDING -> REJECTED)
+POST http://localhost:8080/api/v2/groups/{{apm_groupId}}/attendance/{{apm_member2UserId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{apm_hostAccessToken}}
+
+{}
+
+### 7. (옵션) 처리된 상태별 attendance 조회도 확인
+GET http://localhost:8080/api/v2/groups/{{apm_groupId}}/attendance?status=REJECTED
+Authorization: Bearer {{apm_hostAccessToken}}
+
+###
+GET http://localhost:8080/api/v2/groups/{{apm_groupId}}/attendance?status=ATTEND
+Authorization: Bearer {{apm_hostAccessToken}}

@@ -276,7 +276,7 @@ public interface GroupV2ControllerDocs {
                 - 응답 items에는 joinRequestMessage(신청 메시지)가 포함됩니다.
                 """
     )
-    @GetMapping("/{groupId}/join-requests")
+    @GetMapping("/{groupId}/attendance")
     ResponseEntity<ApiResponse<GroupJoinRequestsResponse>> getJoinRequests(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId,
