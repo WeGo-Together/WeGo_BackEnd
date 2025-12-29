@@ -114,6 +114,11 @@ Authorization: Bearer {{memberAAccessToken}}
 GET http://localhost:8080/api/v2/groups/me?size=5
 Authorization: Bearer {{memberAAccessToken}}
 
+
+### 8.1 내 모임 조회 (MEMBER_A) - current + myStatuses=CANCELLED
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=CANCELLED
+Authorization: Bearer {{memberAAccessToken}}
+
 > {%
   const nextCursor = response.body.data.nextCursor;
   if (nextCursor !== null && nextCursor !== undefined) {
