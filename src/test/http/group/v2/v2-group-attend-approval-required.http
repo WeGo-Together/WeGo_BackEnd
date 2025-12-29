@@ -100,6 +100,7 @@ Content-Type: application/json
 
 > {%
   client.global.set("member1AccessToken", response.body.data.accessToken);
+  client.global.set("member1userId", response.body.data.user.userId);
 %}
 
 ### 3. 승인제 - MEMBER 1 참여 (성공: PENDING)
@@ -136,6 +137,11 @@ Content-Type: application/json
 Authorization: Bearer {{member1AccessToken}}
 
 {}
+
+### 5.1 승인제 - MEMBER 1 승인 완료(PENDING -> ATTEND)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attendance/{{member1userId}}/approve
+Content-Type: application/json
+Authorization: Bearer {{host2AccessToken}}
 
 ### 6. 예외: HOST가 자신의 모임 left 시도 (HOST는 left 불가)
 POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/left
