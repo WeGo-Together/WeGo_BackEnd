@@ -15,6 +15,9 @@ public class SecurityEndpoints {
         "/swagger-ui.html",
         "/api-docs/**",
         "/v*/api-docs/**",
+
+        // WebSocket (인증은 STOMP CONNECT에서 처리)
+        "/ws-chat/**",
     };
 
 }

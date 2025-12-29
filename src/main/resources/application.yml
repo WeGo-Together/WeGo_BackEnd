@@ -88,3 +88,23 @@ jwt:
   refresh:
     token:
       expiration: 604800000
+
+# 채팅 설정
+chat:
+  auto-join:
+    enabled: true  # 모임 참여 시 채팅방 자동 참여
+  dm:
+    delete-policy: NONE  # NONE | INACTIVE_DAYS
+    inactive-days: 90
+  websocket:
+    endpoint: /ws-chat
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+      - https://wego.monster
+      - https://api.wego.monster
+  message:
+    max-length: 1000
+  batch:
+    delete-expired-chat:
+      cron: "0 0 * * * *"  # 매 시간 정각
