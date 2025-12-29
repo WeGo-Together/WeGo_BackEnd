@@ -1,0 +1,589 @@
+# 승인제: PENDING 상태에서 내 모임(current) 확인 + 신청 취소(=left) + 다시 조회
+### 0. 회원가입(HOST_A)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host_a@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostA",
+  "phoneNumber": "010-1000-0001"
+}
+
+> {%
+  client.global.set("hostAUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST_A)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host_a@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostAAccessToken", response.body.data.accessToken);
+%}
+
+### 1. 모임 V2 이미지 선 업로드 (HOST_A)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostAAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("a_img0_key", images[0].imageKey);
+  client.global.set("a_img1_key", images[1].imageKey);
+%}
+
+### 2. 승인제 모임 생성 (HOST_A)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostAAccessToken}}
+
+{
+  "title": "시나리오A 승인제 모임 - PENDING/취소 테스트",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "location": "서울 강남구",
+  "locationDetail": "강남역 2번출구",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["SCENARIO_A", "APPROVAL", "PENDING_CANCEL"],
+  "description": "PENDING 상태로 내 모임 조회 후 신청 취소(LEFT/Cancel) 테스트",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{a_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{a_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("a_groupId", response.body.data.id);
+%}
+
+### 3. 회원가입(MEMBER_A)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member_a@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberA",
+  "phoneNumber": "010-1000-1001"
+}
+
+> {%
+  client.global.set("memberAUserId", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER_A)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member_a@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("memberAAccessToken", response.body.data.accessToken);
+%}
+
+### 4. MEMBER_A 참여 신청 (승인제 -> PENDING 기대)
+POST http://localhost:8080/api/v2/groups/{{a_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{memberAAccessToken}}
+
+{}
+
+### 5. 내 모임 조회 (MEMBER_A) - current 기본
+GET http://localhost:8080/api/v2/groups/me?size=5
+Authorization: Bearer {{memberAAccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("a_cursor_current_1", nextCursor);
+  }
+%}
+
+### 6. 내 모임 조회 (MEMBER_A) - current + myStatuses=PENDING
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=PENDING
+Authorization: Bearer {{memberAAccessToken}}
+
+### 7. MEMBER_A 신청 취소/나가기 (PENDING -> LEFT 또는 CANCEL 처리 기대)
+POST http://localhost:8080/api/v2/groups/{{a_groupId}}/left
+Content-Type: application/json
+Authorization: Bearer {{memberAAccessToken}}
+
+{}
+
+### 8. 내 모임 조회 (MEMBER_A) - current 재조회 (PENDING 없어졌는지 확인)
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10
+Authorization: Bearer {{memberAAccessToken}}
+
+### 8.1 내 모임 조회 (MEMBER_A) - current + myStatuses=CANCELLED
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=CANCELLED
+Authorization: Bearer {{memberAAccessToken}}
+
+### 9. (선택) 모임 상세 조회 - MEMBER_A 상태 확인
+GET http://localhost:8080/api/v2/groups/{{a_groupId}}
+Authorization: Bearer {{memberAAccessToken}}
+
+# 승인제: HOST가 승인/거절 후 MEMBER별 내 모임 조회(myStatuses로 분리)
+### 0. 회원가입(HOST_B)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host_b@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostB",
+  "phoneNumber": "010-2000-0001"
+}
+
+> {%
+  client.global.set("hostBUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST_B)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host_b@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostBAccessToken", response.body.data.accessToken);
+%}
+
+### 1. 모임 V2 이미지 선 업로드 (HOST_B)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostBAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("b_img0_key", images[0].imageKey);
+  client.global.set("b_img1_key", images[1].imageKey);
+%}
+
+### 2. 승인제 모임 생성 (HOST_B)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostBAccessToken}}
+
+{
+  "title": "시나리오B 승인/거절 후 내모임 조회 분기",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "location": "서울 서초구",
+  "locationDetail": "교대역",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["SCENARIO_B", "APPROVAL", "APPROVE_REJECT"],
+  "description": "승인/거절 후 MEMBER별 내모임 current 조회",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{b_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{b_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("b_groupId", response.body.data.id);
+%}
+
+### 3. 회원가입(MEMBER_B1)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member_b1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberB1",
+  "phoneNumber": "010-2000-1001"
+}
+
+> {%
+  client.global.set("memberB1UserId", response.body.data.userId);
+%}
+
+### 3-1. 로그인(MEMBER_B1)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member_b1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("memberB1AccessToken", response.body.data.accessToken);
+%}
+
+### 4. 회원가입(MEMBER_B2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member_b2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberB2",
+  "phoneNumber": "010-2000-1002"
+}
+
+> {%
+  client.global.set("memberB2UserId", response.body.data.userId);
+%}
+
+### 4-1. 로그인(MEMBER_B2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member_b2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("memberB2AccessToken", response.body.data.accessToken);
+%}
+
+### 5-1. MEMBER_B1 참여 신청 (PENDING 기대)
+POST http://localhost:8080/api/v2/groups/{{b_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{memberB1AccessToken}}
+
+{}
+
+### 5-2. MEMBER_B2 참여 신청 (PENDING 기대)
+POST http://localhost:8080/api/v2/groups/{{b_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{memberB2AccessToken}}
+
+{}
+
+### 6-1. HOST_B가 MEMBER_B1 승인 (PENDING -> ATTEND)
+POST http://localhost:8080/api/v2/groups/{{b_groupId}}/attendance/{{memberB1UserId}}/approve
+Content-Type: application/json
+Authorization: Bearer {{hostBAccessToken}}
+
+{}
+
+### 6-2. HOST_B가 MEMBER_B2 거절 (PENDING -> REJECTED)
+POST http://localhost:8080/api/v2/groups/{{b_groupId}}/attendance/{{memberB2UserId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{hostBAccessToken}}
+
+{}
+
+### 7-1. 내 모임 조회 (MEMBER_B1) - current
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10
+Authorization: Bearer {{memberB1AccessToken}}
+
+### 7-2. 내 모임 조회 (MEMBER_B2) - current
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10
+Authorization: Bearer {{memberB2AccessToken}}
+
+### 8-1. (선택) 내 모임 조회 (MEMBER_B1) - myStatuses=ATTEND
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=ATTEND
+Authorization: Bearer {{memberB1AccessToken}}
+
+### 8-2. (선택) 내 모임 조회 (MEMBER_B2) - myStatuses=REJECTED
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=REJECTED
+Authorization: Bearer {{memberB2AccessToken}}
+
+# 승인제: 거절된 멤버가 left 시도(예외) + 내 모임 목록에서 어떻게 보이는지 확인. 0. (전제) 시나리오B처럼 승인제 모임을 만든 뒤,
+### 1. MEMBER_B2 나가기 시도 (이미 REJECTED -> 예외 기대)
+POST http://localhost:8080/api/v2/groups/{{b_groupId}}/left
+Content-Type: application/json
+Authorization: Bearer {{memberB2AccessToken}}
+
+{}
+
+### 2. 내 모임 조회 (MEMBER_B2) - current 재조회
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10
+Authorization: Bearer {{memberB2AccessToken}}
+
+### 3. (선택) 내 모임 조회 (MEMBER_B2) - myStatuses=REJECTED
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10&myStatuses=REJECTED
+Authorization: Bearer {{memberB2AccessToken}}
+
+
+# HOST의 myPost 조회 + 커서 페이지네이션 확인(2개 이상 만들고 cursor로 넘기기)
+### 0. 회원가입(HOST_D)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host_d@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostD",
+  "phoneNumber": "010-3000-0001"
+}
+
+> {%
+  client.global.set("hostDAccessToken", null);
+%}
+
+### 0-1. 로그인(HOST_D)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host_d@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostDAccessToken", response.body.data.accessToken);
+%}
+
+### 1. 모임 V2 이미지 선 업로드 (HOST_D)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostDAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("d_img0_key", images[0].imageKey);
+  client.global.set("d_img1_key", images[1].imageKey);
+%}
+
+### 2-1. 모임 생성 1 (HOST_D)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostDAccessToken}}
+
+{
+  "title": "시나리오D myPost page test - 1",
+  "location": "서울 마포구",
+  "joinPolicy": "FREE",
+  "locationDetail": "홍대입구",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["SCENARIO_D", "MYPOST", "PAGE_1"],
+  "description": "myPost 페이지네이션 테스트용(1)",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{d_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{d_img1_key}}" }
+  ]
+}
+
+### 2-2. 모임 생성 2 (HOST_D)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostDAccessToken}}
+
+{
+  "title": "시나리오D myPost page test - 2",
+  "location": "서울 마포구",
+  "joinPolicy": "FREE",
+  "locationDetail": "홍대입구",
+  "startTime": "2026-12-21T19:00:00",
+  "endTime": "2026-12-21T21:00:00",
+  "tags": ["SCENARIO_D", "MYPOST", "PAGE_2"],
+  "description": "myPost 페이지네이션 테스트용(2)",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{d_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{d_img1_key}}" }
+  ]
+}
+
+### 3. 내 모임 조회 (HOST_D) - myPost (size=1로 강제 페이지 분리)
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=1
+Authorization: Bearer {{hostDAccessToken}}
+
+> {%
+  const nextCursor = response.body.data.nextCursor;
+  if (nextCursor !== null && nextCursor !== undefined) {
+    client.global.set("d_cursor_myPost_1", nextCursor);
+  }
+%}
+
+### 4. 내 모임 조회 (HOST_D) - myPost 다음 페이지
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=1&cursor={{d_cursor_myPost_1}}
+Authorization: Bearer {{hostDAccessToken}}
+
+# past 조회 검증용(과거 시간 모임 만들고, 참석 후 past로 잡히는지 확인)
+### 0. 회원가입(HOST_E)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host_e@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostE",
+  "phoneNumber": "010-4000-0001"
+}
+
+### 0-1. 로그인(HOST_E)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host_e@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostEAccessToken", response.body.data.accessToken);
+%}
+
+### 1. 이미지 선 업로드 (HOST_E)
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostEAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("e_img0_key", images[0].imageKey);
+  client.global.set("e_img1_key", images[1].imageKey);
+%}
+
+### 2. 과거 시간 모임 생성 (HOST_E) - past 판정용
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostEAccessToken}}
+
+{
+  "title": "시나리오E past 판정 테스트",
+  "location": "서울 중구",
+  "joinPolicy": "FREE",
+  "locationDetail": "시청역",
+  "startTime": "2020-01-01T19:00:00",
+  "endTime": "2020-01-01T21:00:00",
+  "tags": ["SCENARIO_E", "PAST"],
+  "description": "과거 시간 모임 -> 내 모임 past 조회에서 잡히는지",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{e_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{e_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("e_groupId", response.body.data.id);
+%}
+
+### 3. 회원가입(MEMBER_E)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member_e@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberE",
+  "phoneNumber": "010-4000-1001"
+}
+
+### 3-1. 로그인(MEMBER_E)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member_e@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("memberEAccessToken", response.body.data.accessToken);
+%}
+
+### 4. MEMBER_E 모임 참여 (FREE -> ATTEND 기대)
+POST http://localhost:8080/api/v2/groups/{{e_groupId}}/attend
+Content-Type: application/json
+Authorization: Bearer {{memberEAccessToken}}
+
+{}
+
+### 5. 내 모임 조회 (MEMBER_E) - past
+GET http://localhost:8080/api/v2/groups/me?type=past&size=10
+Authorization: Bearer {{memberEAccessToken}}
+
+### 6. 내 모임 조회 (MEMBER_E) - current (여기엔 안 나오는지 확인)
+GET http://localhost:8080/api/v2/groups/me?type=current&size=10
+Authorization: Bearer {{memberEAccessToken}}
+
+# F — 상태 필터(include/exclude) 조합 테스트(모임 상태가 RECRUITING/FULL/CLOSED/CANCELLED/FINISHED 중 무엇으로 내려오는지 확인)
+### 0. (전제) myPost 조회가 가능한 HOST 토큰이 있다고 가정: host2AccessToken 또는 hostDAccessToken 사용 가능
+### 여기서는 host2AccessToken 사용 예시.
+
+### 1. 내 모임 조회 (HOST2) - myPost (상태 확인용)
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10
+Authorization: Bearer {{host2AccessToken}}
+
+> {%
+  const items = response.body.data.items || [];
+  if (items.length > 0) {
+    client.global.set("f_groupId_0", items[0].id);
+    // 상태 필드명이 status라고 가정 (응답 구조에 맞게 수정 가능)
+    client.global.set("f_status_0", items[0].status);
+  }
+%}
+
+### 2. (선택) includeStatuses로만 조회 (예: RECRUITING)
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10&includeStatuses=RECRUITING
+Authorization: Bearer {{host2AccessToken}}
+
+### 3. (선택) excludeStatuses로 제외 조회 (예: CANCELLED 제외)
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10&excludeStatuses=CANCELLED
+Authorization: Bearer {{host2AccessToken}}
+
+### 4. (선택) include + exclude 동시 (예: RECRUITING만 보되 CANCELLED는 제외)
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10&includeStatuses=RECRUITING&excludeStatuses=CANCELLED
+Authorization: Bearer {{host2AccessToken}}
