@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
+import team.wego.wegobackend.group.v2.application.dto.request.AttendGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.GroupListFilter;
 import team.wego.wegobackend.group.v2.application.dto.request.UpdateGroupV2Request;
@@ -24,6 +25,7 @@ import team.wego.wegobackend.group.v2.application.dto.response.GetGroupListV2Res
 import team.wego.wegobackend.group.v2.application.dto.response.GetGroupV2Response;
 import team.wego.wegobackend.group.v2.application.dto.response.GetKickTargetsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GetMyGroupListV2Response;
+import team.wego.wegobackend.group.v2.application.dto.response.GroupJoinRequestsResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.GroupUserV2StatusResponse;
 import team.wego.wegobackend.group.v2.application.dto.response.UpdateGroupV2Response;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
@@ -59,7 +61,8 @@ public interface GroupV2ControllerDocs {
     )
     ResponseEntity<ApiResponse<AttendanceGroupV2Response>> attend(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long groupId
+            @PathVariable Long groupId,
+            @RequestBody(required = false) AttendGroupV2Request request
     );
 
 
@@ -262,5 +265,21 @@ public interface GroupV2ControllerDocs {
     ResponseEntity<ApiResponse<GetBannedTargetsResponse>> getBannedTargets(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long groupId
+    );
+
+    @Operation(
+            summary = "참여 요청 목록 조회 (HOST)",
+            description = """
+                승인제(APPROVAL_REQUIRED) 모임에서 참여 요청 목록을 조회합니다.
+                - 권한: HOST만 조회 가능
+                - status 파라미터로 조회 상태를 필터링합니다. (기본값: PENDING)
+                - 응답 items에는 joinRequestMessage(신청 메시지)가 포함됩니다.
+                """
+    )
+    @GetMapping("/{groupId}/attendance")
+    ResponseEntity<ApiResponse<GroupJoinRequestsResponse>> getJoinRequests(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long groupId,
+            @RequestParam(defaultValue = "PENDING") GroupUserV2Status status
     );
 }

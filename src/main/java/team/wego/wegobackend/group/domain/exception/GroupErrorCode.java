@@ -9,6 +9,9 @@ import team.wego.wegobackend.common.exception.ErrorCode;
 @RequiredArgsConstructor
 public enum GroupErrorCode implements ErrorCode {
 
+    NO_PERMISSION_TO_VIEW_JOIN_REQUESTS(HttpStatus.FORBIDDEN,
+            "모임: 참여 요청 목록 조회 권한이 없습니다. 모임 ID: %s 회원 ID: %s"),
+    JOIN_REQUEST_MESSAGE_TOO_LONG(HttpStatus.BAD_REQUEST, "모임: 모임 메시지는 300자 이하입니다."),
     // 이미지 검증 / 정렬 / 업로드
     INVALID_GROUP_IMAGE_ITEM(HttpStatus.BAD_REQUEST,
             "모임: images 항목이 올바르지 않습니다. 모임 ID: %s 회원 ID: %s"),

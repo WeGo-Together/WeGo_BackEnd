@@ -49,7 +49,7 @@ public class GroupV2AttendanceService {
 
     // TODO: 참석, 취소 동시성 해결 필요.
     @Transactional
-    public AttendanceGroupV2Response attend(Long userId, Long groupId) {
+    public AttendanceGroupV2Response attend(Long userId, Long groupId, String message) {
         // 회원 체크
         if (userId == null) {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
@@ -141,7 +141,8 @@ public class GroupV2AttendanceService {
             } else {
                 groupUserV2 = GroupUserV2.createPending(
                         group,
-                        userRepository.getReferenceById(userId)
+                        userRepository.getReferenceById(userId),
+                        message
                 );
                 groupUserV2Repository.save(groupUserV2);
             }

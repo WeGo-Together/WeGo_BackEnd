@@ -1,0 +1,121 @@
+### 0. 회원가입(HOST - PENDING TEST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "host_pending@example.com",
+  "password": "Test1234!@#",
+  "nickName": "HostPending",
+  "phoneNumber": "010-0000-0202"
+}
+
+> {%
+  client.global.set("hostPendingUserId", response.body.data.userId);
+%}
+
+### 0-1. 로그인(HOST) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "host_pending@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostPendingAccessToken", response.body.data.accessToken);
+%}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png / jpg 2장) - imageKey 저장
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostPendingAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img2.jpg"
+Content-Type: image/jpeg
+
+< ../../image/resources/img2.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("p_img0_key", images[0].imageKey);
+  client.global.set("p_img1_key", images[1].imageKey);
+%}
+
+### 1-2. 모임 V2 생성 (승인제 APPROVAL_REQUIRED)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostPendingAccessToken}}
+
+{
+  "title": "V2 승인제 - joinRequestMessage 포함 테스트",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "location": "서울 강남구",
+  "locationDetail": "역삼역 근처",
+  "startTime": "2026-12-20T19:00:00",
+  "endTime": "2026-12-20T21:00:00",
+  "tags": ["v2", "join-requests", "pending"],
+  "description": "join-requests 응답에 joinRequestMessage 포함되는지 테스트",
+  "maxParticipants": 5,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{p_img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{p_img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("groupId_pendingTest", response.body.data.id);
+%}
+
+### 2. 회원가입(MEMBER - PENDING TEST)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member_pending@example.com",
+  "password": "Test1234!@#",
+  "nickName": "MemberPending",
+  "phoneNumber": "010-1111-0202"
+}
+
+> {%
+  client.global.set("memberPendingId", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER) - accessToken 발급
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member_pending@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("memberPendingAccessToken", response.body.data.accessToken);
+  client.global.set("memberPendingUserId", response.body.data.user.userId);
+%}
+
+### 3. 승인제 - MEMBER 참여 (PENDING + message 저장)
+POST http://localhost:8080/api/v2/groups/{{groupId_pendingTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{memberPendingAccessToken}}
+
+{
+  "message": "안녕하세요! 참가 신청합니다. joinRequestMessage 테스트용 메시지입니다."
+}
+
+### 4. HOST - join-requests 조회 (기본: PENDING)
+GET http://localhost:8080/api/v2/groups/{{groupId_pendingTest}}/attendance?status=PENDING
+Authorization: Bearer {{hostPendingAccessToken}}
+
+### 5. (옵션) MEMBER가 join-requests 조회 시도 -> 403 기대 (권한 체크)
+GET http://localhost:8080/api/v2/groups/{{groupId_pendingTest}}/attendance?status=PENDING
+Authorization: Bearer {{memberPendingAccessToken}}
