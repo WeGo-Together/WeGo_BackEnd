@@ -33,8 +33,6 @@ public class NotificationDispatcher {
             return;
         }
 
-
-
         // 저장 결과를 받아서 "ID 확정된 엔티티"로 SSE 전송
         List<Notification> saved = notificationRepository.saveAll(notifications);
         notificationRepository.flush();
@@ -45,13 +43,16 @@ public class NotificationDispatcher {
         int sent = 0;
         int noEmitter = 0;
 
-
         for (Notification n : saved) {
             Long receiverId = n.getReceiver().getId();
             boolean ok = sseEmitterService.sendNotificationIfConnected(
                     receiverId, NotificationEvent.of(n, actor, group)
             );
-            if (ok) sent++; else noEmitter++;
+            if (ok) {
+                sent++;
+            } else {
+                noEmitter++;
+            }
         }
         log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
     }

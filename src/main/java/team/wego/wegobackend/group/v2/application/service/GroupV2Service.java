@@ -250,8 +250,8 @@ public class GroupV2Service {
         // 이벤트 발행
         log.info("[GROUP] created. groupId={}, hostId={}", saved.getId(), host.getId());
         eventPublisher.publishEvent(new GroupCreatedEvent(saved.getId(), host.getId()));
-        log.info("[GROUP] published GroupCreatedEvent. groupId={}, hostId={}", saved.getId(), host.getId());
-
+        log.info("[GROUP] published GroupCreatedEvent. groupId={}, hostId={}", saved.getId(),
+                host.getId());
 
         return CreateGroupV2Response.from(saved, host);
     }
@@ -268,5 +268,4 @@ public class GroupV2Service {
 
         return GetGroupV2Response.of(group, images, users, userId);
     }
-
 }

@@ -1,6 +1,11 @@
 package team.wego.wegobackend.group.v2.application.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,9 +25,14 @@ public record UpdateGroupV2Request(
         String location,
         String locationDetail,
 
+        @FutureOrPresent(message = "모임: 시작 시간은 현재 이후여야 합니다.")
         LocalDateTime startTime,
+
+        @Future(message = "모임: 종료 시간은 현재 이후여야 합니다.")
         LocalDateTime endTime,
 
+        @Min(value = 2, message = "모임: 최대 인원은 최소 2명 이상이어야 합니다.")
+        @Max(value = 12, message = "모임: 최대 인원은 최대 12명 이하이어야 합니다.")
         Integer maxParticipants,
 
         GroupV2Status status,
