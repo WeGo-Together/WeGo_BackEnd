@@ -62,17 +62,22 @@ public record GetGroupV2Response(
         // 비회원, 사용자: ATTEND만 확인 가능
         List<JoinedMember> joinedMembers;
 
-        if (isHostViewer) { // HOST: 전원 노출 + status/leftAt 노출
-            joinedMembers = users.stream()
-                    .map(groupUserV2 -> JoinedMember.from(groupUserV2, true))
-                    .toList();
-        } else { // 비HOST: ATTEND만 노출
-            joinedMembers = users.stream()
-                    .filter(groupUserV2 -> groupUserV2.getStatus() == GroupUserV2Status.ATTEND)
-                    .map(groupUserV2 -> JoinedMember.from(groupUserV2,
-                            true)) // 여기서는 ATTEND만 들어오니 status 노출해도 OK
-                    .toList();
-        }
+//        if (isHostViewer) { // HOST: 전원 노출 + status/leftAt 노출
+//            joinedMembers = users.stream()
+//                    .map(groupUserV2 -> JoinedMember.from(groupUserV2, true))
+//                    .toList();
+//        } else { // 비HOST: ATTEND만 노출
+//            joinedMembers = users.stream()
+//                    .filter(groupUserV2 -> groupUserV2.getStatus() == GroupUserV2Status.ATTEND)
+//                    .map(groupUserV2 -> JoinedMember.from(groupUserV2,
+//                            true)) // 여기서는 ATTEND만 들어오니 status 노출해도 OK
+//                    .toList();
+//        }
+        joinedMembers = users.stream()
+                .filter(groupUserV2 -> groupUserV2.getStatus() == GroupUserV2Status.ATTEND)
+                .map(groupUserV2 -> JoinedMember.from(groupUserV2,
+                        true)) // 여기서는 ATTEND만 들어오니 status 노출해도 OK
+                .toList();
 
         // myMembership (로그인된 사용자만)
         MyMembership myMembership = (userIdOrNull == null)
