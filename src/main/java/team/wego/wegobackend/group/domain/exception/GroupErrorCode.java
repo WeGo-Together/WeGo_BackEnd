@@ -202,7 +202,7 @@ public enum GroupErrorCode implements ErrorCode {
     ALREADY_REQUESTED_TO_JOIN(HttpStatus.BAD_REQUEST, "모임: 이미 가입 요청한 상태입니다. 모임 ID: %s 회원 ID: %s"),
     DUPLICATED_IMAGE_KEY_IN_REQUEST(HttpStatus.BAD_REQUEST, "모임: 이미지 키가 중복되었습니다."),
 
-    ;
+    GROUP_CHAT_ROOM_NOT_FOUND_BY_ID(HttpStatus.NOT_FOUND, "모임: 모임 채팅방을 찾을 수 없습니다. 모임 ID: %s");
 
     private final HttpStatus status;
     private final String message;

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import team.wego.wegobackend.chat.domain.entity.ChatRoom;
+import team.wego.wegobackend.chat.domain.repository.ChatRoomRepository;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
 import team.wego.wegobackend.group.v2.application.event.GroupDeletedEvent;
@@ -31,6 +33,8 @@ public class GroupV2DeleteService {
 
     private final ImageUploadService imageUploadService;
     private final ApplicationEventPublisher eventPublisher;
+
+    private final ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public void deleteHard(Long userId, Long groupId) {
@@ -60,7 +64,14 @@ public class GroupV2DeleteService {
         // S3 삭제 대상 URL도 삭제 전에 확보
         List<String> variantUrls = groupImageV2Repository.findAllVariantUrlsByGroupId(groupId);
 
+        // chat room 확인
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId)
+                .orElseThrow(
+                        () -> new GroupException(GroupErrorCode.GROUP_CHAT_ROOM_NOT_FOUND_BY_ID,
+                                groupId));
+
         // DB 삭제
+        chatRoomRepository.deleteById(chatRoom.getId());
         groupUserV2Repository.deleteByGroupId(groupId);
         groupTagV2Repository.deleteByGroupId(groupId);
         groupImageV2Repository.deleteVariantsByGroupId(groupId);
