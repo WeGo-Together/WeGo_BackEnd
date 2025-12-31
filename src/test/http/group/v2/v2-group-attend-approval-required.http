@@ -103,6 +103,36 @@ Content-Type: application/json
   client.global.set("member1userId", response.body.data.user.userId);
 %}
 
+### 2. 회원가입(MEMBER 2)
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "member2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Member2",
+  "phoneNumber": "010-1111-0101"
+}
+
+> {%
+  client.global.set("memberId2", response.body.data.userId);
+%}
+
+### 2-1. 로그인(MEMBER 2)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "member2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("member2AccessToken", response.body.data.accessToken);
+  client.global.set("member2userId", response.body.data.user.userId);
+%}
+
+
 ### 3. 승인제 - MEMBER 1 참여 (성공: PENDING)
 POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
 Content-Type: application/json
@@ -160,3 +190,7 @@ Content-Type: application/json
 Authorization: Bearer {{member1AccessToken}}
 
 {}
+
+### 6-1. V2 목록 첫 페이지 (기본: filter=ACTIVE, keyword 없음)
+GET http://localhost:8080/api/v2/groups?size=5
+Authorization: Bearer {{member2AccessToken}}
