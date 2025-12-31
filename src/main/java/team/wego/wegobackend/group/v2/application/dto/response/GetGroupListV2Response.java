@@ -2,6 +2,7 @@ package team.wego.wegobackend.group.v2.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2JoinPolicy;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
@@ -38,6 +39,8 @@ public record GetGroupListV2Response(
             int remainingSeats, //  남은 자리(프론트 계산 제거)
             boolean joinable,   //  참여 버튼 활성화 여부
 
+            MyMembership myMembership,
+
             CreatedByV2Response createdBy,
 
             LocalDateTime createdAt,
@@ -58,6 +61,7 @@ public record GetGroupListV2Response(
                 String description,
                 int participantCount,
                 int maxParticipants,
+                MyMembership myMembership,
                 CreatedByV2Response createdBy,
                 LocalDateTime createdAt,
                 LocalDateTime updatedAt
@@ -87,6 +91,7 @@ public record GetGroupListV2Response(
                     maxParticipants,
                     remainingSeats,
                     joinable,
+                    myMembership,
                     createdBy,
                     createdAt,
                     updatedAt

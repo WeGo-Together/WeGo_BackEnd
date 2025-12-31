@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Chat WS Test (SockJS + STOMP)</title>
+
+  <!-- SockJS -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <!-- STOMP -->
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; margin: 16px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    input, button, textarea { padding: 8px; font-size: 14px; }
+    input, textarea { width: 100%; max-width: 680px; }
+    .box { border: 1px solid #ddd; padding: 12px; border-radius: 10px; max-width: 720px; }
+    .log { height: 320px; overflow: auto; background: #0b1020; color: #d7e2ff; padding: 10px; border-radius: 10px; white-space: pre-wrap; }
+    .tag { font-size: 12px; opacity: .8; }
+    button { cursor: pointer; }
+    .status { font-weight: 700; }
+  </style>
+</head>
+
+<body>
+<h2>Chat WebSocket Test (SockJS + STOMP)</h2>
+
+<div class="box">
+  <div class="row">
+    <div style="flex:1; min-width:260px;">
+      <div class="tag">SockJS URL</div>
+      <input id="wsUrl" value="http://localhost:8080/ws-chat" />
+    </div>
+    <div style="flex:1; min-width:260px;">
+      <div class="tag">Access Token (Bearer 제외)</div>
+      <input id="token" placeholder="eyJhbGciOiJIUzI1NiJ9..." />
+    </div>
+  </div>
+
+  <div class="row">
+    <div style="flex:1; min-width:180px;">
+      <div class="tag">roomId</div>
+      <input id="roomId" type="number" value="1" />
+    </div>
+    <div style="flex:1; min-width:180px;">
+      <div class="tag">userId (개인 알림용)</div>
+      <input id="userId" type="number" value="1" />
+    </div>
+    <div style="display:flex; align-items:flex-end; gap:8px;">
+      <button id="btnConnect">Connect</button>
+      <button id="btnDisconnect" disabled>Disconnect</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="status">Status: <span id="statusText">DISCONNECTED</span></div>
+  </div>
+
+  <hr/>
+
+  <div class="row">
+    <div style="flex:1; min-width:260px;">
+      <div class="tag">Message Content</div>
+      <input id="msg" placeholder="안녕하세요!" />
+    </div>
+    <div style="display:flex; align-items:flex-end; gap:8px;">
+      <button id="btnSend" disabled>Send</button>
+      <button id="btnClear">Clear Log</button>
+    </div>
+  </div>
+
+  <div class="tag">Log</div>
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  let stompClient = null;
+  let roomSub = null;
+  let userSub = null;
+
+  function log(...args) {
+    const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a, null, 2)).join(' ');
+    const el = $('log');
+    el.textContent += line + "\n";
+    el.scrollTop = el.scrollHeight;
+    console.log(...args);
+  }
+
+  function setStatus(s) {
+    $('statusText').textContent = s;
+  }
+
+  function setUiConnected(connected) {
+    $('btnConnect').disabled = connected;
+    $('btnDisconnect').disabled = !connected;
+    $('btnSend').disabled = !connected;
+  }
+
+  function connect() {
+    const wsUrl = $('wsUrl').value.trim();
+    const token = $('token').value.trim();
+    const roomId = Number($('roomId').value);
+    const userId = Number($('userId').value);
+
+    if (!wsUrl) return alert("wsUrl을 입력하세요.");
+    if (!token) return alert("accessToken을 입력하세요.");
+
+    setStatus("CONNECTING...");
+    log("[CONNECT] wsUrl =", wsUrl);
+
+    // SockJS 연결
+    const socket = new SockJS(wsUrl);
+
+    // STOMP client 생성
+    stompClient = new StompJs.Client({
+      webSocketFactory: () => socket,
+      connectHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+      debug: (str) => log("[STOMP]", str),
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+    });
+
+    stompClient.onConnect = (frame) => {
+      setStatus("CONNECTED");
+      setUiConnected(true);
+      log("[CONNECTED]", frame.headers);
+
+      // room 구독
+      const roomDest = `/sub/chat/room/${roomId}`;
+      roomSub = stompClient.subscribe(roomDest, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+          log(`[ROOM ${roomId}]`, payload);
+        } catch (e) {
+          log(`[ROOM ${roomId}] raw:`, message.body);
+        }
+      });
+      log("[SUBSCRIBE]", roomDest);
+
+      // user 알림 구독
+      const userDest = `/sub/user/${userId}`;
+      userSub = stompClient.subscribe(userDest, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+          log(`[USER ${userId}]`, payload);
+        } catch (e) {
+          log(`[USER ${userId}] raw:`, message.body);
+        }
+      });
+      log("[SUBSCRIBE]", userDest);
+    };
+
+    stompClient.onDisconnect = () => {
+      setStatus("DISCONNECTED");
+      setUiConnected(false);
+      log("[DISCONNECTED]");
+    };
+
+    stompClient.onStompError = (frame) => {
+      log("[STOMP ERROR]", frame.headers, frame.body);
+    };
+
+    stompClient.onWebSocketError = (evt) => {
+      log("[WS ERROR]", evt);
+    };
+
+    stompClient.onWebSocketClose = (evt) => {
+      log("[WS CLOSED]", evt.code, evt.reason);
+      setStatus("DISCONNECTED");
+      setUiConnected(false);
+    };
+
+    stompClient.activate();
+  }
+
+  function disconnect() {
+    if (roomSub) { roomSub.unsubscribe(); roomSub = null; }
+    if (userSub) { userSub.unsubscribe(); userSub = null; }
+
+    if (stompClient) {
+      log("[DISCONNECT] deactivating...");
+      stompClient.deactivate();
+      stompClient = null;
+    }
+    setStatus("DISCONNECTED");
+    setUiConnected(false);
+  }
+
+  function sendMessage() {
+    if (!stompClient || !stompClient.connected) {
+      alert("연결되어 있지 않습니다.");
+      return;
+    }
+    const roomId = Number($('roomId').value);
+    const content = $('msg').value;
+
+    const body = JSON.stringify({ chatRoomId: roomId, content });
+    stompClient.publish({
+      destination: "/pub/chat/message",
+      body,
+    });
+    log("[SEND]", body);
+  }
+
+  $('btnConnect').addEventListener('click', connect);
+  $('btnDisconnect').addEventListener('click', disconnect);
+  $('btnSend').addEventListener('click', sendMessage);
+  $('btnClear').addEventListener('click', () => $('log').textContent = "");
+
+  window.addEventListener('beforeunload', () => {
+    try { disconnect(); } catch (_) {}
+  });
+</script>
+</body>
+</html>

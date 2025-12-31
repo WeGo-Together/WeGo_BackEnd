@@ -29,11 +29,20 @@ public interface GroupUserV2Repository extends JpaRepository<GroupUserV2, Long> 
 
 
     @Query("""
-        select gu.user.id
-        from GroupUserV2 gu
-        where gu.group.id = :groupId
-          and gu.status = :status
-    """)
+                select gu.user.id
+                from GroupUserV2 gu
+                where gu.group.id = :groupId
+                  and gu.status = :status
+            """)
     List<Long> findUserIdsByGroupIdAndStatus(@Param("groupId") Long groupId,
             @Param("status") GroupUserV2Status status);
+
+    @Query("""
+                select gu
+                from GroupUserV2 gu
+                join fetch gu.group g
+                where gu.user.id = :userId
+                  and g.id in :groupIds
+            """)
+    List<GroupUserV2> findMyMembershipsByGroupIds(Long userId, List<Long> groupIds);
 }
