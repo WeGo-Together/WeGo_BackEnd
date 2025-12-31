@@ -92,6 +92,7 @@ public interface GroupV2ControllerDocs {
                     """
     )
     ResponseEntity<ApiResponse<GetGroupListV2Response>> getGroupList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size,

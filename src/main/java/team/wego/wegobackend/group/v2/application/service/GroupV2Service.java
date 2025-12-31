@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 import team.wego.wegobackend.group.domain.exception.GroupException;
+import team.wego.wegobackend.group.v2.application.dto.common.MyMembership;
 import team.wego.wegobackend.group.v2.application.dto.common.PreUploadedGroupImage;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupImageV2Request;
 import team.wego.wegobackend.group.v2.application.dto.request.CreateGroupV2Request;
@@ -66,6 +67,7 @@ public class GroupV2Service {
 
     @Transactional(readOnly = true)
     public GetGroupListV2Response getGroupListV2(
+            Long userIdOrNull,
             String keyword,
             Long cursor,
             int size,
@@ -140,31 +142,50 @@ public class GroupV2Service {
         Map<Long, List<String>> tagMap =
                 groupV2QueryRepository.fetchTagNamesByGroupIds(groupIds);
 
+        final Map<Long, MyMembership> myMembershipMap =
+                (userIdOrNull == null)
+                        ? Map.of()
+                        : groupUserV2Repository.findMyMembershipsByGroupIds(userIdOrNull, groupIds)
+                                .stream()
+                                .collect(java.util.stream.Collectors.toMap(
+                                        gu -> gu.getGroup().getId(),
+                                        MyMembership::from,
+                                        (a, b) -> a
+                                ));
+
         List<GroupListItemV2Response> items = content.stream()
-                .map(groupListRow -> {
-                    int participantCount = (groupListRow.participantCount() == null) ? 0
-                            : groupListRow.participantCount().intValue();
+                .map(row -> {
+                    int participantCount = (row.participantCount() == null) ? 0
+                            : row.participantCount().intValue();
+
+                    MyMembership myMembership =
+                            (userIdOrNull == null) ? null : myMembershipMap.get(row.groupId());
+
+                    // 비로그인: null
+                    // 로그인했지만 가입이력 없음: null (프론트에서 "미가입"으로 해석)
+
                     return GroupListItemV2Response.of(
-                            groupListRow.groupId(),
-                            groupListRow.title(),
-                            groupListRow.joinPolicy(),
-                            groupListRow.status(),
-                            groupListRow.location(),
-                            groupListRow.locationDetail(),
-                            groupListRow.startTime(),
-                            groupListRow.endTime(),
-                            imageMap.getOrDefault(groupListRow.groupId(), List.of()),
-                            tagMap.getOrDefault(groupListRow.groupId(), List.of()),
-                            groupListRow.description(),
+                            row.groupId(),
+                            row.title(),
+                            row.joinPolicy(),
+                            row.status(),
+                            row.location(),
+                            row.locationDetail(),
+                            row.startTime(),
+                            row.endTime(),
+                            imageMap.getOrDefault(row.groupId(), List.of()),
+                            tagMap.getOrDefault(row.groupId(), List.of()),
+                            row.description(),
                             participantCount,
-                            groupListRow.maxParticipants(),
+                            row.maxParticipants(),
+                            myMembership,
                             CreatedByV2Response.of(
-                                    groupListRow.hostId(),
-                                    groupListRow.hostNickName(),
-                                    groupListRow.hostProfileImage()
+                                    row.hostId(),
+                                    row.hostNickName(),
+                                    row.hostProfileImage()
                             ),
-                            groupListRow.createdAt(),
-                            groupListRow.updatedAt()
+                            row.createdAt(),
+                            row.updatedAt()
                     );
                 })
                 .toList();

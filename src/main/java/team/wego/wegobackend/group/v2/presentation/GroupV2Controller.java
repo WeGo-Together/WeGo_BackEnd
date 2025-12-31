@@ -110,6 +110,7 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
 
     @GetMapping
     public ResponseEntity<ApiResponse<GetGroupListV2Response>> getGroupList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size,
@@ -117,9 +118,12 @@ public class GroupV2Controller implements GroupV2ControllerDocs {
             @RequestParam(required = false) List<GroupV2Status> includeStatuses,
             @RequestParam(required = false) List<GroupV2Status> excludeStatuses
     ) {
+        Long userIdOrNull = (userDetails == null) ? null : userDetails.getId();
+
         GetGroupListV2Response response =
-                groupV2Service.getGroupListV2(keyword, cursor, size, filter, includeStatuses,
-                        excludeStatuses);
+                groupV2Service.getGroupListV2(
+                        userIdOrNull, keyword, cursor, size, filter, includeStatuses, excludeStatuses
+                );
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), response));
     }
