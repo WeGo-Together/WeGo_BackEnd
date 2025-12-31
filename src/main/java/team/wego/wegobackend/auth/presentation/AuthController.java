@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.auth.application.AuthService;
+import team.wego.wegobackend.auth.application.dto.request.GoogleLoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.LoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
@@ -51,13 +52,34 @@ public class AuthController implements AuthControllerDocs {
     }
 
     /**
-     * 로그인
+     * 서비스 자체 로그인
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
         @Valid @RequestBody LoginRequest request,
         HttpServletResponse response) {
         LoginResponse loginResponse = authService.login(request);
+
+        response.addCookie(createRefreshTokenCookie(loginResponse.getRefreshToken()));
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(
+                200,
+                true,
+                loginResponse
+            ));
+    }
+
+    /**
+     * OAuth-Google 로그인
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+        @Valid @RequestBody GoogleLoginRequest request,
+        HttpServletResponse response
+    ) {
+        LoginResponse loginResponse = authService.googleLogin(request);
 
         response.addCookie(createRefreshTokenCookie(loginResponse.getRefreshToken()));
 
@@ -88,7 +110,7 @@ public class AuthController implements AuthControllerDocs {
 
     /**
      * 회원탈퇴
-     * */
+     */
     @DeleteMapping("/withdraw")
     public ResponseEntity<ApiResponse<String>> withDraw(
         @AuthenticationPrincipal CustomUserDetails userDetails,

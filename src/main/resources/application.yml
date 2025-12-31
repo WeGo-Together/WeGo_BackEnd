@@ -2,8 +2,8 @@ server:
   port: 8080
 
 spring:
-#  profiles:
-#    active: local
+  profiles:
+    active: local
 
   servlet:
     multipart:
@@ -110,3 +110,9 @@ chat:
   batch:
     delete-expired-chat:
       cron: "0 0 * * * *"  # 매 시간 정각
+
+# OAuth-Google
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestBody;
+import team.wego.wegobackend.auth.application.dto.request.GoogleLoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.LoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
@@ -27,6 +28,12 @@ public interface AuthControllerDocs {
     ResponseEntity<ApiResponse<LoginResponse>> login(
         @Valid @RequestBody LoginRequest request,
         HttpServletResponse response);
+
+    @Operation(summary = "구글 소셜 로그인", description = "요청에 Authorization Code와 code 발급에 사용했던 redirect Uri를 전송")
+    ResponseEntity<ApiResponse<LoginResponse>> login(
+        @Valid @RequestBody GoogleLoginRequest request,
+        HttpServletResponse response
+    );
 
     @Operation(summary = "로그아웃", description = "리프레시 토큰 쿠키만 삭제합니다.")
     ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response);

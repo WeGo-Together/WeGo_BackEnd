@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,8 @@ import team.wego.wegobackend.common.security.Role;
 @Entity
 @Table(name = "users")
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
 
@@ -32,7 +35,7 @@ public class User extends BaseTimeEntity {
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", length = 60, nullable = false)
+    @Column(name = "password", length = 60, nullable = true)    //oauth의 경우 password == null
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -51,23 +54,36 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_message", length = 500)
     private String profileMessage;
 
+    @Builder.Default
     @Column(name = "followee_count", columnDefinition = "int default 0")
     private Integer followeesCnt = 0;
 
+    @Builder.Default
     @Column(name = "follower_count", columnDefinition = "int default 0")
     private Integer followersCnt = 0;
 
+    @Builder.Default
     @Column(name = "group_joined_count", columnDefinition = "int default 0")
     private Integer groupJoinedCnt = 0;
 
+    @Builder.Default
     @Column(name = "group_created_count", columnDefinition = "int default 0")
     private Integer groupCreatedCnt = 0;
 
+    @Builder.Default
     @Column(name = "notification_enabled", nullable = false)
     private Boolean notificationEnabled = false;
 
+    @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private Boolean deleted = false;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider")
+    private ProviderType provider;
 
     @OneToMany(mappedBy = "follower")
     private List<Follow> followings = new ArrayList<>();
@@ -75,13 +91,24 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "followee")
     private List<Follow> followers = new ArrayList<>();
 
+    public static User createLocalUser(String email, String password, String nickName, Role role) {
+        return User.builder()
+            .email(email)
+            .password(password)
+            .nickName(nickName)
+            .role(role)
+            .build();
+    }
 
-    @Builder
-    public User(String email, String password, String nickName, Role role) {
-        this.email = email;
-        this.password = password;
-        this.nickName = nickName;
-        this.role = role != null ? role : Role.ROLE_USER;
+    public static User createGoogleUser(String email, String nickName, String profileImage, String providerId, ProviderType provider, Role role) {
+        return User.builder()
+            .email(email)
+            .nickName(nickName)
+            .profileImage(profileImage)
+            .providerId(providerId)
+            .provider(provider)
+            .role(role)
+            .build();
     }
 
     // ===== 카운트 증가 메서드 =====
