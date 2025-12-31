@@ -1,8 +1,6 @@
 package team.wego.wegobackend.auth.application;
 
-import jakarta.annotation.PostConstruct;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,19 +69,13 @@ public class AuthService {
             throw new NicknameAlreadyExistsException();
         }
 
-        User user = User.builder().email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword())).nickName(request.getNickName())
-            .provider(ProviderType.LOCAL)
-            .role(Role.ROLE_USER)   //default
-            .build();
-
-        userRepository.save(User.createLocalUser(
-            request.getEmail(),
-            passwordEncoder.encode(request.getPassword()),
-            request.getNickName(),
-            Role.ROLE_USER));
-
-        return SignupResponse.from(user);
+        return SignupResponse.from(
+            userRepository.save(User.createLocalUser(
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                request.getNickName(),
+                Role.ROLE_USER))
+        );
     }
 
     /**
@@ -118,15 +110,10 @@ public class AuthService {
     @Transactional
     public LoginResponse googleLogin(GoogleLoginRequest request) {
 
-        log.debug("authorizationCode -> {}", request.authorizationCode());
-        log.debug("redirectUri -> {}", request.redirectUri());
-
         String requestBody = String.format(
             "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code",
             request.authorizationCode(), clientId, clientSecret, request.redirectUri()
         );
-
-        log.debug("requestBody -> {}", requestBody);
 
         GoogleTokenResponse response = restClient.post()
             .uri("https://oauth2.googleapis.com/token")
@@ -134,8 +121,6 @@ public class AuthService {
             .body(requestBody)
             .retrieve()
             .body(GoogleTokenResponse.class);
-
-        log.debug("accessToken -> {}", response.getAccessToken());
 
         GoogleUserInfoResponse userInfo = restClient.get()
             .uri("https://www.googleapis.com/oauth2/v3/userinfo")
@@ -148,6 +133,10 @@ public class AuthService {
         Optional<User> user = userRepository.findByProviderAndProviderId(ProviderType.GOOGLE,
             userInfo.getId());
 
+        if (user.isPresent() && user.get().getDeleted()) {
+            throw new DeletedUserException();
+        }
+
         if (user.isEmpty()) {
             String nickname = generateAutoNickname();   //닉네임 자동 생성
 
@@ -158,7 +147,6 @@ public class AuthService {
                 nickname,
                 userInfo.getPicture(),
                 userInfo.getId(),
-                ProviderType.GOOGLE,
                 Role.ROLE_USER
             )));
 

@@ -96,17 +96,18 @@ public class User extends BaseTimeEntity {
             .email(email)
             .password(password)
             .nickName(nickName)
+            .provider(ProviderType.LOCAL)
             .role(role)
             .build();
     }
 
-    public static User createGoogleUser(String email, String nickName, String profileImage, String providerId, ProviderType provider, Role role) {
+    public static User createGoogleUser(String email, String nickName, String profileImage, String providerId, Role role) {
         return User.builder()
             .email(email)
             .nickName(nickName)
             .profileImage(profileImage)
             .providerId(providerId)
-            .provider(provider)
+            .provider(ProviderType.GOOGLE)
             .role(role)
             .build();
     }
