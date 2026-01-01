@@ -148,7 +148,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification createGroupJoinNotification(User receiver, User actor, GroupV2 group) {
+    public static Notification createGroupJoinNotification(User receiver, User actor,
+            GroupV2 group) {
         return Notification.builder()
                 .receiver(receiver) // host
                 .actor(actor) // joiner
@@ -160,7 +161,8 @@ public class Notification extends BaseTimeEntity {
                 .build();
     }
 
-    public static Notification createGroupLeaveNotification(User receiver, User actor, GroupV2 group) {
+    public static Notification createGroupLeaveNotification(User receiver, User actor,
+            GroupV2 group) {
         return Notification.builder()
                 .receiver(receiver) // host
                 .actor(actor) // leaver
@@ -179,14 +181,16 @@ public class Notification extends BaseTimeEntity {
                 .receiver(receiver)
                 .actor(actor)
                 .type(NotificationType.GROUP_DELETE)
-                .message(actor.getNickName() + "님이 \"" + groupTitle + "\" 모임을 삭제했어요.")
+                .message(actor.getNickName() + "님이 \"" + groupTitle + "\" 모임(" + actor.getId()
+                        + ") 을 삭제했어요.")
                 .relatedId(groupId)
                 .relatedType("GROUP")
                 .redirectUrl("/groups")
                 .build();
     }
 
-    public static Notification createGroupJoinKickedNotification(User receiver, User actor, GroupV2 group) {
+    public static Notification createGroupJoinKickedNotification(User receiver, User actor,
+            GroupV2 group) {
         return Notification.builder()
                 .receiver(receiver) // kicked user
                 .actor(actor) // host

@@ -54,9 +54,16 @@ public class GroupV2DeleteService {
         final String hostNickName = group.getHost().getNickName();
         final String groupTitle = group.getTitle();
 
-        List<Long> attendeeIds = groupUserV2Repository.findUserIdsByGroupIdAndStatus(
-                groupId, GroupUserV2Status.ATTEND
-        ).stream().filter(id -> !id.equals(userId)).toList();
+        List<GroupUserV2Status> targets = List.of(
+                GroupUserV2Status.ATTEND,
+                GroupUserV2Status.PENDING
+        );
+
+        List<Long> attendeeIds = groupUserV2Repository.findUserIdsByGroupIdAndStatuses(groupId, targets)
+                .stream()
+                .distinct()
+                .filter(id -> !id.equals(userId))
+                .toList();
 
         log.info("[GROUP_DELETE] start groupId={} hostId={} title='{}' attendeeCount={}",
                 groupId, userId, groupTitle, attendeeIds.size());

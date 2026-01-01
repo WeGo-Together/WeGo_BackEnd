@@ -88,4 +88,23 @@ public class NotificationItemResponse {
                 n.getCreatedAt()
         );
     }
+
+    public static NotificationItemResponse of(
+            Notification n,
+            User actor,
+            Long groupId,
+            String groupTitle
+    ) {
+        return new NotificationItemResponse(
+                n.getId(),
+                actor == null ? null : actor.getId(),
+                actor == null ? null : actor.getNickName(),
+                groupId,
+                groupTitle,
+                n.getType(),
+                n.getMessage(),
+                n.getReadAt(),
+                n.getCreatedAt()
+        );
+    }
 }

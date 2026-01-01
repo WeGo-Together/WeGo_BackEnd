@@ -58,5 +58,39 @@ public class NotificationDispatcher {
         }
         log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void dispatch(
+            List<Notification> notifications,
+            User actor,
+            Long groupId,
+            String groupTitle
+    ) {
+        if (notifications == null || notifications.isEmpty()) return;
+
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+        notificationRepository.flush();
+
+        log.info("[NOTI][DISPATCH] saved={} actorId={} groupSnapshotId={}",
+                saved.size(), (actor == null ? null : actor.getId()), groupId);
+
+        int sent = 0;
+        int noEmitter = 0;
+
+        for (Notification n : saved) {
+            Long receiverId = n.getReceiver().getId();
+
+            // 모임 삭제 시 groupId, title 포함하기 위해 DTO에 직접 주입
+            NotificationItemResponse payload =
+                    NotificationItemResponse.of(n, actor, groupId, groupTitle);
+
+            boolean ok = sseEmitterService.sendNotificationIfConnected(receiverId, payload);
+
+            if (ok) sent++;
+            else noEmitter++;
+        }
+
+        log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
+    }
 }
 

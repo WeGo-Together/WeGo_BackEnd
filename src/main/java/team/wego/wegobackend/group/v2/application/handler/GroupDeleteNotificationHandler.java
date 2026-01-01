@@ -51,7 +51,7 @@ public class GroupDeleteNotificationHandler {
         }
 
         log.info("[GROUP_DELETE][HANDLER] built notifications size={}", notifications.size());
-        notificationDispatcher.dispatch(notifications, host, null);
+        notificationDispatcher.dispatch(notifications, host, event.groupId(), event.groupTitle());
 
         log.info("[GROUP_DELETE][HANDLER] done groupId={}", event.groupId());
     }
