@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import team.wego.wegobackend.group.v2.application.event.NotificationEvent;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.notification.application.SseEmitterService;
+import team.wego.wegobackend.notification.application.dto.response.NotificationItemResponse;
 import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.notification.repository.NotificationRepository;
 import team.wego.wegobackend.user.domain.User;
@@ -45,9 +45,11 @@ public class NotificationDispatcher {
 
         for (Notification n : saved) {
             Long receiverId = n.getReceiver().getId();
-            boolean ok = sseEmitterService.sendNotificationIfConnected(
-                    receiverId, NotificationEvent.of(n, actor, group)
-            );
+
+            NotificationItemResponse payload = NotificationItemResponse.of(n, actor, group);
+
+            boolean ok = sseEmitterService.sendNotificationIfConnected(receiverId, payload);
+
             if (ok) {
                 sent++;
             } else {

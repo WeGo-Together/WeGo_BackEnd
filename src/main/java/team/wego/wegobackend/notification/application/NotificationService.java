@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.notification.application.dto.response.NotificationItemResponse;
 import team.wego.wegobackend.notification.application.dto.response.NotificationListResponse;
-import team.wego.wegobackend.notification.application.dto.response.NotificationResponse;
 import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.notification.exception.NotificationAccessDeniedException;
 import team.wego.wegobackend.notification.exception.NotificationNotFoundException;
@@ -29,8 +29,9 @@ public class NotificationService {
 
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
-        List<NotificationResponse> result = notificationRepository.findNotificationList(
-            user.getId(), cursor, size);
+        List<NotificationItemResponse> result =
+                notificationRepository.findNotificationList(user.getId(), cursor, size);
+
         Long nextCursor = result.isEmpty() ? null : result.getLast().getId();
 
         return new NotificationListResponse(result, nextCursor);
@@ -51,11 +52,11 @@ public class NotificationService {
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
         Notification notification = notificationRepository.findById(notificationId).orElseThrow(
-            NotificationNotFoundException::new);
+                NotificationNotFoundException::new);
 
-        if(!user.getId().equals(notification.getReceiver().getId())) {
+        if (!user.getId().equals(notification.getReceiver().getId())) {
             log.debug("login User -> {}, receiver User -> {}", user.getId(),
-                notification.getReceiver().getId());
+                    notification.getReceiver().getId());
             throw new NotificationAccessDeniedException();
         }
 

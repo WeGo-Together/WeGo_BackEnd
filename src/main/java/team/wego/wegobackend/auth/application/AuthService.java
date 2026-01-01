@@ -254,7 +254,6 @@ public class AuthService {
         followRepository.deleteByFollowerId(userId);
         followRepository.deleteByFolloweeId(userId);
 
-        // 3) 마지막 유저 삭제
         userRepository.delete(user);
     }
 
