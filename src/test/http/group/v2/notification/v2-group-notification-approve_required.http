@@ -1,0 +1,249 @@
+### 0. HOST 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Beemo"
+}
+
+> {%
+  client.global.set("hostUserId", response.body.data.userId);
+%}
+
+### 0-1. HOST 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("hostAccessToken", response.body.data.accessToken);
+%}
+
+### 0-2. FOLLOWER1 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "follower1@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Jake"
+}
+
+> {%
+  client.global.set("followerUserId", response.body.data.userId);
+%}
+
+### 0-3. FOLLOWER1 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "follower1@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("follower1AccessToken", response.body.data.accessToken);
+  client.global.set("follower1UserId", response.body.data.user.userId);
+
+%}
+
+### 0-2. FOLLOWER2 회원가입
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "follower2@example.com",
+  "password": "Test1234!@#",
+  "nickName": "Jake2"
+}
+
+> {%
+  client.global.set("follower2UserId", response.body.data.userId);
+%}
+
+### 0-3. FOLLOWER2 로그인
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "follower2@example.com",
+  "password": "Test1234!@#"
+}
+
+> {%
+  client.global.set("follower2AccessToken", response.body.data.accessToken);
+  client.global.set("follower2UserId", response.body.data.user.userId);
+%}
+
+### 0-4-1. FOLLOWER1 알림 허용 (켜기)
+PATCH http://localhost:8080/api/v1/users/notification?isNotificationEnabled=true
+Authorization: Bearer {{follower1AccessToken}}
+
+### 0-4-2. FOLLOWER2 알림 허용 (켜기)
+PATCH http://localhost:8080/api/v1/users/notification?isNotificationEnabled=true
+Authorization: Bearer {{follower2AccessToken}}
+
+### 0-4-3. HOST 알림 허용 (켜기)
+PATCH http://localhost:8080/api/v1/users/notification?isNotificationEnabled=true
+Authorization: Bearer {{hostAccessToken}}
+
+### 0-5-1. FOLLOWER1 -> HOST 팔로우
+POST http://localhost:8080/api/v1/users/follow?followNickname=Beemo
+Authorization: Bearer {{follower1AccessToken}}
+
+### 0-5-2. FOLLOWER2 -> HOST 팔로우
+POST http://localhost:8080/api/v1/users/follow?followNickname=Beemo
+Authorization: Bearer {{follower2AccessToken}}
+
+### 1-1. 모임 V2 이미지 선 업로드 (png/jpg 2장) - HOST
+POST http://localhost:8080/api/v2/groups/images/upload
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{hostAccessToken}}
+
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Type: image/png
+
+< ../../../image/resources/img1.png
+--boundary
+Content-Disposition: form-data; name="images"; filename="img4.jpg"
+Content-Type: image/jpeg
+
+< ../../../image/resources/img4.jpg
+--boundary--
+
+> {%
+  const images = response.body.data.images;
+  client.global.set("img0_key", images[0].imageKey);
+  client.global.set("img1_key", images[1].imageKey);
+%}
+
+### 1-2. HOST 모임 생성 (이 순간 SSE 이벤트가 FOLLOWER에 와야 함)
+POST http://localhost:8080/api/v2/groups/create
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+{
+  "title": "SSE 알림 실시간 테스트",
+  "location": "서울 강남구",
+  "joinPolicy": "APPROVAL_REQUIRED",
+  "locationDetail": "강남역 2번 출구 근처 카페",
+  "startTime": "2026-12-10T19:00:00",
+  "endTime": "2026-12-10T21:00:00",
+  "tags": ["자바","백엔드","스터디"],
+  "description": "SSE 구독 후 모임 생성 시 follower에게 이벤트가 실시간으로 와야 합니다.",
+  "maxParticipants": 12,
+  "images": [
+    { "sortOrder": 0, "imageKey": "{{img0_key}}" },
+    { "sortOrder": 1, "imageKey": "{{img1_key}}" }
+  ]
+}
+
+> {%
+  client.global.set("createdGroupId", response.body.data.id);
+%}
+
+### 2-1. 모임 생성 후 FOLLOWER1 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower1AccessToken}}
+
+### 2-2. FOLLOWER1 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower1AccessToken}}
+
+### 2-3. 모임 생성 후 FOLLOWER2 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower2AccessToken}}
+
+### 2-4. FOLLOWER2 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower2AccessToken}}
+
+### 2-5-1. FOLLOWER1 모임 참여(Join) 신청 -> PENDING
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attend
+Authorization: Bearer {{follower1AccessToken}}
+Content-Type: application/json
+
+### 2-5-2. FOLLOWER2 모임 참여(Join) 신청 -> PENDING
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attend
+Authorization: Bearer {{follower2AccessToken}}
+Content-Type: application/json
+
+### 2-5-3. FOLLOWER1, FOLLOWER2 모임 참여 신청 후 HOST에게 참여 알림 전달을 확인 unread-count
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{hostAccessToken}}
+
+### 2-5-4.FOLLOWER1, FOLLOWER2 모임 참여 후 HOST에게 참여 알림 전달을 확인 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{hostAccessToken}}
+
+### 3-1. 승인제 - FOLLOWER1 승인 완료(PENDING -> ATTEND)
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attendance/{{follower1UserId}}/approve
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+### 3-2. 승인제 - FOLLOWER2 거절 완료(PENDING -> REJECTED)
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attendance/{{follower2UserId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+### 2-1. 모임 승인 후 FOLLOWER1 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower1AccessToken}}
+
+### 2-2. FOLLOWER1 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower1AccessToken}}
+
+### 2-3. 모임 거절 후 FOLLOWER2 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower2AccessToken}}
+
+### 2-4. FOLLOWER2 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower2AccessToken}}
+
+### 6-1. HOST가 FOLLOWER1 kick (ATTEND -> KICKED)
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attendance/{{follower2UserId}}/kick
+Content-Type: application/json
+Authorization: Bearer {{hostAccessToken}}
+
+### 7-1. 모임 추방 후 FOLLOWER1 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower1AccessToken}}
+
+### 7-2. FOLLOWER1 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower1AccessToken}}
+
+### 8-1. 탈퇴 후 HOST 알림 목록 조회
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{hostAccessToken}}
+
+### 9-1. 모임 V2 삭제 (Hard Delete) - 성공 기대 (204 No Content)
+DELETE http://localhost:8080/api/v2/groups/{{createdGroupId}}
+Authorization: Bearer {{hostAccessToken}}
+
+### 9-2. 모임 승인 후 FOLLOWER1 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower1AccessToken}}
+
+### 9-3. FOLLOWER1 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower1AccessToken}}
+
+### 9-4. 모임 거절 후 FOLLOWER2 unread-count (DB 기준으로도 증가했는지)
+GET http://localhost:8080/api/v1/notifications/unread-count
+Authorization: Bearer {{follower2AccessToken}}
+
+### 9-5. FOLLOWER2 알림 목록 조회 (목록에도 쌓였는지)
+GET http://localhost:8080/api/v1/notifications
+Authorization: Bearer {{follower2AccessToken}}
+
