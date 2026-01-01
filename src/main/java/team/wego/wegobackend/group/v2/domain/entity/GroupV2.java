@@ -60,7 +60,7 @@ public class GroupV2 extends BaseTimeEntity {
     @Column(name = "max_participants", nullable = false)
     private Integer maxParticipants;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 

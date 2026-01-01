@@ -49,4 +49,11 @@ public interface GroupV2Repository extends JpaRepository<GroupV2, Long> {
             @Param("threshold") LocalDateTime threshold,
             Pageable pageable
     );
+
+    @Query("select g.id from GroupV2 g where g.host.id = :userId")
+    List<Long> findIdsByHostId(@Param("userId") Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from GroupV2 g where g.id in :groupIds")
+    void deleteByIds(@Param("groupIds") List<Long> groupIds);
 }

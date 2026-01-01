@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import team.wego.wegobackend.chat.domain.entity.ChatRoom;
@@ -39,4 +40,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             @Param("userId1") Long userId1,
             @Param("userId2") Long userId2
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from ChatRoom cr where cr.group.id in :groupIds")
+    void deleteByGroupIds(@Param("groupIds") List<Long> groupIds);
 }

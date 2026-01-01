@@ -33,12 +33,23 @@ public interface GroupImageV2Repository extends JpaRepository<GroupImageV2, Long
 
 
     @Query("""
-        select v.imageUrl
-        from GroupImageV2Variant v
-          join v.groupImage gi
-        where gi.group.id = :groupId
-    """)
+                select v.imageUrl
+                from GroupImageV2Variant v
+                  join v.groupImage gi
+                where gi.group.id = :groupId
+            """)
     List<String> findAllVariantUrlsByGroupId(@Param("groupId") Long groupId);
 
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from GroupImageV2 gi where gi.group.id in :groupIds")
+    void deleteByGroupIds(@Param("groupIds") List<Long> groupIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+                delete from GroupImageV2Variant v
+                where v.groupImage.group.id in :groupIds
+            """)
+    int deleteVariantsByGroupIds(@Param("groupIds") List<Long> groupIds);
 }
 

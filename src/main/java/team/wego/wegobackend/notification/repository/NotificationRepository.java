@@ -25,4 +25,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 """)
     int markAllAsRead(@Param("userId") Long userId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Notification n where n.actor.id = :userId")
+    void deleteByActorId(@Param("userId") Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Notification n where n.receiver.id = :userId")
+    void deleteByReceiverId(@Param("userId") Long userId);
 }

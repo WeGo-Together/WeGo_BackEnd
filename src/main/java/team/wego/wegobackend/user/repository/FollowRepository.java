@@ -8,4 +8,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long>, FollowRep
 
     Optional<Follow> findByFollowerIdAndFolloweeId(Long followerId, Long followingId);
     boolean existsByFollowerIdAndFolloweeId(Long followerId, Long followingId);
+
+    void deleteByFollowerId(Long userId);
+
+    void deleteByFolloweeId(Long userId);
 }

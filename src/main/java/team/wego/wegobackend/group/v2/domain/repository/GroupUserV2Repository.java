@@ -45,4 +45,12 @@ public interface GroupUserV2Repository extends JpaRepository<GroupUserV2, Long> 
                   and g.id in :groupIds
             """)
     List<GroupUserV2> findMyMembershipsByGroupIds(Long userId, List<Long> groupIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from GroupUserV2 gu where gu.group.id in :groupIds")
+    void deleteByGroupIds(@Param("groupIds") List<Long> groupIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from GroupUserV2 gu where gu.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }
