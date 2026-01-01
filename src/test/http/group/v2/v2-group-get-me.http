@@ -59,8 +59,8 @@ Authorization: Bearer {{host2AccessToken}}
   "location": "서울 서초구",
   "joinPolicy": "FREE",
   "locationDetail": "교대역 1번 출구 근처 카페",
-  "startTime": "2026-12-20T19:00:00",
-  "endTime": "2026-12-20T21:00:00",
+  "startTime": "2025-12-31T19:17:59",
+  "endTime": "2025-12-31T21:18:00",
   "tags": ["ME_HTTP", "ACTIVE"],
   "description": "me.http current/active 테스트용 모임입니다.",
   "maxParticipants": 5,
@@ -146,6 +146,17 @@ Authorization: Bearer {{host2AccessToken}}
   const items = response.body.data.items || [];
   if (items.length > 0) {
     client.global.set("my_post_groupId_0", items[0].id);
+  }
+%}
+
+### 11.1 내 모임 조회 (MEMBER2) - myPost
+GET http://localhost:8080/api/v2/groups/me?type=myPost&size=10
+Authorization: Bearer {{c_member2AccessToken}}
+
+> {%
+  const items = response.body.data.items || [];
+  if (items.length > 0) {
+    client.global.set("member_my_post_groupId_0", items[0].id);
   }
 %}
 
