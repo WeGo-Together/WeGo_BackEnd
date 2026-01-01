@@ -1,9 +1,11 @@
 package team.wego.wegobackend.chat.domain.repository;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import team.wego.wegobackend.chat.domain.entity.ChatMessage;
@@ -47,4 +49,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("chatRoomId") Long chatRoomId,
             @Param("lastReadMessageId") Long lastReadMessageId
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from ChatMessage cm where cm.chatRoom.group.id in :groupIds")
+    void deleteByGroupIds(@Param("groupIds") List<Long> groupIds);
+
+    @Modifying
+    @Query("delete from ChatMessage cm where cm.sender.id = :userId")
+    void deleteBySenderId(@Param("userId") Long userId);
 }

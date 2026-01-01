@@ -1,5 +1,6 @@
 package team.wego.wegobackend.auth.application;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,20 @@ import team.wego.wegobackend.auth.exception.NotInitializedUserCounterException;
 import team.wego.wegobackend.auth.exception.UserAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
 import team.wego.wegobackend.auth.repository.UserCounterRepository;
+import team.wego.wegobackend.chat.domain.repository.ChatMessageRepository;
+import team.wego.wegobackend.chat.domain.repository.ChatParticipantRepository;
+import team.wego.wegobackend.chat.domain.repository.ChatRoomRepository;
 import team.wego.wegobackend.common.security.Role;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
+import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
+import team.wego.wegobackend.group.v2.domain.repository.GroupTagV2Repository;
+import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
+import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
+import team.wego.wegobackend.notification.repository.NotificationRepository;
 import team.wego.wegobackend.user.domain.ProviderType;
 import team.wego.wegobackend.user.domain.User;
+import team.wego.wegobackend.user.repository.FollowRepository;
 import team.wego.wegobackend.user.repository.UserRepository;
 
 @Slf4j
@@ -55,6 +65,24 @@ public class AuthService {
 
     private final UserCounterRepository userCounterRepository;
 
+    private final ChatParticipantRepository chatParticipantRepository;
+
+    private final NotificationRepository notificationRepository;
+
+    private final FollowRepository followRepository;
+
+    private final GroupUserV2Repository groupUserV2Repository;
+
+    private final GroupV2Repository groupV2Repository;
+
+    private final ChatMessageRepository chatMessageRepository;
+
+    private final ChatRoomRepository chatRoomRepository;
+
+    private final GroupImageV2Repository groupImageV2Repository;
+
+    private final GroupTagV2Repository groupTagV2Repository;
+
     /**
      * 회원가입
      */
@@ -70,11 +98,11 @@ public class AuthService {
         }
 
         return SignupResponse.from(
-            userRepository.save(User.createLocalUser(
-                request.getEmail(),
-                passwordEncoder.encode(request.getPassword()),
-                request.getNickName(),
-                Role.ROLE_USER))
+                userRepository.save(User.createLocalUser(
+                        request.getEmail(),
+                        passwordEncoder.encode(request.getPassword()),
+                        request.getNickName(),
+                        Role.ROLE_USER))
         );
     }
 
@@ -84,7 +112,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidPasswordException();
@@ -95,7 +123,7 @@ public class AuthService {
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-            user.getRole().name());
+                user.getRole().name());
 
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
 
@@ -111,27 +139,27 @@ public class AuthService {
     public LoginResponse googleLogin(GoogleLoginRequest request) {
 
         String requestBody = String.format(
-            "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code",
-            request.authorizationCode(), clientId, clientSecret, request.redirectUri()
+                "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code",
+                request.authorizationCode(), clientId, clientSecret, request.redirectUri()
         );
 
         GoogleTokenResponse response = restClient.post()
-            .uri("https://oauth2.googleapis.com/token")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(requestBody)
-            .retrieve()
-            .body(GoogleTokenResponse.class);
+                .uri("https://oauth2.googleapis.com/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(requestBody)
+                .retrieve()
+                .body(GoogleTokenResponse.class);
 
         GoogleUserInfoResponse userInfo = restClient.get()
-            .uri("https://www.googleapis.com/oauth2/v3/userinfo")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + response.getAccessToken())
-            .retrieve()
-            .body(GoogleUserInfoResponse.class);
+                .uri("https://www.googleapis.com/oauth2/v3/userinfo")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + response.getAccessToken())
+                .retrieve()
+                .body(GoogleUserInfoResponse.class);
 
         log.debug("사용자 정보 조회 성공 -> {}", userInfo);
 
         Optional<User> user = userRepository.findByProviderAndProviderId(ProviderType.GOOGLE,
-            userInfo.getId());
+                userInfo.getId());
 
         if (user.isPresent() && user.get().getDeleted()) {
             throw new DeletedUserException();
@@ -143,11 +171,11 @@ public class AuthService {
             log.debug("create Init nickname -> {}", nickname);
 
             user = Optional.of(userRepository.save(User.createGoogleUser(
-                userInfo.getEmail(),
-                nickname,
-                userInfo.getPicture(),
-                userInfo.getId(),
-                Role.ROLE_USER
+                    userInfo.getEmail(),
+                    nickname,
+                    userInfo.getPicture(),
+                    userInfo.getId(),
+                    Role.ROLE_USER
             )));
 
         }
@@ -155,11 +183,11 @@ public class AuthService {
         User loginUser = user.get();
 
         String accessToken = jwtTokenProvider.createAccessToken(loginUser.getId(),
-            loginUser.getEmail(),
-            loginUser.getRole().name());
+                loginUser.getEmail(),
+                loginUser.getRole().name());
 
         String refreshToken = jwtTokenProvider.createRefreshToken(loginUser.getId(),
-            loginUser.getEmail());
+                loginUser.getEmail());
 
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
@@ -178,14 +206,14 @@ public class AuthService {
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
 
         User user = userRepository.findByEmail(email)
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         if (user.getDeleted()) {
             throw new DeletedUserException();
         }
 
         String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-            user.getRole().name());
+                user.getRole().name());
 
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
 
@@ -197,12 +225,37 @@ public class AuthService {
      */
     @Transactional
     public void withDraw(Long userId) {
-
         User user = userRepository.findById(userId)
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
-        user.updatedeleted(true);
+        List<Long> hostGroupIds = groupV2Repository.findIdsByHostId(userId);
 
+        if (!hostGroupIds.isEmpty()) {
+            chatMessageRepository.deleteByGroupIds(hostGroupIds);
+            chatParticipantRepository.deleteByGroupIds(hostGroupIds);
+            chatRoomRepository.deleteByGroupIds(hostGroupIds);
+
+            groupImageV2Repository.deleteVariantsByGroupIds(hostGroupIds);
+            groupImageV2Repository.deleteByGroupIds(hostGroupIds);
+
+            groupTagV2Repository.deleteByGroupIds(hostGroupIds);
+            groupUserV2Repository.deleteByGroupIds(hostGroupIds);
+
+            groupV2Repository.deleteByIds(hostGroupIds);
+        }
+
+        chatMessageRepository.deleteBySenderId(userId);
+        chatParticipantRepository.deleteByUserId(userId);
+        groupUserV2Repository.deleteByUserId(userId);
+
+        notificationRepository.deleteByActorId(userId);
+        notificationRepository.deleteByReceiverId(userId);
+
+        followRepository.deleteByFollowerId(userId);
+        followRepository.deleteByFolloweeId(userId);
+
+        // 3) 마지막 유저 삭제
+        userRepository.delete(user);
     }
 
     /**
@@ -211,8 +264,8 @@ public class AuthService {
     private String generateAutoNickname() {
 
         UserCounter counter = userCounterRepository
-            .findWithLock()
-            .orElseThrow(NotInitializedUserCounterException::new);
+                .findWithLock()
+                .orElseThrow(NotInitializedUserCounterException::new);
 
         String nickname;
         do {
