@@ -74,4 +74,17 @@ public class SseEmitterService {
             return false;
         }
     }
+
+    public boolean sendNotificationIfConnected(Long userId, Object payload) {
+        SseEmitter emitter = emitters.get(userId);
+        if (emitter == null) return false;
+
+        try {
+            emitter.send(SseEmitter.event().name("notification").data(payload));
+            return true;
+        } catch (IOException e) {
+            emitters.remove(userId);
+            return false;
+        }
+    }
 }
