@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.notification.application.SseEmitterService;
+import team.wego.wegobackend.notification.application.dto.response.NotificationFollowResponse;
 import team.wego.wegobackend.notification.application.dto.response.NotificationItemResponse;
 import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.notification.repository.NotificationRepository;
@@ -91,6 +92,21 @@ public class NotificationDispatcher {
         }
 
         log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
+    }
+
+    @Transactional
+    public void dispatch(
+        User follower,
+        User follow
+    ) {
+
+        Notification notification = Notification.createFollowNotification(follow, follower);
+
+        notificationRepository.save(notification);
+
+
+        sseEmitterService.sendNotificationIfConnected(follow.getId(), new NotificationFollowResponse(notification, follower));
+
     }
 }
 
