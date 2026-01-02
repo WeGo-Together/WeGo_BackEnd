@@ -42,7 +42,7 @@ public class GroupV2AutoMaintenanceService {
     }
 
     // 완료된 그룹은 시작 시간으로부터 24시간이 지난 후 영구 삭제
-    @Scheduled(cron = "30 */5 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 */1 * * * *", zone = "Asia/Seoul")
     public void autoHardDeleteFinishedAfter24h() {
 
         // 이미 실행 중이면 이번 트리거는 스킵
