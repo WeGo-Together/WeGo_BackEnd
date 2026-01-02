@@ -28,18 +28,6 @@ public class NotificationItemResponse {
     private final String message;
 
     @Getter
-    public static class UserSummary {
-
-        private final Long id;
-        private final String nickname;
-
-        public UserSummary(Long id, String nickname) {
-            this.id = id;
-            this.nickname = nickname;
-        }
-    }
-
-    @Getter
     public static class GroupSummary {
 
         private final Long id;
