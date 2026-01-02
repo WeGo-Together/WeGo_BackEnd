@@ -171,10 +171,19 @@ POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attend
 Authorization: Bearer {{follower1AccessToken}}
 Content-Type: application/json
 
+{
+  "message": "FOLLOWER1 참여 신청"
+}
+
 ### 2-5-2. FOLLOWER2 모임 참여(Join) 신청 -> PENDING
 POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attend
 Authorization: Bearer {{follower2AccessToken}}
 Content-Type: application/json
+
+
+{
+  "message": "FOLLOWER2 참여 신청"
+}
 
 ### 2-5-3. FOLLOWER1, FOLLOWER2 모임 참여 신청 후 HOST에게 참여 알림 전달을 확인 unread-count
 GET http://localhost:8080/api/v1/notifications/unread-count
@@ -193,6 +202,17 @@ Authorization: Bearer {{hostAccessToken}}
 POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attendance/{{follower2UserId}}/reject
 Content-Type: application/json
 Authorization: Bearer {{hostAccessToken}}
+
+### 3-2-1. FOLLOWER2 모임 참여(Join) 재신청 -> PENDING
+POST http://localhost:8080/api/v2/groups/{{createdGroupId}}/attend
+Authorization: Bearer {{follower2AccessToken}}
+Content-Type: application/json
+
+
+{
+  "message": "~~FOLLOWER2 참여 재신청~~"
+}
+
 
 ### 2-1. 모임 승인 후 FOLLOWER1 unread-count (DB 기준으로도 증가했는지)
 GET http://localhost:8080/api/v1/notifications/unread-count

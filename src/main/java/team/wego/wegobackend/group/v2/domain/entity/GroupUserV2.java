@@ -148,13 +148,14 @@ public class GroupUserV2 extends BaseTimeEntity {
     }
 
     public static GroupUserV2 createPending(GroupV2 group, User user, String message) {
-        GroupUserV2 groupUser = new GroupUserV2(user, GroupUserV2Role.MEMBER, GroupUserV2Status.PENDING);
+        GroupUserV2 groupUser = new GroupUserV2(user, GroupUserV2Role.MEMBER,
+                GroupUserV2Status.PENDING);
         groupUser.applyJoinRequestMessage(message);
         group.addUser(groupUser);
         return groupUser;
     }
 
-    public void requestJoin() {
+    public void requestJoin(String message) {
         if (this.status == GroupUserV2Status.BANNED) {
             throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
         }
@@ -162,16 +163,8 @@ public class GroupUserV2 extends BaseTimeEntity {
         this.status = GroupUserV2Status.PENDING;
         this.joinedAt = LocalDateTime.now();
         this.leftAt = null;
-    }
 
-    public void requestJoin(String message) {
-        if (this.status == GroupUserV2Status.BANNED) {
-            throw new GroupException(GroupErrorCode.GROUP_BANNED_USER);
-        }
-        this.status = GroupUserV2Status.PENDING;
-        this.joinedAt = LocalDateTime.now();
-        this.leftAt = null;
-        applyJoinRequestMessage(message); // 여기서 갱신
+        applyJoinRequestMessage(message);
     }
 
     public void leaveOrCancel() {
