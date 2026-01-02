@@ -137,7 +137,7 @@ public class GroupV2AttendanceService {
             if (groupUserV2 != null) {
                 // LEFT, KICKED, REJECTED, CANCELLED -> 재신청(PENDING)으로 전환
                 // reAttend()는 ATTEND로 바꾸므로 승인제에서는 쓰지 않는게 안전하다고 판단
-                groupUserV2.requestJoin();
+                groupUserV2.requestJoin(message);
             } else {
                 groupUserV2 = GroupUserV2.createPending(
                         group,
