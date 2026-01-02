@@ -12,8 +12,8 @@ import team.wego.wegobackend.group.v2.application.dto.common.JoinRequestItem;
 import team.wego.wegobackend.group.v2.application.dto.response.GroupJoinRequestsResponse;
 import team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2QueryRepository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2QueryRepository;
-import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 
 @Slf4j
@@ -23,6 +23,7 @@ public class GroupJoinRequestService {
 
     private final GroupV2Repository groupV2Repository;
     private final GroupUserV2QueryRepository groupUserV2QueryRepository;
+    private final GroupImageV2QueryRepository groupImageV2QueryRepository;
 
 
     @Transactional(readOnly = true)
@@ -53,6 +54,7 @@ public class GroupJoinRequestService {
         GroupUserV2Status targetStatus = (status == null) ? GroupUserV2Status.PENDING : status;
 
         // QueryDSL 조회
+
         List<JoinRequestItem> items = groupUserV2QueryRepository
                 .fetchJoinRequests(groupId, targetStatus)
                 .stream()
@@ -67,6 +69,14 @@ public class GroupJoinRequestService {
                 ))
                 .toList();
 
-        return GroupJoinRequestsResponse.of(groupId, targetStatus, items);
+        String thumbnail100Url = groupImageV2QueryRepository.fetchThumbnail100Url(groupId);
+
+        return GroupJoinRequestsResponse.of(
+                groupId,
+                groupV2.getTitle(),
+                thumbnail100Url,
+                targetStatus,
+                items
+        );
     }
 }
