@@ -251,3 +251,8 @@ Authorization: Bearer {{follower2AccessToken}}
 ### 10. 회원 탈퇴
 DELETE http://localhost:8080/api/v1/auth/withdraw
 Authorization: Bearer {{hostAccessToken}}
+
+
+### 11. 목록 조회
+GET http://localhost:8080/api/v2/groups/{{createdGroupId}}/attendance?status=PENDING
+Authorization: Bearer {{hostAccessToken}}
