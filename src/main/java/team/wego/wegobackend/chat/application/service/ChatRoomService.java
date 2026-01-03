@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.wego.wegobackend.chat.application.dto.response.ChatKickPayload;
 import team.wego.wegobackend.chat.application.dto.response.ChatRoomItemResponse;
 import team.wego.wegobackend.chat.application.dto.response.ChatRoomListResponse;
 import team.wego.wegobackend.chat.application.dto.response.ChatRoomResponse;
@@ -47,6 +49,7 @@ public class ChatRoomService {
     private final GroupV2Repository groupV2Repository;
     private final GroupImageV2Repository groupImageV2Repository;
     private final GroupV2AttendanceService groupV2AttendanceService;
+    private final SimpMessageSendingOperations messagingTemplate;
 
     /**
      * 내 채팅방 목록 조회
@@ -139,10 +142,17 @@ public class ChatRoomService {
         }
 
         ChatParticipant targetParticipant = findParticipant(roomId, targetUserId);
+        String targetUserName = targetParticipant.getUser().getNickName();
         targetParticipant.kick();
 
         // 모임에서도 추방 처리.
         groupV2AttendanceService.kick(userId, chatRoom.getGroup().getId(), targetUserId);
+
+        // 채팅방 구독자들에게 추방 메시지 전송
+        messagingTemplate.convertAndSend(
+                "/sub/chat/room/" + roomId,
+                ChatKickPayload.of(roomId, targetUserId, targetUserName)
+        );
 
         log.info("참여자 추방 - roomId: {}, targetUserId: {}, kickedBy: {}", roomId, targetUserId, userId);
     }
