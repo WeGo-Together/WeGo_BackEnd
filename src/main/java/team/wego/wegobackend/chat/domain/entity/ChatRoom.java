@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import team.wego.wegobackend.common.entity.BaseTimeEntity;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.user.domain.User;
 
 @Entity
 @Table(name = "chat_room")
@@ -87,6 +88,20 @@ public class ChatRoom extends BaseTimeEntity {
         return chatType == ChatType.DM;
     }
 
+    public boolean isHost(User user) {
+        if (!isGroupChat() || group == null) {
+            return false;
+        }
+        return group.getHost().getId().equals(user.getId());
+    }
+
+    public Long getHostId() {
+        if (!isGroupChat() || group == null) {
+            return null;
+        }
+        return group.getHost().getId();
+    }
+
     public void addParticipant(ChatParticipant participant) {
         this.participants.add(participant);
         participant.assignToChatRoom(this);
@@ -96,4 +111,5 @@ public class ChatRoom extends BaseTimeEntity {
         this.messages.add(message);
         message.assignToChatRoom(this);
     }
+
 }

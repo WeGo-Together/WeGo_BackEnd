@@ -9,6 +9,7 @@ public record ChatRoomResponse(
         Long chatRoomId,
         ChatType chatType,
         String chatRoomName,
+        String thumbnail,
         Long groupId,
         int participantCount,
         List<ParticipantResponse> participants,
@@ -18,12 +19,14 @@ public record ChatRoomResponse(
     public static ChatRoomResponse of(
             ChatRoom chatRoom,
             String chatRoomName,
+            String thumbnail,
             List<ParticipantResponse> participants
     ) {
         return new ChatRoomResponse(
                 chatRoom.getId(),
                 chatRoom.getChatType(),
                 chatRoomName,
+                thumbnail,
                 chatRoom.getGroup() != null ? chatRoom.getGroup().getId() : null,
                 participants.size(),
                 participants,
