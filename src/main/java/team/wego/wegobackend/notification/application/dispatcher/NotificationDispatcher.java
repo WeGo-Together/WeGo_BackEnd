@@ -102,10 +102,10 @@ public class NotificationDispatcher {
 
         Notification notification = Notification.createFollowNotification(follow, follower);
 
-        notificationRepository.save(notification);
+        Notification saveNotification = notificationRepository.save(notification);
 
 
-        sseEmitterService.sendNotificationIfConnected(follow.getId(), new NotificationFollowResponse(notification, follower));
+        sseEmitterService.sendNotificationIfConnected(follow.getId(), new NotificationFollowResponse(saveNotification, follower));
 
     }
 }
