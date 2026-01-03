@@ -79,6 +79,8 @@ public class AuthController implements AuthControllerDocs {
         @Valid @RequestBody GoogleLoginRequest request,
         HttpServletResponse response
     ) {
+
+        log.info("google login controlloer Request -> {}", request);
         LoginResponse loginResponse = authService.googleLogin(request);
 
         response.addCookie(createRefreshTokenCookie(loginResponse.getRefreshToken()));
