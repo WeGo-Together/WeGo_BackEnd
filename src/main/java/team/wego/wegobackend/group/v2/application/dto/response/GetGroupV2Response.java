@@ -35,14 +35,16 @@ public record GetGroupV2Response(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         MyMembership myMembership,            // 로그인 아니면 null
-        List<JoinedMember> joinedMembers      // Host면 전체, 아니면 ATTEND만
+        List<JoinedMember> joinedMembers,     // Host면 전체, 아니면 ATTEND만
+        Long chatRoomId                       // 채팅방 참여를 위한 ID
 ) {
 
     public static GetGroupV2Response of(
             GroupV2 group,
             List<GroupImageV2> images,
             List<GroupUserV2> users,
-            Long userIdOrNull
+            Long userIdOrNull,
+            Long chatRoomId
     ) {
         // 태그
         List<String> tagNames = group.getGroupTags().stream()
@@ -106,7 +108,8 @@ public record GetGroupV2Response(
                 group.getCreatedAt(),
                 group.getUpdatedAt(),
                 myMembership,
-                joinedMembers
+                joinedMembers,
+                chatRoomId
         );
     }
 

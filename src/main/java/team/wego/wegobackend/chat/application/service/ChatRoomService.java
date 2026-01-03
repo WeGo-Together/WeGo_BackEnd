@@ -1,5 +1,6 @@
 package team.wego.wegobackend.chat.application.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,10 @@ import team.wego.wegobackend.chat.domain.exception.ChatException;
 import team.wego.wegobackend.chat.domain.repository.ChatMessageRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatParticipantRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatRoomRepository;
+import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
+import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2VariantType;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
+import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
@@ -40,6 +44,7 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final GroupV2Repository groupV2Repository;
+    private final GroupImageV2Repository groupImageV2Repository;
 
     /**
      * 내 채팅방 목록 조회
@@ -49,6 +54,10 @@ public class ChatRoomService {
 
         List<ChatRoomItemResponse> items = chatRooms.stream()
                 .map(chatRoom -> buildChatRoomItem(chatRoom, userId))
+                .sorted(Comparator.comparing(
+                    item -> item.lastMessage() != null ? item.lastMessage().timestamp() : null, //Group 채팅의 경우 lastMessage가 비어있는 경우 존재 -> NPE 처리
+                    Comparator.nullsLast(Comparator.reverseOrder())  // null 처리 + 최신순
+                ))
                 .collect(Collectors.toList());
 
         return ChatRoomListResponse.from(items);
@@ -61,15 +70,17 @@ public class ChatRoomService {
         ChatRoom chatRoom = findChatRoomById(roomId);
         validateParticipant(chatRoom.getId(), userId);
 
+        Long hostId = chatRoom.getHostId();
         List<ParticipantResponse> participants = chatParticipantRepository
                 .findActiveParticipants(roomId)
                 .stream()
-                .map(ParticipantResponse::from)
+                .map(p -> ParticipantResponse.from(p, isOwner(p, hostId)))
                 .collect(Collectors.toList());
 
         String chatRoomName = resolveChatRoomName(chatRoom, userId);
+        String thumbnail = resolveThumbnail(chatRoom, userId);
 
-        return ChatRoomResponse.of(chatRoom, chatRoomName, participants);
+        return ChatRoomResponse.of(chatRoom, chatRoomName, thumbnail, participants);
     }
 
     /**
@@ -79,10 +90,11 @@ public class ChatRoomService {
         ChatRoom chatRoom = findChatRoomById(roomId);
         validateParticipant(chatRoom.getId(), userId);
 
+        Long hostId = chatRoom.getHostId();
         List<ParticipantResponse> participants = chatParticipantRepository
                 .findActiveParticipants(roomId)
                 .stream()
-                .map(ParticipantResponse::from)
+                .map(p -> ParticipantResponse.from(p, isOwner(p, hostId)))
                 .collect(Collectors.toList());
 
         return ParticipantListResponse.of(roomId, participants);
@@ -268,6 +280,7 @@ public class ChatRoomService {
 
     private ChatRoomItemResponse buildChatRoomItem(ChatRoom chatRoom, Long userId) {
         String chatRoomName = resolveChatRoomName(chatRoom, userId);
+        String thumbnail = resolveThumbnail(chatRoom, userId);
         int participantCount = chatParticipantRepository.countActiveParticipants(chatRoom.getId());
 
         LastMessageResponse lastMessage = chatMessageRepository.findLatestByChatRoomId(chatRoom.getId())
@@ -279,19 +292,21 @@ public class ChatRoomService {
 
         int unreadCount = calculateUnreadCount(chatRoom.getId(), userId);
 
-        return ChatRoomItemResponse.of(chatRoom, chatRoomName, participantCount, lastMessage, unreadCount);
+        return ChatRoomItemResponse.of(chatRoom, chatRoomName, thumbnail, participantCount, lastMessage, unreadCount);
     }
 
     private ChatRoomResponse buildChatRoomResponse(ChatRoom chatRoom, Long userId) {
         String chatRoomName = resolveChatRoomName(chatRoom, userId);
+        String thumbnail = resolveThumbnail(chatRoom, userId);
 
+        Long hostId = chatRoom.getHostId();
         List<ParticipantResponse> participants = chatParticipantRepository
                 .findActiveParticipants(chatRoom.getId())
                 .stream()
-                .map(ParticipantResponse::from)
+                .map(p -> ParticipantResponse.from(p, isOwner(p, hostId)))
                 .collect(Collectors.toList());
 
-        return ChatRoomResponse.of(chatRoom, chatRoomName, participants);
+        return ChatRoomResponse.of(chatRoom, chatRoomName, thumbnail, participants);
     }
 
     private String resolveChatRoomName(ChatRoom chatRoom, Long userId) {
@@ -306,6 +321,39 @@ public class ChatRoomService {
                 .findFirst()
                 .map(p -> p.getUser().getNickName())
                 .orElse("알 수 없음");
+    }
+
+    private String resolveThumbnail(ChatRoom chatRoom, Long userId) {
+        if (chatRoom.getChatType() == ChatType.GROUP && chatRoom.getGroup() != null) {
+            // 그룹 채팅: 그룹의 첫 번째 이미지의 THUMBNAIL_100_100 variant
+            List<GroupImageV2> images = groupImageV2Repository
+                    .findAllByGroupIdWithVariants(chatRoom.getGroup().getId());
+
+            if (images.isEmpty()) {
+                return null;
+            }
+
+            return images.get(0).getVariants().stream()
+                    .filter(v -> v.getType() == GroupImageV2VariantType.THUMBNAIL_100_100)
+                    .findFirst()
+                    .map(v -> v.getImageUrl())
+                    .orElse(null);
+        }
+
+        // DM인 경우 상대방 프로필 이미지 반환
+        return chatParticipantRepository.findActiveParticipants(chatRoom.getId())
+                .stream()
+                .filter(p -> !p.getUser().getId().equals(userId))
+                .findFirst()
+                .map(p -> p.getUser().getProfileImage())
+                .orElse(null);
+    }
+
+    private boolean isOwner(ChatParticipant participant, Long hostId) {
+        if (hostId == null) {
+            return false;
+        }
+        return participant.getUser().getId().equals(hostId);
     }
 
     private int calculateUnreadCount(Long roomId, Long userId) {

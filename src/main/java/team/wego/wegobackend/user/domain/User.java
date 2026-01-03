@@ -85,9 +85,11 @@ public class User extends BaseTimeEntity {
     @Column(name = "provider")
     private ProviderType provider;
 
+    @Builder.Default
     @OneToMany(mappedBy = "follower")
     private List<Follow> followings = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "followee")
     private List<Follow> followers = new ArrayList<>();
 
@@ -168,7 +170,7 @@ public class User extends BaseTimeEntity {
 
     public void updatedeleted(Boolean flag) {
         this.deleted = flag;
-    }
+    }   //HARD DELETE로 변경
 
     public void updateMbti(String mbti) {
         this.mbti = mbti;

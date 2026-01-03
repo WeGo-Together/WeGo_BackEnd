@@ -36,7 +36,7 @@ class MyGroupsDummyTest {
                 .orElseGet(() -> {
                     String encodedPw = passwordEncoder.encode(RAW_PASSWORD);
                     return userRepository.save(
-                            new User(
+                            User.createLocalUser(
                                     email,
                                     encodedPw,
                                     nickname,

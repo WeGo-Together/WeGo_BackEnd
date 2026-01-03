@@ -49,7 +49,7 @@ class GroupCursorDummyTest {
         // 1. 공통 호스트 한 명 생성
         User host = userRepository.findByEmail("cursor-host@example.com")
                 .orElseGet(() -> userRepository.save(
-                        new User(
+                        User.createLocalUser(
                                 "cursor-host@example.com",
                                 "Test1234!@#",
                                 "CursorHost",
@@ -67,7 +67,7 @@ class GroupCursorDummyTest {
             // 이미 있으면 재사용, 없으면 새로 생성
             User member = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.save(
-                            new User(
+                            User.createLocalUser(
                                     email,
                                     "Test1234!@#",
                                     "CursorMember" + uIndex,

@@ -8,6 +8,7 @@ public record ChatRoomItemResponse(
         Long chatRoomId,
         ChatType chatType,
         String chatRoomName,
+        String thumbnail,
         Long groupId,
         int participantCount,
         LastMessageResponse lastMessage,
@@ -17,6 +18,7 @@ public record ChatRoomItemResponse(
     public static ChatRoomItemResponse of(
             ChatRoom chatRoom,
             String chatRoomName,
+            String thumbnail,
             int participantCount,
             LastMessageResponse lastMessage,
             int unreadCount
@@ -25,6 +27,7 @@ public record ChatRoomItemResponse(
                 chatRoom.getId(),
                 chatRoom.getChatType(),
                 chatRoomName,
+                thumbnail,
                 chatRoom.getGroup() != null ? chatRoom.getGroup().getId() : null,
                 participantCount,
                 lastMessage,

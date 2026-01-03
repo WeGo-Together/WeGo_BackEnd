@@ -10,15 +10,17 @@ public record ParticipantResponse(
         String nickName,
         String profileImage,
         ParticipantStatus status,
+        boolean isOwner,
         LocalDateTime joinedAt
 ) {
-    public static ParticipantResponse from(ChatParticipant participant) {
+    public static ParticipantResponse from(ChatParticipant participant, boolean isOwner) {
         return new ParticipantResponse(
                 participant.getId(),
                 participant.getUser().getId(),
                 participant.getUser().getNickName(),
                 participant.getUser().getProfileImage(),
                 participant.getStatus(),
+                isOwner,
                 participant.getJoinedAt()
         );
     }
