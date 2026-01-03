@@ -73,9 +73,9 @@ aws:
     secure-access-key: ${S3_SECURE_ACCESS_KEY}
 
 image:
-  max-size-bytes: 20971520 # 10MB
-  max-width: 2000
-  max-height: 2000
+  max-size-bytes: 20971520 # 20MB
+  max-width: 7000
+  max-height: 7000
 
   thumb-max-width: 600
   thumb-max-height: 600
