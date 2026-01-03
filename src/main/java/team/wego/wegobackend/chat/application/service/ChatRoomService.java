@@ -25,6 +25,7 @@ import team.wego.wegobackend.chat.domain.exception.ChatException;
 import team.wego.wegobackend.chat.domain.repository.ChatMessageRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatParticipantRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatRoomRepository;
+import team.wego.wegobackend.group.v2.application.service.GroupV2AttendanceService;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupImageV2VariantType;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
@@ -45,6 +46,7 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final GroupV2Repository groupV2Repository;
     private final GroupImageV2Repository groupImageV2Repository;
+    private final GroupV2AttendanceService groupV2AttendanceService;
 
     /**
      * 내 채팅방 목록 조회
@@ -138,6 +140,9 @@ public class ChatRoomService {
 
         ChatParticipant targetParticipant = findParticipant(roomId, targetUserId);
         targetParticipant.kick();
+
+        // 모임에서도 추방 처리.
+        groupV2AttendanceService.kick(userId, chatRoom.getGroup().getId(), targetUserId);
 
         log.info("참여자 추방 - roomId: {}, targetUserId: {}, kickedBy: {}", roomId, targetUserId, userId);
     }

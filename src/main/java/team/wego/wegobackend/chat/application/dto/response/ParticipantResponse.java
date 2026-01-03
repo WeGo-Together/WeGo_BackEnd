@@ -9,6 +9,7 @@ public record ParticipantResponse(
         Long userId,
         String nickName,
         String profileImage,
+        String profileMessage,
         ParticipantStatus status,
         boolean isOwner,
         LocalDateTime joinedAt
@@ -19,6 +20,7 @@ public record ParticipantResponse(
                 participant.getUser().getId(),
                 participant.getUser().getNickName(),
                 participant.getUser().getProfileImage(),
+                participant.getUser().getProfileMessage(),
                 participant.getStatus(),
                 isOwner,
                 participant.getJoinedAt()
