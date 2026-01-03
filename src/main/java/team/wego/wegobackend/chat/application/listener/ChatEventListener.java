@@ -13,6 +13,7 @@ import team.wego.wegobackend.group.v2.application.event.GroupJoinApprovedEvent;
 import team.wego.wegobackend.group.v2.application.event.GroupJoinedEvent;
 import team.wego.wegobackend.group.v2.application.event.GroupJoinKickedEvent;
 import team.wego.wegobackend.group.v2.application.event.GroupLeftEvent;
+import team.wego.wegobackend.group.v2.application.service.GroupV2AttendanceService;
 
 @Component
 @RequiredArgsConstructor
@@ -134,6 +135,8 @@ public class ChatEventListener {
                     event.groupId(),
                     event.targetUserId()
             );
+
+
             log.info("채팅방 추방 처리 완료 - groupId: {}, userId: {}",
                     event.groupId(), event.targetUserId());
         } catch (Exception e) {

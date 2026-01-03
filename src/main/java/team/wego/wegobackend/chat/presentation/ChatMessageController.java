@@ -80,6 +80,21 @@ public class ChatMessageController {
     }
 
     /**
+     * 추방 메시지 전송 (시스템 메시지)
+     */
+    public void sendKickedMessage(Long chatRoomId, String userName) {
+        ChatMessagePayload payload = ChatMessagePayload.systemMessage(
+            chatRoomId,
+            userName + "님이 추방당했습니다."
+        );
+
+        messagingTemplate.convertAndSend(
+            "/sub/chat/room/" + chatRoomId,
+            payload
+        );
+    }
+
+    /**
      * 특정 사용자에게 개인 알림 전송
      */
     public void sendToUser(Long userId, Object payload) {
