@@ -55,7 +55,7 @@ public class ChatRoomService {
         List<ChatRoomItemResponse> items = chatRooms.stream()
                 .map(chatRoom -> buildChatRoomItem(chatRoom, userId))
                 .sorted(Comparator.comparing(
-                    item -> item.lastMessage().timestamp(),
+                    item -> item.lastMessage() != null ? item.lastMessage().timestamp() : null, //Group 채팅의 경우 lastMessage가 비어있는 경우 존재 -> NPE 처리
                     Comparator.nullsLast(Comparator.reverseOrder())  // null 처리 + 최신순
                 ))
                 .collect(Collectors.toList());
