@@ -53,6 +53,8 @@ public class StompChannelInterceptor implements ChannelInterceptor {
             }
         }
 
+        //TODO: StompCommand.SUBSCRIBE 분기 처리 로직 추가 (그룹 채팅 참여 검증 로직)
+
         return message;
     }
 

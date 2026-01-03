@@ -287,6 +287,8 @@ public class GroupV2Service {
         List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
         List<GroupUserV2> users = groupUserV2Repository.findAllByGroupIdWithUser(groupId);
 
-        return GetGroupV2Response.of(group, images, users, userId);
+        Long chatRoomId = group.getChatRoom() != null ? group.getChatRoom().getId() : null;
+
+        return GetGroupV2Response.of(group, images, users, userId, chatRoomId);
     }
 }
