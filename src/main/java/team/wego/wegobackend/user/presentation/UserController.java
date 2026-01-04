@@ -175,6 +175,23 @@ public class UserController implements UserControllerDocs {
     }
 
     /**
+     * 팔로워 리스트 조회
+     */
+    @GetMapping("/{userId}/follower")
+    public ResponseEntity<ApiResponse<FollowListResponse>> followerList(
+        @PathVariable Long userId, //다른 유저 조회를 위한 파라메터
+        @RequestParam(required = false) Long cursor,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+    ) {
+
+        FollowListResponse response = followService.followerList(userId, cursor, size);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, response));
+    }
+
+    /**
      * 이메일 중복검사
      */
     @GetMapping("/email/availability")

@@ -101,4 +101,18 @@ public class FollowService {
 
         return new FollowListResponse(list, nextCursor);
     }
+
+    @Transactional(readOnly = true)
+    public FollowListResponse followerList(Long userId, Long cursor, Integer size) {
+
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException();
+        }
+
+        List<FollowResponse> list = followRepository.findFollowerList(userId, cursor, size);
+
+        Long nextCursor = list.isEmpty() ? null : list.getLast().getFollowId();
+
+        return new FollowListResponse(list, nextCursor);
+    }
 }
