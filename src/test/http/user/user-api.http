@@ -68,7 +68,7 @@ Content-Type: application/json
 }
 
 ### 팔로우 요청
-POST http://localhost:8080/api/v1/users/follow?followNickname=user0
+POST http://localhost:8080/api/v1/users/follow?followNickname=ttest
 Authorization: Bearer {{accessToken}}
 
 ### 팔로우 취소
@@ -90,6 +90,20 @@ GET http://localhost:8080/api/v1/users/1/follow?size=10
 
 ### 팔로우 리스트 조회 (cursor)
 GET http://localhost:8080/api/v1/users/1/follow?cursor={{nextCursor}}&size=10
+
+> {%
+  client.global.set("nextCursor", response.body.data.nextCursor);
+%}
+
+### 팔로워 리스트 조회 (초기값)
+GET http://localhost:8080/api/v1/users/102/follower?size=10
+
+> {%
+  client.global.set("nextCursor", response.body.data.nextCursor);
+%}
+
+### 팔로워 리스트 조회 (cursor)
+GET http://localhost:8080/api/v1/users/1/follower?cursor={{nextCursor}}&size=10
 
 > {%
   client.global.set("nextCursor", response.body.data.nextCursor);

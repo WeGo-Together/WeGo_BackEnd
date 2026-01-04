@@ -13,6 +13,12 @@ public interface FollowRepositoryCustom {
             int size
     );
 
+    List<FollowResponse> findFollowerList(
+        Long followerId,
+        Long cursorFollowId,
+        int size
+    );
+
     List<FollowerNotifyRow> findFollowersForNotify(Long followeeId, Long cursorFollowId, int size);
 
 }
