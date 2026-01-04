@@ -8,15 +8,15 @@ public final class NotificationTypeMapper {
     private NotificationTypeMapper() {}
 
     private static final Map<NotificationType, String> MAP = Map.of(
-            NotificationType.FOLLOW, "follow",
-            NotificationType.GROUP_JOIN, "group-join",
-            NotificationType.GROUP_LEAVE, "group-leave",
-            NotificationType.GROUP_CREATE, "group-create",
-            NotificationType.GROUP_DELETE, "group-delete",
-            NotificationType.GROUP_JOIN_REQUEST, "group-join-request",
-            NotificationType.GROUP_JOIN_APPROVED, "group-join-approved",
-            NotificationType.GROUP_JOIN_REJECTED, "group-join-rejected",
-            NotificationType.GROUP_JOIN_KICKED, "group-join-kicked"
+            NotificationType.FOLLOW, "FOLLOW",
+            NotificationType.GROUP_JOIN, "GROUP_JOIN",
+            NotificationType.GROUP_LEAVE, "GROUP_LEAVE",
+            NotificationType.GROUP_CREATE, "GROUP_CREATE",
+            NotificationType.GROUP_DELETE, "GROUP_DELETE",
+            NotificationType.GROUP_JOIN_REQUEST, "GROUP_JOIN_REQUEST",
+            NotificationType.GROUP_JOIN_APPROVED, "GROUP_JOIN_APPROVED",
+            NotificationType.GROUP_JOIN_REJECTED, "GROUP_JOIN_REJECTED",
+            NotificationType.GROUP_JOIN_KICKED, "GROUP_JOIN_KICKED"
     );
 
     public static String toClientType(NotificationType type) {
