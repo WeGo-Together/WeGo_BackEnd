@@ -114,7 +114,6 @@ public class FollowService {
 
         for(FollowResponse follower : list) {
             boolean isFollow = followingUserIds.contains(follower.getUserId());
-                follower.getUserId(), follower.getNickname(), isFollow);
             WrapperFollowerResponse response = new WrapperFollowerResponse(follower, isFollow);
             result.add(response);
         }
@@ -123,4 +122,5 @@ public class FollowService {
 
         return new FollowerListResponse(result, nextCursor);
     }
+
 }
