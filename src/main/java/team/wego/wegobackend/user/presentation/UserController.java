@@ -29,6 +29,7 @@ import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
 import team.wego.wegobackend.user.application.dto.response.AvailabilityResponse;
 import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
+import team.wego.wegobackend.user.application.dto.response.FollowerListResponse;
 import team.wego.wegobackend.user.application.dto.response.UserInfoResponse;
 
 @Slf4j
@@ -178,13 +179,13 @@ public class UserController implements UserControllerDocs {
      * 팔로워 리스트 조회
      */
     @GetMapping("/{userId}/follower")
-    public ResponseEntity<ApiResponse<FollowListResponse>> followerList(
+    public ResponseEntity<ApiResponse<FollowerListResponse>> followerList(
         @PathVariable Long userId, //다른 유저 조회를 위한 파라메터
         @RequestParam(required = false) Long cursor,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
 
-        FollowListResponse response = followService.followerList(userId, cursor, size);
+        FollowerListResponse response = followService.followerList(userId, cursor, size);
 
         return ResponseEntity
             .status(HttpStatus.OK)
