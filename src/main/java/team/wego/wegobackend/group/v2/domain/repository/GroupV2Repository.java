@@ -1,11 +1,13 @@
 package team.wego.wegobackend.group.v2.domain.repository;
 
 
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,14 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2;
 import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 
 public interface GroupV2Repository extends JpaRepository<GroupV2, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+              select g
+              from GroupV2 g
+              where g.id = :groupId
+            """)
+    Optional<GroupV2> findByIdForUpdate(@Param("groupId") Long groupId);
 
     @Query("""
                 select distinct g
@@ -38,13 +48,13 @@ public interface GroupV2Repository extends JpaRepository<GroupV2, Long> {
     );
 
     @Query("""
-        select g.id
-          from GroupV2 g
-         where g.deletedAt is null
-           and g.status = 'FINISHED'
-           and g.startTime <= :threshold
-         order by g.id asc
-    """)
+                select g.id
+                  from GroupV2 g
+                 where g.deletedAt is null
+                   and g.status = 'FINISHED'
+                   and g.startTime <= :threshold
+                 order by g.id asc
+            """)
     List<Long> findFinishedExpiredGroupIdsByStartTime(
             @Param("threshold") LocalDateTime threshold,
             Pageable pageable

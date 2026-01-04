@@ -67,10 +67,10 @@ Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{accessToken}}
 
 --boundary
-Content-Disposition: form-data; name="images"; filename="img1.png"
+Content-Disposition: form-data; name="images"; filename="2023-02-26_012341.png"
 Content-Type: image/png
 
-< ../../image/resources/img1.png
+< ../../image/resources/2023-02-26_012341.png
 --boundary
 Content-Disposition: form-data; name="images"; filename="img4.jpg"
 Content-Type: image/jpeg

@@ -55,8 +55,8 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
 
-        // 모임 체크
-        GroupV2 group = groupV2Repository.findById(groupId)
+        // 모임 체크: for update로 가져오기
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
@@ -102,6 +102,13 @@ public class GroupV2AttendanceService {
 
         // 즉시 참여인 경우
         if (group.getJoinPolicy() == GroupV2JoinPolicy.FREE) {
+            // 정원 체크(ATTEND만 카운트)
+            long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                    GroupUserV2Status.ATTEND);
+            if (attendCount >= group.getMaxParticipants()) {
+                throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
+            }
+
             if (groupUserV2 != null) {
                 // LEFT, KICKED, REJECTED, CANCELLED -> 재참여
                 groupUserV2.reAttend(); // 내부에서 BANNED만 막고, ATTEND로 변경
@@ -111,15 +118,10 @@ public class GroupV2AttendanceService {
                 groupUserV2Repository.save(groupUserV2);
             }
 
-            // 정원 체크(ATTEND만 카운트)
-            long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
-                    GroupUserV2Status.ATTEND);
-            if (attendCount > group.getMaxParticipants()) {
-                throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
-            }
-
             // FULL 자동 전환
-            if (attendCount == group.getMaxParticipants()
+            long newCount = groupUserV2Repository.countByGroupIdAndStatus(groupId, GroupUserV2Status.ATTEND);
+
+            if (newCount == group.getMaxParticipants()
                     && group.getStatus() == GroupV2Status.RECRUITING) {
                 group.changeStatus(GroupV2Status.FULL);
             }
@@ -130,7 +132,7 @@ public class GroupV2AttendanceService {
             eventPublisher.publishEvent(
                     new GroupJoinedEvent(groupId, group.getHost().getId(), userId));
 
-            return AttendanceGroupV2Response.of(group, attendCount, membership);
+            return AttendanceGroupV2Response.of(group, newCount, membership);
         }
 
         if (joinPolicy == GroupV2JoinPolicy.APPROVAL_REQUIRED) {
@@ -152,16 +154,6 @@ public class GroupV2AttendanceService {
             long attendCount = groupUserV2Repository.countByGroupIdAndStatus(
                     groupId,
                     GroupUserV2Status.ATTEND);
-            if (attendCount > group.getMaxParticipants()) {
-                // 방금 reAttend로 늘었는데 초과하면 롤백시키기 위해 예외
-                throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
-            }
-
-            // FULL 자동 전환
-            if (attendCount == group.getMaxParticipants()
-                    && group.getStatus() == GroupV2Status.RECRUITING) {
-                group.changeStatus(GroupV2Status.FULL);
-            }
 
             // 내 멤버십 + 최신 카운트 + 모임 상태 응답
             MyMembership membership = MyMembership.from(groupUserV2);
@@ -180,7 +172,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID,
                                 groupId));
@@ -241,7 +233,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.CANNOT_APPROVE_SELF, groupId, approverUserId);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
@@ -285,26 +277,31 @@ public class GroupV2AttendanceService {
                 .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_USER_NOT_FOUND,
                         targetUserId));
 
-        // PENDING만 승인 가능 (도메인에서 검증)
-        target.approveJoin();
+        // 서비스 레벨 방어
+        if (target.getStatus() != GroupUserV2Status.PENDING) {
+            throw new GroupException(GroupErrorCode.GROUP_USER_STATUS_NOT_ALLOWED_TO_APPROVE,
+                    groupId, targetUserId, target.getStatus().name());
+        }
+
+        // 사전 정원 체크: 지금 ATTEND가 max-1 이하여야 승인 가능
+        long beforeCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                GroupUserV2Status.ATTEND);
+        if (beforeCount >= group.getMaxParticipants()) {
+            throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
+        }
+
+        target.approveJoin(); // PENDING -> ATTEND
+
+        long newCount = beforeCount + 1;
+
+        if (newCount == group.getMaxParticipants() && group.getStatus() != GroupV2Status.FULL) {
+            group.changeStatus(GroupV2Status.FULL);
+        }
 
         eventPublisher.publishEvent(
                 new GroupJoinApprovedEvent(groupId, approverUserId, targetUserId));
 
-        long attendCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
-                GroupUserV2Status.ATTEND);
-
-        if (attendCount > group.getMaxParticipants()) {
-            throw new GroupException(GroupErrorCode.GROUP_IS_FULL, groupId);
-        }
-
-        // FULL 자동 전환
-        if (attendCount == group.getMaxParticipants()
-                && group.getStatus() == GroupV2Status.RECRUITING) {
-            group.changeStatus(GroupV2Status.FULL);
-        }
-
-        return GroupUserV2StatusResponse.of(group, attendCount, targetUserId, target);
+        return GroupUserV2StatusResponse.of(group, newCount, targetUserId, target);
     }
 
     @Transactional
@@ -318,7 +315,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.CANNOT_REJECT_SELF, groupId, approverUserId);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
@@ -381,7 +378,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.GROUP_CANNOT_KICK_SELF, groupId, kickerUserId);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
@@ -436,7 +433,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.GROUP_CANNOT_BAN_SELF, groupId, bannerUserId);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
@@ -547,7 +544,7 @@ public class GroupV2AttendanceService {
             throw new GroupException(GroupErrorCode.USER_ID_NULL);
         }
 
-        GroupV2 group = groupV2Repository.findById(groupId)
+        GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
