@@ -84,4 +84,15 @@ public interface GroupUserV2Repository extends JpaRepository<GroupUserV2, Long> 
             """)
     List<GroupUserV2> findAttendByGroupIdOrderByJoinedAtAscWithUser(@Param("groupId") Long groupId);
 
+    @Query("""
+                select gu
+                from GroupUserV2 gu
+                  join fetch gu.user u
+                where gu.group.id = :groupId
+                  and (gu.status = team.wego.wegobackend.group.v2.domain.entity.GroupUserV2Status.ATTEND
+                       or u.id = :userId)
+                order by gu.joinedAt asc
+            """)
+    List<GroupUserV2> findAttendPlusMeByGroupId(@Param("groupId") Long groupId,
+            @Param("userId") Long userId);
 }
