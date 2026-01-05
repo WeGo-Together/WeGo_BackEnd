@@ -64,4 +64,24 @@ public interface GroupUserV2Repository extends JpaRepository<GroupUserV2, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from GroupUserV2 gu where gu.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    @Query("""
+                select gu
+                from GroupUserV2 gu
+                  join fetch gu.user u
+                where gu.group.id = :groupId
+                order by gu.joinedAt asc
+            """)
+    List<GroupUserV2> findByGroupIdOrderByJoinedAtAscWithUser(@Param("groupId") Long groupId);
+
+    @Query("""
+                select gu
+                from GroupUserV2 gu
+                  join fetch gu.user u
+                where gu.group.id = :groupId
+                  and gu.status = 'ATTEND'
+                order by gu.joinedAt asc
+            """)
+    List<GroupUserV2> findAttendByGroupIdOrderByJoinedAtAscWithUser(@Param("groupId") Long groupId);
+
 }

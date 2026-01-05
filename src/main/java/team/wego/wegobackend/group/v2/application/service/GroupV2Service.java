@@ -202,10 +202,13 @@ public class GroupV2Service {
 
         groupCreateCooldownService.acquireOrThrowWithRollbackRelease(userId, COOL_DOWN_SECONDS);
 
-        // 회원 조회
+        // 회원 조회 후 카운트
         User host = userRepository.findById(userId)
                 .orElseThrow(() -> new GroupException(GroupErrorCode.HOST_USER_NOT_FOUND, userId)
                 );
+
+        host.increaseGroupCreatedCount();
+        host.increaseGroupJoinedCount();
 
         // 모임 주소 생성
         GroupV2Address address = GroupV2Address.of(request.location(), request.locationDetail());
@@ -283,9 +286,15 @@ public class GroupV2Service {
                 .orElseThrow(
                         () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
+        // HOST 여부에 따라 응답 결과를 분기 처리하자.
+        boolean isHost = group.getHost().getId().equals(userId);
+
+        List<GroupUserV2> users = isHost
+                ? groupUserV2Repository.findByGroupIdOrderByJoinedAtAscWithUser(groupId)
+                : groupUserV2Repository.findAttendByGroupIdOrderByJoinedAtAscWithUser(groupId);
+
         // 컬렉션은 안전하게 따로 보관해서 옮겨야 좋다고 한다.
         List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
-        List<GroupUserV2> users = groupUserV2Repository.findAllByGroupIdWithUser(groupId);
 
         Long chatRoomId = group.getChatRoom() != null ? group.getChatRoom().getId() : null;
 
