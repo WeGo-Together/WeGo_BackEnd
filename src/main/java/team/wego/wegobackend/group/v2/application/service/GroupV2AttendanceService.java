@@ -30,6 +30,7 @@ import team.wego.wegobackend.group.v2.domain.entity.GroupV2Status;
 import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2QueryRepository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupUserV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupV2Repository;
+import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.repository.UserRepository;
 
 @Slf4j
@@ -51,9 +52,8 @@ public class GroupV2AttendanceService {
     @Transactional
     public AttendanceGroupV2Response attend(Long userId, Long groupId, String message) {
         // 회원 체크
-        if (userId == null) {
-            throw new GroupException(GroupErrorCode.USER_ID_NULL);
-        }
+        User member = userRepository.findById(userId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.USER_ID_NULL));
 
         // 모임 체크: for update로 가져오기
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
@@ -119,7 +119,8 @@ public class GroupV2AttendanceService {
             }
 
             // FULL 자동 전환
-            long newCount = groupUserV2Repository.countByGroupIdAndStatus(groupId, GroupUserV2Status.ATTEND);
+            long newCount = groupUserV2Repository.countByGroupIdAndStatus(groupId,
+                    GroupUserV2Status.ATTEND);
 
             if (newCount == group.getMaxParticipants()
                     && group.getStatus() == GroupV2Status.RECRUITING) {
@@ -131,6 +132,8 @@ public class GroupV2AttendanceService {
             log.info("[EVENT][PUBLISH] {}", GroupJoinedEvent.class.getName());
             eventPublisher.publishEvent(
                     new GroupJoinedEvent(groupId, group.getHost().getId(), userId));
+
+            member.increaseGroupJoinedCount();
 
             return AttendanceGroupV2Response.of(group, newCount, membership);
         }
@@ -297,6 +300,11 @@ public class GroupV2AttendanceService {
         if (newCount == group.getMaxParticipants() && group.getStatus() != GroupV2Status.FULL) {
             group.changeStatus(GroupV2Status.FULL);
         }
+
+        User member = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new GroupException(GroupErrorCode.USER_ID_NULL, targetUserId));
+
+        member.increaseGroupJoinedCount();
 
         eventPublisher.publishEvent(
                 new GroupJoinApprovedEvent(groupId, approverUserId, targetUserId));
