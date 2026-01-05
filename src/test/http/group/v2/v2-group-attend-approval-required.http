@@ -140,6 +140,13 @@ Authorization: Bearer {{member1AccessToken}}
 
 {}
 
+### 3. 승인제 - MEMBER 2 참여 (성공: PENDING)
+POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
+Content-Type: application/json
+Authorization: Bearer {{member2AccessToken}}
+
+{}
+
 ### 3-1. 예외: 승인제 - MEMBER 1 중복 신청 (이미 PENDING)
 POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/attend
 Content-Type: application/json
@@ -182,7 +189,7 @@ Authorization: Bearer {{host2AccessToken}}
 
 ### 7. (선택) 모임 상세 조회 - MEMBER1 토큰으로 내 상태 확인
 GET http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}
-Authorization: Bearer {{member1AccessToken}}
+Authorization: Bearer {{host2AccessToken}}
 
 ### 8. (선택) MEMBER1이 모임 left 시도 (HOST는 left 불가)
 POST http://localhost:8080/api/v2/groups/{{groupId_approvalTest}}/left

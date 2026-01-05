@@ -291,7 +291,7 @@ public class GroupV2Service {
 
         List<GroupUserV2> users = isHost
                 ? groupUserV2Repository.findByGroupIdOrderByJoinedAtAscWithUser(groupId)
-                : groupUserV2Repository.findAttendByGroupIdOrderByJoinedAtAscWithUser(groupId);
+                : groupUserV2Repository.findAttendPlusMeByGroupId(groupId, userId);
 
         // 컬렉션은 안전하게 따로 보관해서 옮겨야 좋다고 한다.
         List<GroupImageV2> images = groupImageV2Repository.findAllByGroupIdWithVariants(groupId);
