@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v*/groups/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v*/groups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/**").permitAll()
                         .requestMatchers(SecurityEndpoints.PUBLIC_PATTERNS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()

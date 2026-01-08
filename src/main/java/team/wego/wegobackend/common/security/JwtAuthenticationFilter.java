@@ -134,6 +134,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (pathMatcher.match("/api/v1/users/me", path)) {
             return false;
         }
+
+        if ("GET".equals(method) && pathMatcher.match("/api/v*/groups/me", path)) {
+            return false;
+        }
+
+        if ("GET".equals(method) && pathMatcher.match("/actuator/**", path)) {
+            return false;
+        }
+
         if ("GET".equals(method) && pathMatcher.match("/api/v*/groups/me", path)) {
             return false;
         }
