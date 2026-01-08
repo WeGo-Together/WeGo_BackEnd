@@ -19,6 +19,9 @@ public class SecurityEndpoints {
 
         // WebSocket (인증은 STOMP CONNECT에서 처리)
         "/ws-chat/**",
+
+        // actuator
+         "/actuator/**",
     };
 
 }
