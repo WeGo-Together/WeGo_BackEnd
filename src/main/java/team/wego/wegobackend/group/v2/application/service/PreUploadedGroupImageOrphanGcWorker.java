@@ -21,14 +21,13 @@ public class PreUploadedGroupImageOrphanGcWorker {
 
     // “사용자가 업로드 후 모임 생성까지 걸릴 수 있는 최대 시간”
     // 최소 변경이 목적이면 1~2시간 정도를 권장 (너무 짧으면 정상 플로우도 삭제 위험)
-//    private static final Duration ORPHAN_GRACE = Duration.ofHours(2);
-    private static final Duration ORPHAN_GRACE = Duration.ofSeconds(30);
+    private static final Duration ORPHAN_GRACE = Duration.ofHours(2);
 
     // 한 번에 너무 많이 지우지 않도록 제한
     private static final int BATCH_LIMIT = 200;
 
     // 10분마다 정도면 충분히 안정적
-    @Scheduled(fixedDelay = 30_000L)
+    @Scheduled(fixedDelay = 10 * 60 * 1000L)
     public void gc() {
         long thresholdEpochSec = Instant.now().minus(ORPHAN_GRACE).getEpochSecond();
 
