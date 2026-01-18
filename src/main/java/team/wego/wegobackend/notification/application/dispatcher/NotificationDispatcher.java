@@ -94,7 +94,7 @@ public class NotificationDispatcher {
         log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatch(
         User follower,
         User follow
@@ -104,6 +104,7 @@ public class NotificationDispatcher {
 
         Notification saveNotification = notificationRepository.save(notification);
 
+        notificationRepository.flush();
 
         sseEmitterService.sendNotificationIfConnected(follow.getId(), new NotificationFollowResponse(saveNotification, follower));
 
