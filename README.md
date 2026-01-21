@@ -267,7 +267,15 @@ docker-compose down
 | [채팅서비스_클라이언트_가이드문서.md](docs/채팅서비스_클라이언트_가이드문서.md) | 채팅 클라이언트 연동 가이드 |
 
 ---
-## 8. 유지보수 계획
+
+## 8. ERD
+<img width="1888" height="996" alt="image" src="https://github.com/user-attachments/assets/f958b572-dd26-47e7-b1a3-ccce92b51cab" />
+
+
+## 9. 시스템 아키텍처
+<img width="1568" height="898" alt="image" src="https://github.com/user-attachments/assets/84195c19-d585-45f8-b2d6-978a49678d1e" />
+
+## 10. 유지보수 계획
 
 ### 모니터링 시스템 적용 및 고도화
 - 메트릭 등 시스템 주요 지표 모니터링 대상 항목 설계
@@ -304,3 +312,4 @@ docker-compose down
 ### 문서화
 - API 변경 이력 관리 (Changelog)
 - Swagger 문서 보완 (요청/응답 예시, 에러 코드)
+
