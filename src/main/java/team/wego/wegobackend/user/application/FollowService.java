@@ -1,7 +1,6 @@
 package team.wego.wegobackend.user.application;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import team.wego.wegobackend.user.application.dto.response.FollowListResponse;
 import team.wego.wegobackend.user.application.dto.response.FollowResponse;
 import team.wego.wegobackend.user.application.dto.response.FollowerListResponse;
 import team.wego.wegobackend.user.application.dto.response.WrapperFollowerResponse;
-import team.wego.wegobackend.user.application.event.FollowEvent;
+import team.wego.wegobackend.user.application.event.UserFollowEvent;
 import team.wego.wegobackend.user.domain.Follow;
 import team.wego.wegobackend.user.domain.User;
 import team.wego.wegobackend.user.exception.ExistFollowException;
@@ -60,7 +59,7 @@ public class FollowService {
         follow.increaseFollowerCount();
 
         // 알림 이벤트 발행
-        eventPublisher.publishEvent(new FollowEvent(follower, follow));
+        eventPublisher.publishEvent(new UserFollowEvent(follower.getId(), follow.getId()));
     }
 
     public void unFollow(String unFollowNickname, Long followerId) {
