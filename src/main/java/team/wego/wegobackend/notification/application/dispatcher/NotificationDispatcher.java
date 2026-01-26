@@ -12,6 +12,8 @@ import team.wego.wegobackend.notification.application.dto.response.NotificationF
 import team.wego.wegobackend.notification.application.dto.response.NotificationItemResponse;
 import team.wego.wegobackend.notification.domain.Notification;
 import team.wego.wegobackend.notification.repository.NotificationRepository;
+import team.wego.wegobackend.user.application.event.UserFollowEvent;
+import team.wego.wegobackend.user.domain.Follow;
 import team.wego.wegobackend.user.domain.User;
 
 
@@ -94,20 +96,5 @@ public class NotificationDispatcher {
         log.info("[NOTI][DISPATCH] sseSent={} noEmitter={}", sent, noEmitter);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void dispatch(
-        User follower,
-        User follow
-    ) {
-
-        Notification notification = Notification.createFollowNotification(follow, follower);
-
-        Notification saveNotification = notificationRepository.save(notification);
-
-        notificationRepository.flush();
-
-        sseEmitterService.sendNotificationIfConnected(follow.getId(), new NotificationFollowResponse(saveNotification, follower));
-
-    }
 }
 
