@@ -20,6 +20,10 @@ public record CreateGroupV2Request(
 
         String locationDetail,
 
+        Double latitude,
+
+        Double longitude,
+
         @NotNull(message = "모임: 시작 시간은 필수 입니다.")
         @FutureOrPresent(message = "모임: 시작 시간은 현재 이후여야 합니다.")
         LocalDateTime startTime,

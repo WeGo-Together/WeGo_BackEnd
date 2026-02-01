@@ -96,6 +96,8 @@ Authorization: Bearer {{accessToken}}
   "location": "서울 강남구",
   "joinPolicy": "FREE",
   "locationDetail": "강남역 2번 출구 근처 카페",
+  "latitude": 33.450701,
+  "longitude": 126.570667,
   "startTime": "2026-12-10T19:00:00",
   "endTime": "2026-12-10T21:00:00",
   "tags": [

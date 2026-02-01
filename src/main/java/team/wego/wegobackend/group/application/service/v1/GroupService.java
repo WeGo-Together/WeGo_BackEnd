@@ -234,6 +234,10 @@ public class GroupService {
 
     @Transactional
     public GetGroupResponse attendGroup(CustomUserDetails userDetails, Long groupId) {
+        // 1. 현재 참석자 수(count)를 조회한다
+        // 2. count < maxParticipants면 참석 처리한다
+        // 3. 저장한다
+
         Long userId = userDetails.getId();
 
         Group group = findActiveGroup(groupId);

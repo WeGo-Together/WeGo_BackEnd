@@ -25,6 +25,9 @@ public record UpdateGroupV2Request(
         String location,
         String locationDetail,
 
+        Double latitude,
+        Double longitude,
+
         @FutureOrPresent(message = "모임: 시작 시간은 현재 이후여야 합니다.")
         LocalDateTime startTime,
 

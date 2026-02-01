@@ -59,9 +59,7 @@ public class PreUploadedGroupImageRedisRepository {
         Set<String> set = stringRedisTemplate.opsForZSet()
                 .rangeByScore(IDX_KEY, Double.NEGATIVE_INFINITY, thresholdEpochSec, 0, limit);
 
-        if (set == null || set.isEmpty()) {
-            return List.of();
-        }
+        if (set == null || set.isEmpty()) return List.of();
         return new ArrayList<>(set);
     }
 
