@@ -211,7 +211,12 @@ public class GroupV2Service {
         host.increaseGroupJoinedCount();
 
         // 모임 주소 생성
-        GroupV2Address address = GroupV2Address.of(request.location(), request.locationDetail());
+        GroupV2Address address = GroupV2Address.of(
+                request.location(),
+                request.locationDetail(),
+                request.latitude(),
+                request.longitude()
+        );
 
         // 모임 생성
         GroupV2 group = GroupV2.create(

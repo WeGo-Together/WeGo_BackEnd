@@ -202,7 +202,17 @@ public enum GroupErrorCode implements ErrorCode {
     ALREADY_REQUESTED_TO_JOIN(HttpStatus.BAD_REQUEST, "모임: 이미 가입 요청한 상태입니다. 모임 ID: %s 회원 ID: %s"),
     DUPLICATED_IMAGE_KEY_IN_REQUEST(HttpStatus.BAD_REQUEST, "모임: 이미지 키가 중복되었습니다."),
 
-    GROUP_CHAT_ROOM_NOT_FOUND_BY_ID(HttpStatus.NOT_FOUND, "모임: 모임 채팅방을 찾을 수 없습니다. 모임 ID: %s");
+    GROUP_CHAT_ROOM_NOT_FOUND_BY_ID(HttpStatus.NOT_FOUND, "모임: 모임 채팅방을 찾을 수 없습니다. 모임 ID: %s"),
+
+    // 위치(좌표) 검증
+    LOCATION_COORDINATES_INVALID(HttpStatus.BAD_REQUEST,
+            "모임: 위도(latitude)와 경도(longitude)는 함께 전달되어야 합니다."),
+
+    LOCATION_LATITUDE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST,
+            "모임: 위도(latitude) 범위가 올바르지 않습니다. (허용: -90~90)"),
+
+    LOCATION_LONGITUDE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST,
+            "모임: 경도(longitude) 범위가 올바르지 않습니다. (허용: -180~180)");
 
     private final HttpStatus status;
     private final String message;

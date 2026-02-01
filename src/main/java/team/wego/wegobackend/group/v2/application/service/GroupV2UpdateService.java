@@ -132,16 +132,30 @@ public class GroupV2UpdateService {
             group.changeDescription(request.description());
         }
 
-        if (request.location() != null || request.locationDetail() != null) { // 주소
-            String newLocation = request.location() != null
+        if (request.location() != null
+                || request.locationDetail() != null
+                || request.latitude() != null
+                || request.longitude() != null) {
+
+            GroupV2Address cur = group.getAddress();
+
+            String newLocation = (request.location() != null)
                     ? request.location()
-                    : group.getAddress().getLocation();
+                    : cur.getLocation();
 
-            String newDetail = request.locationDetail() != null
+            String newDetail = (request.locationDetail() != null)
                     ? request.locationDetail()
-                    : group.getAddress().getLocationDetail();
+                    : cur.getLocationDetail();
 
-            group.changeAddress(GroupV2Address.of(newLocation, newDetail));
+            Double newLat = (request.latitude() != null || request.longitude() != null)
+                    ? request.latitude()
+                    : cur.getLatitude();
+
+            Double newLng = (request.latitude() != null || request.longitude() != null)
+                    ? request.longitude()
+                    : cur.getLongitude();
+
+            group.changeAddress(GroupV2Address.of(newLocation, newDetail, newLat, newLng));
         }
 
         // 시간: 둘 중 하나만 와도 엔티티가 최종 검증하도록 설계했으면 각각 호출

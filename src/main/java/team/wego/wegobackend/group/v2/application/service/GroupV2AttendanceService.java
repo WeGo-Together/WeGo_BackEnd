@@ -57,8 +57,7 @@ public class GroupV2AttendanceService {
 
         // 모임 체크: for update로 가져오기
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // HOST는 참석 불가능(모임 생성 시 이미 참가된 상태)
         if (group.getHost().getId().equals(userId)) {
@@ -171,14 +170,10 @@ public class GroupV2AttendanceService {
 
     @Transactional
     public AttendanceGroupV2Response left(Long userId, Long groupId) {
-        if (userId == null) {
-            throw new GroupException(GroupErrorCode.USER_ID_NULL);
-        }
+        if (userId == null) throw new GroupException(GroupErrorCode.USER_ID_NULL);
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID,
-                                groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // HOST는 나가기/신청취소 불가
         if (group.getHost().getId().equals(userId)) {
@@ -237,8 +232,7 @@ public class GroupV2AttendanceService {
         }
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // 승인제 모임만 가능
         if (group.getJoinPolicy() != GroupV2JoinPolicy.APPROVAL_REQUIRED) {
@@ -324,8 +318,7 @@ public class GroupV2AttendanceService {
         }
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         if (group.getJoinPolicy() != GroupV2JoinPolicy.APPROVAL_REQUIRED) {
             throw new GroupException(GroupErrorCode.GROUP_JOIN_POLICY_NOT_APPROVAL_REQUIRED,
@@ -387,8 +380,7 @@ public class GroupV2AttendanceService {
         }
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // HOST only
         if (!group.getHost().getId().equals(kickerUserId)) {
@@ -442,8 +434,7 @@ public class GroupV2AttendanceService {
         }
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // HOST only
         if (!group.getHost().getId().equals(bannerUserId)) {
@@ -553,8 +544,7 @@ public class GroupV2AttendanceService {
         }
 
         GroupV2 group = groupV2Repository.findByIdForUpdate(groupId)
-                .orElseThrow(
-                        () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
+                .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND_BY_ID, groupId));
 
         // HOST만 가능
         if (!group.getHost().getId().equals(requesterUserId)) {

@@ -26,7 +26,7 @@ public class PreUploadedGroupImageOrphanGcWorker {
     // 한 번에 너무 많이 지우지 않도록 제한
     private static final int BATCH_LIMIT = 200;
 
-    // 10분마다 정도면 충분히 안정적
+    // 10분마다 정도면 충분히 안정적으로 판단
     @Scheduled(fixedDelay = 10 * 60 * 1000L)
     public void gc() {
         long thresholdEpochSec = Instant.now().minus(ORPHAN_GRACE).getEpochSecond();
