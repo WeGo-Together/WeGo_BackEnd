@@ -26,6 +26,9 @@ import team.wego.wegobackend.auth.exception.NicknameAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.NotInitializedUserCounterException;
 import team.wego.wegobackend.auth.exception.UserAlreadyExistsException;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.common.exception.AppErrorCode;
+import team.wego.wegobackend.common.exception.AppException;
+import team.wego.wegobackend.common.security.jwt.JwtTokenProvider.SessionTokenPair;
 import team.wego.wegobackend.auth.repository.UserCounterRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatMessageRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatParticipantRepository;
@@ -109,6 +112,7 @@ public class AuthService {
     /**
      * 로그인
      */
+    @Transactional
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
@@ -122,14 +126,13 @@ public class AuthService {
             throw new DeletedUserException();
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-                user.getRole().name());
+        SessionTokenPair tokens = jwtTokenProvider.createSessionTokenPair(
+                user.getId(), user.getEmail(), user.getRole().name());
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
+        user.updateCurrentSessionid(tokens.sessionId());
 
-        Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
-
-        return LoginResponse.of(user, accessToken, refreshToken, expiresIn);
+        return LoginResponse.of(user, tokens.accessToken(), tokens.refreshToken(),
+                jwtTokenProvider.getAccessTokenExpiresIn());
     }
 
     /**
@@ -182,21 +185,19 @@ public class AuthService {
 
         User loginUser = user.get();
 
-        String accessToken = jwtTokenProvider.createAccessToken(loginUser.getId(),
-                loginUser.getEmail(),
-                loginUser.getRole().name());
+        SessionTokenPair tokens = jwtTokenProvider.createSessionTokenPair(
+                loginUser.getId(), loginUser.getEmail(), loginUser.getRole().name());
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(loginUser.getId(),
-                loginUser.getEmail());
+        loginUser.updateCurrentSessionid(tokens.sessionId());
 
-        Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
-
-        return LoginResponse.of(loginUser, accessToken, refreshToken, expiresIn);
+        return LoginResponse.of(loginUser, tokens.accessToken(), tokens.refreshToken(),
+                jwtTokenProvider.getAccessTokenExpiresIn());
     }
 
     /**
-     * Access Token 재발급
+     * Access Token 재발급 (Refresh Token Rotation 적용)
      */
+    @Transactional
     public RefreshResponse refresh(String refreshToken) {
 
         if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
@@ -212,12 +213,29 @@ public class AuthService {
             throw new DeletedUserException();
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(),
-                user.getRole().name());
+        // 리프레시 토큰 sid 검증: 다른 기기에서 로그인 후 이전 기기가 refresh를 시도하는 경우 차단
+        String refreshSid = jwtTokenProvider.getSidFromToken(refreshToken);
+        if (!refreshSid.equals(user.getCurrentSessionid())) {
+            throw new AppException(AppErrorCode.DUPLICATE_LOGIN);
+        }
 
-        Long expiresIn = jwtTokenProvider.getAccessTokenExpiresIn();
+        SessionTokenPair tokens = jwtTokenProvider.createSessionTokenPair(
+                user.getId(), user.getEmail(), user.getRole().name());
 
-        return RefreshResponse.of(newAccessToken, expiresIn);
+        user.updateCurrentSessionid(tokens.sessionId());
+
+        return RefreshResponse.of(tokens.accessToken(), tokens.refreshToken(),
+                jwtTokenProvider.getAccessTokenExpiresIn());
+    }
+
+    /**
+     * 로그아웃
+     */
+    @Transactional
+    public void logout(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        user.updateCurrentSessionid(null);
     }
 
     /**

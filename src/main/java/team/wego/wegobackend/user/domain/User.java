@@ -85,6 +85,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "provider")
     private ProviderType provider;
 
+    @Column(name = "current_sessionid", nullable = true)
+    private String currentSessionid;
+
     @Builder.Default
     @OneToMany(mappedBy = "follower")
     private List<Follow> followings = new ArrayList<>();
@@ -178,6 +181,10 @@ public class User extends BaseTimeEntity {
 
     public void updateProfileMessage(String profileMessage) {
         this.profileMessage = profileMessage;
+    }
+
+    public void updateCurrentSessionid(String sessionId) {
+        this.currentSessionid = sessionId;
     }
 
 }

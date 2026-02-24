@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,18 +44,19 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyString));
     }
 
+    public record SessionTokenPair(String accessToken, String refreshToken, String sessionId) {}
+
     /**
-     * JWT 토큰 생성
+     * 로그인/재발급 전용: 두 토큰이 같은 sid를 공유해 동시 로그인 제한에 사용됩니다.
      */
-    public String createAccessToken(Long userId, String email, String role) {
-        return createToken(userId, email, role, accessTokenExpiration, "access");
+    public SessionTokenPair createSessionTokenPair(Long userId, String email, String role) {
+        String sessionId = UUID.randomUUID().toString();
+        String accessToken = createToken(userId, email, role, accessTokenExpiration, "access", sessionId);
+        String refreshToken = createToken(userId, email, null, refreshTokenExpiration, "refresh", sessionId);
+        return new SessionTokenPair(accessToken, refreshToken, sessionId);
     }
 
-    public String createRefreshToken(Long userId, String email) {
-        return createToken(userId, email, null, refreshTokenExpiration, "refresh");
-    }
-
-    private String createToken(Long userId, String email, String role, long expiration, String type) {
+    private String createToken(Long userId, String email, String role, long expiration, String type, String sessionId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
@@ -62,6 +64,7 @@ public class JwtTokenProvider {
             .subject(email)
             .claim("userId", userId)
             .claim("type", type)
+            .claim("sid", sessionId)
             .issuedAt(now)
             .expiration(expiryDate);
 
@@ -78,6 +81,10 @@ public class JwtTokenProvider {
 
     public String getEmailFromToken(String token) {
         return getClaims(token).getSubject();
+    }
+
+    public String getSidFromToken(String token) {
+        return getClaims(token).get("sid", String.class);
     }
 
     public String getRoleFromToken(String token) {

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,7 +17,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import team.wego.wegobackend.auth.exception.UserNotFoundException;
+import team.wego.wegobackend.common.exception.AppErrorCode;
+import team.wego.wegobackend.common.exception.AppException;
 import team.wego.wegobackend.common.response.ErrorResponse;
+import team.wego.wegobackend.common.security.exception.DuplicateSessionException;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
@@ -50,10 +52,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateAccessToken(jwt)) {
 
+
                 String email = jwtTokenProvider.getEmailFromToken(jwt);
 
                 CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(
                         email);
+
+                // 동시 로그인 제한 : DB의 세션값과 비교
+                String currentSessionid = userDetails.getCurrentSessionid();
+                String tokenSid = jwtTokenProvider.getSidFromToken(jwt);
+
+                if (!tokenSid.equals(currentSessionid)) {
+                    throw new DuplicateSessionException();
+                }
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
@@ -68,18 +79,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             } else {
                 if (!isPublicEndpoint(request)) {
-                    sendJsonError(response, "토큰을 찾을 수 없습니다.");
-                    return;
+                    throw new InvalidTokenException();
                 }
             }
 
             filterChain.doFilter(request, response);
 
 
-        } catch (ExpiredTokenException | InvalidTokenException | UserNotFoundException e) {
-            sendJsonError(response, e.getMessage());
+        } catch (ExpiredTokenException | InvalidTokenException | DuplicateSessionException
+                 | UserNotFoundException e) {
+            sendJsonError(response, e);
         } catch (Exception e) {
-            sendJsonError(response, "인증 설정 중 오류 발생");
+            log.error("JWT 필터 처리 중 예외 발생", e);
+            sendJsonError(response, e);
         }
 
     }
@@ -100,23 +112,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * Servlet 예외 처리 메서드
-     *
      */
-    private void sendJsonError(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(401);
+    private void sendJsonError(HttpServletResponse response, Exception e) throws IOException {
+        if (response.isCommitted()) {
+            log.warn("Response already committed, cannot send error: {}", e.getMessage());
+            return;
+        }
+
+        AppErrorCode errorCode = resolveErrorCode(e);
+
+        response.setStatus(errorCode.getHttpStatus().value());
         response.setContentType("application/json;charset=UTF-8");
 
         ErrorResponse errorResponse = ErrorResponse.of(
-                "about:blank",
-                "ERROR_FROM_TOKEN",
-                HttpStatus.UNAUTHORIZED,
-                message,
-                "/security",
-                "SEC001",
-                null
+                errorCode.getHttpStatus(),
+                errorCode.getMessageTemplate(),
+                errorCode.name()
         );
 
         objectMapper.writeValue(response.getWriter(), errorResponse);
+    }
+
+    private AppErrorCode resolveErrorCode(Exception e) {
+        if (e instanceof ExpiredTokenException) return AppErrorCode.EXPIRED_TOKEN;
+        if (e instanceof InvalidTokenException) return AppErrorCode.INVALID_TOKEN;
+        if (e instanceof DuplicateSessionException) return AppErrorCode.DUPLICATE_LOGIN;
+        if (e instanceof AppException appEx && appEx.getErrorCode() instanceof AppErrorCode code) return code;
+        return AppErrorCode.INTERNAL_SERVER_ERROR;
     }
 
     /**

@@ -35,12 +35,15 @@ public interface AuthControllerDocs {
         HttpServletResponse response
     );
 
-    @Operation(summary = "로그아웃", description = "리프레시 토큰 쿠키만 삭제합니다.")
-    ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response);
+    @Operation(summary = "로그아웃", description = "세션 무효화 및 리프레시 토큰 쿠키를 삭제합니다.")
+    ResponseEntity<ApiResponse<Void>> logout(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        HttpServletResponse response);
 
-    @Operation(summary = "액세스 토큰 재발급", description = "리프레시 토큰 만료가 안되었을 경우 액세스 토큰을 재발급합니다.")
+    @Operation(summary = "액세스 토큰 재발급", description = "리프레시 토큰 검증 후 액세스/리프레시 토큰을 모두 재발급합니다. (Rotation)")
     ResponseEntity<ApiResponse<RefreshResponse>> refresh(
-        @CookieValue(name = "refreshToken", required = false) String refreshToken);
+        @CookieValue(name = "refreshToken", required = false) String refreshToken,
+        HttpServletResponse response);
 
     @Operation(summary = "회원탈퇴", description = "DB Soft Delete + refreshCookie 제거")
     ResponseEntity<ApiResponse<String>> withDraw(
