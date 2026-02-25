@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import team.wego.wegobackend.common.response.ErrorResponse;
 import team.wego.wegobackend.common.response.ErrorResponse.FieldError;
-import team.wego.wegobackend.common.security.exception.DuplicateSessionException;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
@@ -49,12 +48,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex,
             HttpServletRequest request) {
         return handleApp(new AppException(AppErrorCode.INVALID_TOKEN), request);
-    }
-
-    @ExceptionHandler(DuplicateSessionException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateSession(DuplicateSessionException ex,
-            HttpServletRequest request) {
-        return handleApp(new AppException(AppErrorCode.DUPLICATE_LOGIN), request);
     }
 
     @ExceptionHandler(AppException.class)

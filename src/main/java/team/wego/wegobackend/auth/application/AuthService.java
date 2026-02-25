@@ -215,7 +215,7 @@ public class AuthService {
 
         // 리프레시 토큰 sid 검증: 다른 기기에서 로그인 후 이전 기기가 refresh를 시도하는 경우 차단
         String refreshSid = jwtTokenProvider.getSidFromToken(refreshToken);
-        if (!refreshSid.equals(user.getCurrentSessionid())) {
+        if (refreshSid == null || !refreshSid.equals(user.getCurrentSessionid())) {
             throw new AppException(AppErrorCode.DUPLICATE_LOGIN);
         }
 

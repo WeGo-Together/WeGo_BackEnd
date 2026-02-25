@@ -62,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String currentSessionid = userDetails.getCurrentSessionid();
                 String tokenSid = jwtTokenProvider.getSidFromToken(jwt);
 
-                if (!tokenSid.equals(currentSessionid)) {
+                if (tokenSid == null || !tokenSid.equals(currentSessionid)) {
                     throw new DuplicateSessionException();
                 }
 
