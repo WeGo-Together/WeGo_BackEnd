@@ -36,6 +36,7 @@ public enum AppErrorCode implements ErrorCode {
     NOT_INIT_COUNTER(HttpStatus.NOT_FOUND, "회원 : 유저 카운터가 초기화 되어있지 않습니다."),
 
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 만료된 토큰입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 만료된 리프레시 토큰입니다. 재로그인이 필요합니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 유효하지 않은 토큰입니다."),
     NOT_FOUND_TOKEN(HttpStatus.UNAUTHORIZED, "인증 : 토큰을 찾을 수 없습니다."),
     DUPLICATE_LOGIN(HttpStatus.UNAUTHORIZED, "인증 : 다른 기기에서 로그인되었습니다."),

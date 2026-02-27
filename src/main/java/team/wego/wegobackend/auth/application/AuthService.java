@@ -201,8 +201,12 @@ public class AuthService {
     @Transactional
     public RefreshResponse refresh(String refreshToken) {
 
-        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
-            throw new InvalidTokenException();
+        try {
+            if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+                throw new InvalidTokenException();
+            }
+        } catch (ExpiredTokenException e) {
+            throw new AppException(AppErrorCode.EXPIRED_REFRESH_TOKEN);
         }
 
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
