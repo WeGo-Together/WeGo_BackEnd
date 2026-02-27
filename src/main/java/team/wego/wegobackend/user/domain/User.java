@@ -89,6 +89,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "onboarding_completed", nullable = false)
     private Boolean onboardingCompleted = false;
 
+    @Column(name = "current_sessionid", nullable = true)
+    private String currentSessionid;
+
     @Builder.Default
     @OneToMany(mappedBy = "follower")
     private List<Follow> followings = new ArrayList<>();
@@ -172,7 +175,7 @@ public class User extends BaseTimeEntity {
         this.notificationEnabled = flag;
     }
 
-    public void updatedeleted(Boolean flag) {
+    public void updateDeleted(Boolean flag) {
         this.deleted = flag;
     }   //HARD DELETE로 변경
 
@@ -186,6 +189,10 @@ public class User extends BaseTimeEntity {
 
     public void updateOnboardingCompleted() {
         this.onboardingCompleted = true;
+    }
+
+    public void updateCurrentSessionid(String sessionId) {
+        this.currentSessionid = sessionId;
     }
 
 }

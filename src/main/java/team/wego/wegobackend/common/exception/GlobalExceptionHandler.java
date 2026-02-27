@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import team.wego.wegobackend.common.response.ErrorResponse;
 import team.wego.wegobackend.common.response.ErrorResponse.FieldError;
+import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
+import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 
 @Slf4j(topic = "GlobalExceptionHandler")
@@ -35,6 +37,18 @@ import team.wego.wegobackend.group.domain.exception.GroupErrorCode;
 public class GlobalExceptionHandler {
 
     private static final String PROBLEM_BASE_URI = "about:blank";
+
+    @ExceptionHandler(ExpiredTokenException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredToken(ExpiredTokenException ex,
+            HttpServletRequest request) {
+        return handleApp(new AppException(AppErrorCode.EXPIRED_TOKEN), request);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex,
+            HttpServletRequest request) {
+        return handleApp(new AppException(AppErrorCode.INVALID_TOKEN), request);
+    }
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleApp(AppException ex,
@@ -324,8 +338,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleJson(JsonProcessingException ex,
             HttpServletRequest request) {
         log.error("Jackson 직렬화/역직렬화 실패(500): {}", rootCauseMessage(ex), ex);
-        AppException mapped = new AppException(GroupErrorCode.REDIS_READ_FAILED);
-        return handleApp(mapped, request);
+        return handleApp(new AppException(AppErrorCode.INTERNAL_SERVER_ERROR), request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

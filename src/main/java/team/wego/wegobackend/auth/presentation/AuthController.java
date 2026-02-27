@@ -98,8 +98,13 @@ public class AuthController implements AuthControllerDocs {
      * 로그아웃
      */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        HttpServletResponse response) {
 
+        if (userDetails != null) {
+            authService.logout(userDetails.getId());
+        }
         deleteRefreshTokenCookie(response);
 
         return ResponseEntity
@@ -128,23 +133,25 @@ public class AuthController implements AuthControllerDocs {
     }
 
     /**
-     * Access Token 재발급
+     * Access Token 재발급 (Refresh Token Rotation 적용)
      */
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(
-        @CookieValue(name = "refreshToken", required = false) String refreshToken) {
+        @CookieValue(name = "refreshToken", required = false) String refreshToken,
+        HttpServletResponse response) {
         if (refreshToken == null) {
             throw new NotFoundRefreshTokenException();
         }
 
-        RefreshResponse response = authService.refresh(refreshToken);
+        RefreshResponse refreshResponse = authService.refresh(refreshToken);
+        response.addCookie(createRefreshTokenCookie(refreshResponse.getRefreshToken()));
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(
                 201,
                 true,
-                response
+                refreshResponse
             ));
     }
 

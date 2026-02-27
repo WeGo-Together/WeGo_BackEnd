@@ -15,23 +15,26 @@ public class CustomUserDetails implements UserDetails {
 
     private final String email;
 
+    private final String currentSessionid;
+
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(User user) {
         this.id = user.getId();
         this.email = user.getEmail();
+        this.currentSessionid = user.getCurrentSessionid();
         this.authorities = Collections.singletonList(
             new SimpleGrantedAuthority(user.getRole().name()));
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return this.authorities;
     }
 
     @Override
     public String getUsername() {
-        return null;
+        return this.email;
     }
 
     @Override
