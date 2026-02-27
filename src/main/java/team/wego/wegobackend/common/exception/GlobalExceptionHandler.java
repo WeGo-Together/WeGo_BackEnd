@@ -338,8 +338,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleJson(JsonProcessingException ex,
             HttpServletRequest request) {
         log.error("Jackson 직렬화/역직렬화 실패(500): {}", rootCauseMessage(ex), ex);
-        AppException mapped = new AppException(GroupErrorCode.REDIS_READ_FAILED);
-        return handleApp(mapped, request);
+        return handleApp(new AppException(AppErrorCode.INTERNAL_SERVER_ERROR), request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

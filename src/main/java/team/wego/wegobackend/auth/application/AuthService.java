@@ -35,6 +35,7 @@ import team.wego.wegobackend.chat.domain.repository.ChatParticipantRepository;
 import team.wego.wegobackend.chat.domain.repository.ChatRoomRepository;
 import team.wego.wegobackend.common.security.Role;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
+import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 import team.wego.wegobackend.common.security.jwt.JwtTokenProvider;
 import team.wego.wegobackend.group.v2.domain.repository.GroupImageV2Repository;
 import team.wego.wegobackend.group.v2.domain.repository.GroupTagV2Repository;
@@ -201,7 +202,7 @@ public class AuthService {
     public RefreshResponse refresh(String refreshToken) {
 
         if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
-            throw new ExpiredTokenException();
+            throw new InvalidTokenException();
         }
 
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);

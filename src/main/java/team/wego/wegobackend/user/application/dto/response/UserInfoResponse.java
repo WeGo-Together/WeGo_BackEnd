@@ -39,6 +39,8 @@ public class UserInfoResponse {
 
     private Boolean isFollow;
 
+    private Boolean isOnboardingCompleted;
+
     private LocalDateTime createdAt;
 
     public static UserInfoResponse from(User user) {
@@ -54,6 +56,7 @@ public class UserInfoResponse {
             .groupJoinedCnt(user.getGroupJoinedCnt())
             .groupCreatedCnt(user.getGroupCreatedCnt())
             .isNotificationEnabled(user.getNotificationEnabled())
+            .isOnboardingCompleted(user.getOnboardingCompleted())
             .createdAt(user.getCreatedAt())
             .build();
     }

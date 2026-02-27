@@ -1,29 +1,22 @@
 package team.wego.wegobackend.common.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import team.wego.wegobackend.common.response.ErrorResponse;
 import team.wego.wegobackend.common.security.exception.ExpiredTokenException;
 import team.wego.wegobackend.common.security.exception.InvalidTokenException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtTokenProvider {
 
     @Value("${jwt.secret}")
@@ -36,8 +29,6 @@ public class JwtTokenProvider {
     private long refreshTokenExpiration;
 
     private SecretKey secretKey;
-
-    private final ObjectMapper objectMapper;
 
     @PostConstruct
     protected void init() {

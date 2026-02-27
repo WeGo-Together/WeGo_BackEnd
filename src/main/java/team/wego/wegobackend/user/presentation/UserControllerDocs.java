@@ -82,4 +82,9 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<AvailabilityResponse>> checkNicknameAvailability(
         @RequestParam("nickname") String nickname
     );
+
+    @Operation(summary = "온보딩 완료 처리 API", description = "최초 온보딩 완료 시 1회 호출합니다. 이미 완료된 경우에도 정상 응답을 반환합니다.")
+    ResponseEntity<ApiResponse<Void>> updateOnboardingCompleted(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    );
 }

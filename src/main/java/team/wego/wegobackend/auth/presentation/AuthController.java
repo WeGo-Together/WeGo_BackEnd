@@ -102,7 +102,9 @@ public class AuthController implements AuthControllerDocs {
         @AuthenticationPrincipal CustomUserDetails userDetails,
         HttpServletResponse response) {
 
-        authService.logout(userDetails.getId());
+        if (userDetails != null) {
+            authService.logout(userDetails.getId());
+        }
         deleteRefreshTokenCookie(response);
 
         return ResponseEntity

@@ -109,4 +109,11 @@ public class UserService {
 
         return new AvailabilityResponse(!userRepository.existsByNickName(nickname));
     }
+
+    public void updateOnboardingCompleted(Long userId) {
+
+        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+
+        user.updateOnboardingCompleted();
+    }
 }
