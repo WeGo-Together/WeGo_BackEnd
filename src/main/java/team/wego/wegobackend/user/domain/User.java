@@ -86,6 +86,10 @@ public class User extends BaseTimeEntity {
     private ProviderType provider;
 
     @Builder.Default
+    @Column(name = "onboarding_completed", nullable = false)
+    private Boolean onboardingCompleted = false;
+
+    @Builder.Default
     @OneToMany(mappedBy = "follower")
     private List<Follow> followings = new ArrayList<>();
 
@@ -178,6 +182,10 @@ public class User extends BaseTimeEntity {
 
     public void updateProfileMessage(String profileMessage) {
         this.profileMessage = profileMessage;
+    }
+
+    public void updateOnboardingCompleted() {
+        this.onboardingCompleted = true;
     }
 
 }

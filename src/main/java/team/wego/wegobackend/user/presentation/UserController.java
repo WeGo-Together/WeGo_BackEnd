@@ -3,7 +3,6 @@ package team.wego.wegobackend.user.presentation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import team.wego.wegobackend.common.response.ApiResponse;
 import team.wego.wegobackend.common.security.CustomUserDetails;
-import team.wego.wegobackend.image.application.dto.ImageFileResponse;
 import team.wego.wegobackend.user.application.FollowService;
 import team.wego.wegobackend.user.application.UserService;
 import team.wego.wegobackend.user.application.dto.request.ProfileUpdateRequest;
@@ -220,5 +218,20 @@ public class UserController implements UserControllerDocs {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(200, response));
+    }
+
+    /**
+     * 온보딩 완료 여부 갱신
+     * */
+    @PatchMapping("/onboarding-completed")
+    public ResponseEntity<ApiResponse<Void>> updateOnboardingCompleted(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+
+        userService.updateOnboardingCompleted(userDetails.getId());
+
+        return ResponseEntity
+            .status(HttpStatus.NO_CONTENT)
+            .body(ApiResponse.success(204, null));
     }
 }
