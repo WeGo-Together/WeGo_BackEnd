@@ -63,6 +63,18 @@ spring:
           min-idle: 1
           max-wait: 2s
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 aws:
   s3:
@@ -110,6 +122,11 @@ chat:
   batch:
     delete-expired-chat:
       cron: "0 0 * * * *"  # 매 시간 정각
+
+# 비밀번호 재설정
+password-reset:
+  frontend-url: ${PASSWORD_RESET_FRONTEND_URL:https://wego.monster}
+  token-ttl-minutes: 30
 
 # OAuth-Google
 google:
