@@ -195,4 +195,8 @@ public class User extends BaseTimeEntity {
         this.currentSessionid = sessionId;
     }
 
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
 }

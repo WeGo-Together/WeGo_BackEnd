@@ -10,13 +10,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.wego.wegobackend.auth.application.AuthService;
+import team.wego.wegobackend.auth.application.PasswordResetService;
 import team.wego.wegobackend.auth.application.dto.request.GoogleLoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.LoginRequest;
+import team.wego.wegobackend.auth.application.dto.request.PasswordResetConfirmRequest;
+import team.wego.wegobackend.auth.application.dto.request.PasswordResetRequest;
 import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
 import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
@@ -33,6 +38,8 @@ import team.wego.wegobackend.auth.exception.NotFoundRefreshTokenException;
 public class AuthController implements AuthControllerDocs {
 
     private final AuthService authService;
+
+    private final PasswordResetService passwordResetService;
 
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -153,6 +160,49 @@ public class AuthController implements AuthControllerDocs {
                 true,
                 refreshResponse
             ));
+    }
+
+    /**
+     * 비밀번호 재설정 요청 — 이메일 발송
+     * 미가입 이메일이어도 200 OK 반환 (이메일 열거 공격 방지)
+     */
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<ApiResponse<Void>> requestPasswordReset(
+        @Valid @RequestBody PasswordResetRequest request) {
+
+        passwordResetService.requestPasswordReset(request.email());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, true));
+    }
+
+    /**
+     * 검증값(validationValue) 유효성 검사
+     */
+    @GetMapping("/reset-verify")
+    public ResponseEntity<ApiResponse<Void>> verifyResetToken(
+        @RequestParam String validationValue) {
+
+        passwordResetService.verifyToken(validationValue);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, true));
+    }
+
+    /**
+     * 비밀번호 변경
+     */
+    @PostMapping("/password-reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+        @Valid @RequestBody PasswordResetConfirmRequest request) {
+
+        passwordResetService.resetPassword(request.token(), request.newPassword());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(200, true));
     }
 
     /**

@@ -8,8 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import team.wego.wegobackend.auth.application.dto.request.GoogleLoginRequest;
 import team.wego.wegobackend.auth.application.dto.request.LoginRequest;
+import team.wego.wegobackend.auth.application.dto.request.PasswordResetConfirmRequest;
+import team.wego.wegobackend.auth.application.dto.request.PasswordResetRequest;
 import team.wego.wegobackend.auth.application.dto.request.SignupRequest;
 import team.wego.wegobackend.auth.application.dto.response.LoginResponse;
 import team.wego.wegobackend.auth.application.dto.response.RefreshResponse;
@@ -49,6 +52,30 @@ public interface AuthControllerDocs {
     ResponseEntity<ApiResponse<String>> withDraw(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         HttpServletResponse response
+    );
+
+    @Operation(
+        summary = "비밀번호 재설정 요청",
+        description = "이메일로 비밀번호 재설정 링크를 발송합니다. 가입 여부와 관계없이 200 OK를 반환합니다."
+    )
+    ResponseEntity<ApiResponse<Void>> requestPasswordReset(
+        @Valid @RequestBody PasswordResetRequest request
+    );
+
+    @Operation(
+        summary = "비밀번호 재설정 토큰 유효성 검사",
+        description = "이메일 링크의 검증값(validationValue)이 유효한지 확인합니다. 토큰을 소비하지 않습니다."
+    )
+    ResponseEntity<ApiResponse<Void>> verifyResetToken(
+        @RequestParam String validationValue
+    );
+
+    @Operation(
+        summary = "비밀번호 변경",
+        description = "검증값과 새 비밀번호를 전송하여 비밀번호를 변경합니다. 성공 시 토큰 및 세션이 폐기됩니다."
+    )
+    ResponseEntity<ApiResponse<Void>> resetPassword(
+        @Valid @RequestBody PasswordResetConfirmRequest request
     );
 
 }
